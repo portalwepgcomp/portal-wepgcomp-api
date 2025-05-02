@@ -22,6 +22,7 @@ import { AwardedDoctoralStudentsModule } from './awarded-doctoral-students/award
 import { EvaluationCriteriaModule } from './evaluation-criteria/evaluation-criteria.module';
 import { CertificateModule } from './certificate/certificate.module';
 import { ScoringModule } from './scoring/scoring.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { ScoringModule } from './scoring/scoring.module';
     EvaluationCriteriaModule,
     CertificateModule,
     ScoringModule,
+    UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
