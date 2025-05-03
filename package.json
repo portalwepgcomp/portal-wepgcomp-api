@@ -10,8 +10,8 @@
   },
   "license": "UNLICENSED",
   "scripts": {
-    "build": "cp .env.production .env && nest build",
-    "build:dev": "cp .env.development .env && nest build",
+    "build": "nest build",
+    "build:dev": "nest build",
     "build:vercel": "npm run build && vercel --prod",
     "build:vercel:dev": "npm run build:dev && vercel --prod",
     "vercel:link": "vercel link --yes --project portal-wepgcomp-api",
