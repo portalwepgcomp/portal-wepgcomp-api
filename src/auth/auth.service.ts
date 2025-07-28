@@ -70,7 +70,7 @@ export class AuthService {
     const text = `Link para redefinição de senha: ${resetUrl}`;
     const html = `
       <p>Clique no botão abaixo para redefinir sua senha:</p>
-      <p><a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
+      <p><a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 10px 15px; margin-top: 8px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
     `;
     const forgotPasswordEmail = {
       from: process.env.SENDGRID_FROM_EMAIL,
