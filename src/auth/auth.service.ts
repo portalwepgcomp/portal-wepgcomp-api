@@ -66,12 +66,18 @@ export class AuthService {
       { expiresIn: '1h' },
     );
 
-    const text = `Link para redefinição de senha: ${process.env.FRONTEND_URL}/alterar-senha/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/alterar-senha/${resetToken}`;
+    const text = `Link para redefinição de senha: ${resetUrl}`;
+    const html = `
+      <p>Clique no botão abaixo para redefinir sua senha:</p>
+      <p><a href="${resetUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
+    `;
     const forgotPasswordEmail = {
       from: process.env.SENDGRID_FROM_EMAIL,
       to: user.email,
       subject: 'Redefinição de senha: WEPGCOMP',
       text,
+      html,
     };
 
     await this.mailingService.sendEmail(forgotPasswordEmail);
