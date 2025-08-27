@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AppException } from '../exceptions/app.exception';
-import * as bcrypt from 'bcrypt';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
+import { Prisma, Profile, UserAccount, UserLevel } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { AppException } from '../exceptions/app.exception';
+import { MailingService } from '../mailing/mailing.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto, SetAdminDto } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
-import { Prisma, Profile, UserAccount, UserLevel } from '@prisma/client';
-import { MailingService } from '../mailing/mailing.service';
 
 @Injectable()
 export class UserService {
@@ -17,6 +17,12 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
+    if (createUserDto.profile !== Profile.Listener) {
+      if (!createUserDto.email.toLowerCase().endsWith('@ufba.br')) {
+        throw new BadRequestException('Apenas emails @ufba.br podem ser cadastrados.') ;
+      }
+    }
+
     const emailExists = await this.prismaClient.userAccount.findUnique({
       where: {
         email: createUserDto.email,
