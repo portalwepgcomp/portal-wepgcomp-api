@@ -35,7 +35,7 @@ export class CreateUserDto {
 
   @ValidateIf((object) => object.profile === Profile.DoctoralStudent)
   @IsString()
-  @Length(1, 20)
+  @Length(9, 9)
   registrationNumber?: string;
 
   @IsOptional()
