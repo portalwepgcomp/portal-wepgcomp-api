@@ -49,7 +49,7 @@ export class UploadsController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads', // Folder where files will be stored
+        destination: './storage', // Folder where files will be stored
         filename: (req, file, callback) => {
           const uniqueFilename = uuidv4() + extname(file.originalname);
           callback(null, uniqueFilename);
@@ -76,7 +76,7 @@ export class UploadsController {
 
   @Get(':filename')
   getFile(@Param('filename') filename: string, @Res() res: Response) {
-    const filePath = join(__dirname, '..', '..', 'uploads', filename);
+    const filePath = join(__dirname, '..', '..', 'storage', filename);
 
     if (!existsSync(filePath)) {
       throw new NotFoundException('File not found');
