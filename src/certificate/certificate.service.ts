@@ -590,7 +590,7 @@ export class CertificateService {
 
           const text = `Seu certificado já está pronto para ser baixado na página do WEPGCOMP!`;
           const CertificateEmail = {
-            from: process.env.SENDGRID_FROM_EMAIL,
+            from: process.env.SMTP_FROM_EMAIL,
             to: user.email,
             subject: 'Certificado',
             text,

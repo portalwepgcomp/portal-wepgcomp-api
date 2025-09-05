@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 import {
   ContactRequestDto,
   ContactResponseDto,
@@ -30,50 +30,40 @@ function applyEmailTemplate(subject: string, htmlContent: string): string {
 
 @Injectable()
 export class MailingService {
+  private readonly transporter: nodemailer.Transporter;
   constructor(
     private eventEditionService: EventEditionService,
     private committeeMemberService: CommitteeMemberService,
   ) {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    // Nodemailer transporter setup
+    this.transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
   }
 
   async sendEmail(
     defaultEmailDto: DefaultEmailDto,
   ): Promise<DefaultEmailResponseDto> {
     try {
-      const msg = {
+      const mailOptions = {
         to: defaultEmailDto.to,
-        from: defaultEmailDto.from || process.env.SENDGRID_FROM_EMAIL,
+        from: defaultEmailDto.from || process.env.SMTP_FROM_EMAIL,
         subject: defaultEmailDto.subject,
         text: defaultEmailDto.text,
         html: applyEmailTemplate(defaultEmailDto.subject, defaultEmailDto.html || defaultEmailDto.text),
       };
 
-      await sgMail.send(msg);
+      await this.transporter.sendMail(mailOptions);
       return { message: 'Email sent successfully' };
-    } catch (error) {
-      console.error('SendGrid error:', error);
-
-      if (error.response) {
-        const { statusCode } = error.response.body;
-
-        switch (statusCode) {
-          case 401:
-            throw new AppException(
-              'Erro de autenticação: API key inválida',
-              403,
-            );
-          case 429:
-            throw new AppException('Limite diário de emails excedido', 429);
-          default:
-            throw new AppException(
-              `Erro no envio de email: ${error.message}`,
-              500,
-            );
-        }
-      }
-
-      throw new AppException(`Erro inesperado: ${error.message}`, 500);
+    } catch (error: any) {
+      console.error('Nodemailer error:', error);
+      throw new AppException(`Erro no envio de email: ${error.message}`, 500);
     }
   }
 
@@ -91,9 +81,9 @@ export class MailingService {
       <p>${text.replace(/\n/g, '<br>')}</p>
     `;
 
-    const msg = {
+    const mailOptions = {
       to: coordinator.userEmail,
-      from: process.env.SENDGRID_FROM_EMAIL,
+      from: process.env.SMTP_FROM_EMAIL,
       replyTo: email,
       subject: 'Contato: WEPGCOMP',
       text: `Nome: ${name}\nEmail: ${email}\n\nMensagem:\n${text}`,
@@ -101,31 +91,11 @@ export class MailingService {
     };
 
     try {
-      await sgMail.send(msg);
+      await this.transporter.sendMail(mailOptions);
       return { message: 'Email sent successfully' };
-    } catch (error) {
-      console.error('SendGrid contact error:', error);
-
-      if (error.response) {
-        const { statusCode } = error.response.body;
-
-        switch (statusCode) {
-          case 401:
-            throw new AppException(
-              'Erro de autenticação: API key inválida',
-              403,
-            );
-          case 429:
-            throw new AppException('Limite diário de emails excedido', 429);
-          default:
-            throw new AppException(
-              `Erro no envio de email: ${error.message}`,
-              500,
-            );
-        }
-      }
-
-      throw new AppException(`Erro inesperado: ${error.message}`, 500);
+    } catch (error: any) {
+      console.error('Nodemailer contact error:', error);
+      throw new AppException(`Erro no envio de email: ${error.message}`, 500);
     }
   }
 
@@ -140,17 +110,17 @@ export class MailingService {
       <p>${confirmationUrl}</p>
     `;
 
-    const msg = {
+    const mailOptions = {
       to: email,
-      from: process.env.SENDGRID_FROM_EMAIL,
+      from: process.env.SMTP_FROM_EMAIL,
       subject: 'Confirmação de Cadastro',
       html: applyEmailTemplate('Confirmação de Cadastro', htmlContent),
     };
 
     try {
-      await sgMail.send(msg);
-    } catch (error) {
-      console.error('SendGrid confirmation error:', error);
+      await this.transporter.sendMail(mailOptions);
+    } catch (error: any) {
+      console.error('Nodemailer confirmation error:', error);
       throw new AppException(
         `Erro ao enviar email de confirmação: ${error.message}`,
         500,
