@@ -1,15 +1,13 @@
 import {
   Controller,
-  FileTypeValidator,
+  Delete,
   Get,
-  MaxFileSizeValidator,
   NotFoundException,
   Param,
-  ParseFilePipe,
   Post,
   Res,
   UploadedFile,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -18,60 +16,48 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
-import { createReadStream, existsSync } from 'fs';
 import { Response } from 'express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { v4 as uuidv4 } from 'uuid';
+import { createReadStream, existsSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { fileValidationPipe, multerOptions } from './config/multer.options';
 
 @Controller('uploads')
 export class UploadsController {
+  
   @Post()
-  @ApiConsumes('multipart/form-data') // Specify the content type
+  @UseInterceptors(FileInterceptor('file', multerOptions))
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Faz upload de um arquivo PDF' })
   @ApiBody({
     schema: {
       type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-          description: 'File to upload',
-        },
-      },
+      properties: { file: { type: 'string', format: 'binary' } },
     },
   })
-  @ApiOperation({ summary: 'Upload a file to S3' })
-  @ApiResponse({ status: 200, description: 'Arquivo carregado com sucesso!' })
-  @ApiResponse({
-    status: 500,
-    description: 'Erro no carregamento do arquivo',
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './storage', // Folder where files will be stored
-        filename: (req, file, callback) => {
-          const uniqueFilename = uuidv4() + extname(file.originalname);
-          callback(null, uniqueFilename);
-        },
-      }),
-    }),
-  )
+  @ApiResponse({ status: 201, description: 'Arquivo carregado com sucesso!' })
+  @ApiResponse({ status: 400, description: 'Arquivo inválido (tamanho ou tipo).' })
   uploadFile(
-    @UploadedFile(
-      new ParseFilePipe({
-        validators: [
-          new MaxFileSizeValidator({ maxSize: 51200000 }),
-          new FileTypeValidator({ fileType: 'application/pdf' }),
-        ],
-      }),
-    )
-    file: Express.Multer.File,
+    @UploadedFile(fileValidationPipe) file: Express.Multer.File,
   ) {
     return {
-      message: 'File uploaded successfully',
-      key: file.filename, // Return the UUID-based filename as the key
+      message: 'Arquivo enviado com sucesso!',
+      key: file.filename,
+      mimetype: file.mimetype,
+      size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
     };
+  }
+
+  @Delete(':filename')
+  @ApiOperation({ summary: 'Deleta um arquivo pelo nome do arquivo' })
+  @ApiResponse({ status: 200, description: 'Arquivo deletado com sucesso!' })
+  @ApiResponse({ status: 404, description: 'Arquivo não encontrado.' })
+  deleteFile(@Param('filename') filename: string) {
+    const filePath = join(__dirname, '..', '..', 'storage', filename);
+    if (existsSync(filePath)) {
+      unlinkSync(filePath);
+      return { message: 'Arquivo deletado com sucesso!' };
+    }
+    throw new NotFoundException('Arquivo não encontrado.');
   }
 
   @Get(':filename')
@@ -86,9 +72,5 @@ export class UploadsController {
     file.pipe(res);
   }
 
-  @Get()
-  findAll() {
-    // Placeholder for retrieving a list of uploads
-    return { message: 'List of uploads' };
-  }
+
 }
