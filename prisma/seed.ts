@@ -609,12 +609,12 @@ async function main() {
   });
 
   const submissionsData = panelistsAndPresentations.map((panelist, index) => ({
-    title: panelist.presentation || 'Untitled Presentation',
+    title: panelist.presentation || 'Nome da apresentação não informado.',
     // topic: panelist.topic || 'Unspecified Topic',
     advisorId: panelist.advisorId,
     eventEditionId: edition2024.id,
     mainAuthorId: panelist_users[index].id,
-    abstract: 'Abstract not provided.',
+    abstract: 'Resumo não informado.',
     pdfFile: 'path/to/default.pdf',
     phoneNumber: '(71) 99999-9999',
     status: SubmissionStatus.Confirmed,

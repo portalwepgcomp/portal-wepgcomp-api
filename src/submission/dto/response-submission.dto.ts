@@ -20,10 +20,20 @@ export class ResponseSubmissionDto {
   status: SubmissionStatus;
   createdAt: Date;
   updatedAt: Date;
+  advisor: {
+    name: string;
+    email: string;
+  };
 
-  constructor(submission: Submission & { mainAuthor?: UserAccount }, proposedStartTime?: Date) {
+  constructor(
+    submission: Submission & { mainAuthor?: UserAccount } & {
+      advisor?: UserAccount;
+    },
+    proposedStartTime?: Date,
+  ) {
     this.id = submission.id;
     this.advisorId = submission.advisorId;
+    this.advisor = submission.advisor;
     this.mainAuthorId = submission.mainAuthorId;
     this.mainAuthor = submission.mainAuthor;
     this.eventEditionId = submission.eventEditionId;

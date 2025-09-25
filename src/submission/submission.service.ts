@@ -180,14 +180,29 @@ export class SubmissionService {
     });
 
     const result: ResponseSubmissionDto[] = [];
-
     for (const submission of submissions) {
+      const [mainAuthor, advisor] = await Promise.all([
+        this.prismaClient.userAccount.findUnique({
+          where: { id: submission.mainAuthorId },
+        }),
+        submission.advisorId
+          ? this.prismaClient.userAccount.findUnique({
+              where: { id: submission.advisorId },
+            })
+          : null,
+      ]);
+
       const proposedStartTime = await this.calculateProposedStartTime(
         submission,
         eventEditionId,
       );
 
-      result.push(new ResponseSubmissionDto(submission, proposedStartTime));
+      result.push(
+        new ResponseSubmissionDto(
+          { ...submission, mainAuthor, advisor },
+          proposedStartTime,
+        ),
+      );
     }
 
     return result;
