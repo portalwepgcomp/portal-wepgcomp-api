@@ -68,7 +68,10 @@ export class UserController {
     description: 'Activate or deactivate the user.',
   })
   @ApiTags('Users')
-  async toggleUserActivation(@Param('id') id: string, @Query('activate') activate: boolean) {
+  async toggleUserActivation(
+    @Param('id') id: string,
+    @Query('activate') activate: boolean,
+  ) {
     if (activate === undefined) {
       throw new AppException('O campo "activate" é obrigatório.', 400);
     }
@@ -104,7 +107,7 @@ export class UserController {
     const toArray = (input?: string | string[]): string[] => {
       if (!input) return [];
       if (Array.isArray(input)) return input;
-      return input.split(',').map(value => value.trim());
+      return input.split(',').map((value) => value.trim());
     };
 
     const rolesArray = roles ? toArray(roles) : undefined;
@@ -118,6 +121,16 @@ export class UserController {
   @ApiBearerAuth()
   async getAdvisors() {
     return await this.userService.findAll(undefined, Profile.Professor);
+  }
+
+  @Get('admins')
+  @UserLevels(UserLevel.Default, UserLevel.Admin, UserLevel.Superadmin)
+  @ApiBearerAuth()
+  async getAdmins() {
+    return await this.userService.findAll(
+      [UserLevel.Superadmin, UserLevel.Admin],
+      undefined,
+    );
   }
 
   @Post('confirm-email')
