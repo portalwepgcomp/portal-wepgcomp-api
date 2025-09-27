@@ -1,15 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { Profile, Submission, SubmissionStatus } from '@prisma/client';
+import { AppException } from '../exceptions/app.exception';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateSubmissionDto,
   CreateSubmissionInCurrentEventDto,
 } from './dto/create-submission.dto';
-import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
-import { AppException } from '../exceptions/app.exception';
-import { PrismaService } from '../prisma/prisma.service';
-import { SubmissionStatus } from '@prisma/client';
-import { Profile } from '@prisma/client';
-import { Submission } from '@prisma/client';
+import { UpdateSubmissionDto } from './dto/update-submission.dto';
 
 @Injectable()
 export class SubmissionService {
@@ -164,12 +162,14 @@ export class SubmissionService {
     withoutPresentation: boolean,
     orderByProposedPresentation: boolean,
     showConfirmedOnly: boolean,
+    mainAuthorId?: string,
   ): Promise<ResponseSubmissionDto[]> {
     const submissions = await this.prismaClient.submission.findMany({
       where: {
         eventEditionId: eventEditionId,
         ...(withoutPresentation && { Presentation: { none: {} } }),
         ...(showConfirmedOnly && { status: SubmissionStatus.Confirmed }),
+        ...(mainAuthorId && { mainAuthorId: mainAuthorId }),
       },
       orderBy: orderByProposedPresentation
         ? [

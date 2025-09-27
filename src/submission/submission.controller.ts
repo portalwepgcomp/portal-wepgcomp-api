@@ -1,26 +1,26 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
-  Query,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { SubmissionService } from './submission.service';
+import { ApiQuery } from '@nestjs/swagger';
+import { UserLevel } from '@prisma/client';
+import { UserLevels } from '../auth/decorators/user-level.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import {
   CreateSubmissionDto,
   CreateSubmissionInCurrentEventDto,
 } from './dto/create-submission.dto';
-import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
-import { ApiQuery } from '@nestjs/swagger';
-import { UserLevel } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserLevelGuard } from '../auth/guards/user-level.guard';
-import { UserLevels } from '../auth/decorators/user-level.decorator';
+import { UpdateSubmissionDto } from './dto/update-submission.dto';
+import { SubmissionService } from './submission.service';
 
 @Controller('submission')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
@@ -56,15 +56,16 @@ export class SubmissionController {
   findAll(
     @Query('eventEditionId') eventEditionId: string,
     @Query('withoutPresentation') withoutPresentation: boolean = false,
-    @Query('orderByProposedPresentation')
-    orderByProposedPresentation: boolean = false,
+    @Query('orderByProposedPresentation') orderByProposedPresentation: boolean = false,
     @Query('showConfirmedOnly') showConfirmedOnly: boolean = false,
+    @Query('mainAuthorId') mainAuthorId?: string,
   ): Promise<ResponseSubmissionDto[]> {
     return this.submissionService.findAll(
       eventEditionId,
       withoutPresentation,
       orderByProposedPresentation,
       showConfirmedOnly,
+      mainAuthorId,
     );
   }
 
