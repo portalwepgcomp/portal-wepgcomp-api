@@ -38,7 +38,7 @@ export class CertificateService {
   constructor(
     private prismaClient: PrismaService,
     private mailingService: MailingService,
-  ) {}
+  ) { }
 
   async generateCertificateForUser(
     userId: string,
@@ -67,6 +67,13 @@ export class CertificateService {
         },
         certificates: {
           where: { eventEditionId },
+        },
+      },
+    });
+    const panelistBlocks = await this.prismaClient.presentationBlock.findMany({
+      where: {
+        id: {
+          in: user.panelistParticipations.map(p => p.presentationBlockId),
         },
       },
     });
@@ -101,12 +108,30 @@ export class CertificateService {
       eventEdition.name,
     );
     let texto = '';
+    let panelistText = '';
+    if (panelistBlocks.length > 0 || panelistBlocks !== null) {
+      panelistText = 'nos blocos de apresentação '
+      if (panelistBlocks.length == 1) {
+        panelistText = 'no bloco de apresentação '
+      }
+      for (let i = 0; i < panelistBlocks.length; i++) {
+        const block = panelistBlocks[i];
+        if (i === panelistBlocks.length - 2) {
+          panelistText += `${block.title} e `;
+        } else {
+          panelistText += `${block.title}, `;
+        }
+      }
+    }
     if (user.profile == Profile.Professor) {
-      texto += `   Certificamos que ${user.name} participou como avaliador(a) em sessões de apresentações do evento ${eventEdition.name}, promovido pelo Programa de Pós-Graduação em Ciência da Computação do Instituto de Computação da Universidade Federal da Bahia, no período de ${eventEdition.startDate.toLocaleDateString()} a ${eventEdition.endDate.toLocaleDateString()}.`;
+      texto += `   Certificamos que ${user.name} participou como avaliador(a) em sessões de apresentações do evento ${eventEdition.name}, ${panelistText}promovido pelo Programa de Pós-Graduação em Ciência da Computação do Instituto de Computação da Universidade Federal da Bahia, no período de ${eventEdition.startDate.toLocaleDateString()} a ${eventEdition.endDate.toLocaleDateString()}.`;
       if (user.panelistAwards.length) {
         texto += ` Também ficamos felizes de informar que ${user.name} foi homenageado(a) como um dos melhores avaliadores pela comissão organizadora do ${eventEdition.name}.`;
       }
-    } else {
+    } else if (user.profile == Profile.Listener) {
+      texto += `   Certificamos que ${user.name} participou como ouvinte do evento ${eventEdition.name}, promovido pelo Programa de Pós-Graduação em Ciência da Computação do Instituto de Computação da Universidade Federal da Bahia, no período de ${eventEdition.startDate.toLocaleDateString()} a ${eventEdition.endDate.toLocaleDateString()}.`;
+    }
+    else {
       texto += `    Certificamos que ${user.name} apresentou o trabalho de título "${userSubmission.title}" na categoria Apresentação Oral do evento ${eventEdition.name}, promovido pelo Programa de Pós-Graduação em Ciência da Computação do Instituto de Computação da Universidade Federal da Bahia, no período de ${eventEdition.startDate.toLocaleDateString()} a ${eventEdition.endDate.toLocaleDateString()}.`;
       if (userPublicAwardStandings <= 3 && userEvaluatorsAwardStandings <= 3) {
         texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha do Público, classificado em ${userPublicAwardStandings}º lugar na avaliação dos membros do público. Seu trabalho também recebeu o prêmio Escolha dos Avaliadores, sendo classificado em ${userEvaluatorsAwardStandings}º lugar na avaliação da banca avaliadora.`;
@@ -508,10 +533,16 @@ export class CertificateService {
       throw new AppException('Edição do evento não encontrada', 404);
     }
     if (user.profile === Profile.Listener) {
-      throw new AppException(
-        'Usuário não participou como apresentador ou avaliador, portanto não pode receber certificado',
-        404,
-      );
+      const evaluationCount = await this.prismaClient.evaluation.count({
+        where: { userId: user.id },
+      });
+      if (evaluationCount < 10) {
+        throw new AppException(
+          'Usuário ouvinte deve avaliar ao menos 10 apresentações pare receber o certificado',
+          404,
+        );
+      }
+
     } else if (
       user.profile === Profile.DoctoralStudent &&
       !user.mainAuthored?.length
@@ -596,7 +627,7 @@ export class CertificateService {
             text,
           };
           this.mailingService.sendEmail(CertificateEmail);
-        } catch {}
+        } catch { }
       }
     }
   }
