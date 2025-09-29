@@ -14,12 +14,12 @@ export class UserService {
     private prismaClient: PrismaService,
     private jwtService: JwtService,
     private mailingService: MailingService,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto) {
     if (createUserDto.profile !== Profile.Listener) {
       if (!createUserDto.email.toLowerCase().endsWith('@ufba.br')) {
-        throw new BadRequestException('Apenas emails @ufba.br podem ser cadastrados.') ;
+        throw new BadRequestException('Apenas emails @ufba.br podem ser cadastrados.');
       }
     }
 
@@ -81,16 +81,23 @@ export class UserService {
       },
     });
 
+    // ENVIO DE CONFIRMAÇÃO DE EMAIL ASYNC DEVIDO A FALHAS
     if (createdUser.isVerified === false) {
-      const token = await this.generateEmailToken(createdUser.id);
-      await this.mailingService.sendEmailConfirmation(createdUser.email, token);
-      await this.prismaClient.emailVerification.create({
-        data: {
-          userId: createdUser.id,
-          emailVerificationToken: token,
-          emailVerificationSentAt: new Date(),
-        },
-      });
+      void (async () => {
+        try {
+          const token = await this.generateEmailToken(createdUser.id);
+          await this.mailingService.sendEmailConfirmation(createdUser.email, token);
+          await this.prismaClient.emailVerification.create({
+            data: {
+              userId: createdUser.id,
+              emailVerificationToken: token,
+              emailVerificationSentAt: new Date(),
+            },
+          });
+        } catch (e) {
+          console.error('Erro ao enviar email de confirmação:', e);
+        }
+      })();
     }
 
     const responseUserDto = new ResponseUserDto(createdUser);
@@ -326,7 +333,7 @@ export class UserService {
     } else if (roles && typeof roles === 'string') {
       whereClause.level = roles as UserLevel;
     }
-    
+
     if (profiles && Array.isArray(profiles)) {
       whereClause.profile = { in: profiles as Profile[] };
     } else if (profiles && typeof profiles === 'string') {
