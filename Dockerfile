@@ -6,7 +6,6 @@ COPY prisma ./prisma
 RUN npm ci
 RUN npm run postinstall
 COPY . .
-ENV NEXT_PUBLIC_API_URL=https://wepgcomp-api.app.ic.ufba.br
 RUN npm run build
 
 FROM node:22-alpine AS runner
