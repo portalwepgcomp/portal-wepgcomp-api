@@ -1,10 +1,12 @@
 import { Profile, UserAccount, UserLevel } from '@prisma/client';
+import { RegistrationNumberType } from './create-user.dto';
 
 export class ResponseUserDto {
   id: string;
   name: string;
   email: string;
   registrationNumber?: string;
+  registrationNumberType?: RegistrationNumberType;
   photoFilePath?: string;
   profile: Profile;
   level: UserLevel;
@@ -18,6 +20,7 @@ export class ResponseUserDto {
     this.name = user.name;
     this.email = user.email;
     this.registrationNumber = user.registrationNumber;
+    this.registrationNumberType = user.registrationNumberType as RegistrationNumberType;
     this.photoFilePath = user.photoFilePath;
     this.profile = user.profile;
     this.level = user.level;

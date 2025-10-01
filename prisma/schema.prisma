@@ -87,12 +87,18 @@ enum AdminApprovalStatus {
   @@map("admin_approval_status")
 }
 
+enum RegistrationNumberType {
+  CPF
+  MATRICULA
+}
+
 model UserAccount {
   id                      String             @id @default(uuid()) @map("id")
   name                    String             @map("name") @db.VarChar(255)
   email                   String             @unique @map("email") @db.VarChar(255)
   password                String             @map("password") @db.VarChar(255)
-  registrationNumber      String?            @unique @map("registration_number") @db.VarChar(20)
+  registrationNumber      String?            @map("registration_number") @db.VarChar(20) @unique
+  registrationNumberType  RegistrationNumberType? @map("registration_number_type")
   photoFilePath           String?            @map("photo_file_path") @db.VarChar(255)
   profile                 Profile            @default(DoctoralStudent) @map("profile")
   level                   UserLevel          @default(Default) @map("level")

@@ -7,6 +7,7 @@ import {
   Length,
   ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export enum Profile {
   DoctoralStudent = 'DoctoralStudent',
@@ -18,6 +19,11 @@ export enum UserLevel {
   Superadmin = 'Superadmin',
   Admin = 'Admin',
   Default = 'Default',
+}
+
+export enum RegistrationNumberType {
+  CPF = 'CPF',
+  MATRICULA = 'MATRICULA',
 }
 
 export class CreateUserDto {
@@ -37,6 +43,10 @@ export class CreateUserDto {
   @IsString()
   @Length(1, 20)
   registrationNumber?: string;
+
+  @IsOptional()
+  @IsEnum(RegistrationNumberType)
+  registrationNumberType?: RegistrationNumberType;
 
   @IsOptional()
   @IsString()

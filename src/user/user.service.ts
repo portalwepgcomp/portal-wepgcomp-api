@@ -1,11 +1,17 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  CreateUserDto,
+  RegistrationNumberType,
+  Profile,
+  UserLevel,
+  SetAdminDto,
+} from './dto/create-user.dto';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { Prisma, Profile, UserAccount, UserLevel } from '@prisma/client';
+import { Prisma, UserAccount } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AppException } from '../exceptions/app.exception';
 import { MailingService } from '../mailing/mailing.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto, SetAdminDto } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 
 @Injectable()
@@ -17,92 +23,105 @@ export class UserService {
   ) { }
 
   async create(createUserDto: CreateUserDto) {
+    // Validacao de e-mail @ufba.br para quem nao eh de fora.
     if (createUserDto.profile !== Profile.Listener) {
       if (!createUserDto.email.toLowerCase().endsWith('@ufba.br')) {
-        throw new BadRequestException('Apenas emails @ufba.br podem ser cadastrados.');
+        throw new BadRequestException('Apenas e-mails @ufba.br podem ser cadastrados.');
       }
     }
 
-    const emailExists = await this.prismaClient.userAccount.findUnique({
-      where: {
-        email: createUserDto.email,
-      },
-    });
-
-    if (emailExists) {
-      throw new AppException('Um usuário com esse email já existe.', 400);
-    }
-
-    if (
-      (createUserDto.profile !== 'Listener' || !createUserDto.profile) &&
-      !createUserDto.registrationNumber
-    ) {
-      throw new AppException(
-        'O número de matrícula é obrigatório para estudantes de doutorado e professores.',
-        400,
-      );
-    }
-
-    if (createUserDto.registrationNumber) {
-      const registrationExists = await this.prismaClient.userAccount.findUnique(
-        {
-          where: {
-            registrationNumber: createUserDto.registrationNumber,
-          },
-        },
-      );
-      if (registrationExists) {
-        throw new AppException('Um usuário com essa matrícula já existe.', 400);
-      }
-    }
-
+    // Validacao da senha mín 8, 1 letra, 1 número
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(createUserDto.password)) {
-      throw new AppException(
-        'A senha deve conter pelo menos 8 caracteres, incluindo pelo menos uma letra, um número e pode conter caracteres especiais.',
-        400,
+      throw new BadRequestException(
+        'A senha deve conter pelo menos 8 caracteres, incluindo pelo menos uma letra, um número e pode conter caracteres especiais.'
       );
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    // normaliza string vazia
+    const registrationNumber =
+      createUserDto.registrationNumber?.trim() || undefined;
 
-    let shouldBeSuperAdmin = false;
+    // define tipo padrão se vier número e não informar tipo:
+    let registrationNumberType =
+      createUserDto.registrationNumberType ??
+      (registrationNumber
+        ? createUserDto.profile === Profile.Listener
+          ? RegistrationNumberType.CPF
+          : RegistrationNumberType.MATRICULA
+        : undefined);
 
-    if (createUserDto.profile === Profile.Professor) {
-      shouldBeSuperAdmin = await this.checkProfessorShouldBeSuperAdmin();
+    // ouvintes podem não enviar matrícula/CPF; demais perfis exigem número
+    if (createUserDto.profile !== Profile.Listener && !registrationNumber) {
+      throw new BadRequestException(
+        'O número de matrícula é obrigatório para estudantes de doutorado e professores.',
+      );
     }
 
-    const createdUser = await this.prismaClient.userAccount.create({
+    // checagem de duplicidade por registration_number (independe do tipo)
+    if (registrationNumber) {
+      const exists = await this.prismaClient.userAccount.findFirst({
+        where: { registrationNumber },
+        select: { id: true },
+      });
+      if (exists) {
+        throw new BadRequestException(
+          'Um usuário com essa matrícula já existe.',
+        );
+      }
+    }
+
+    // checagem de email duplicado
+    const emailExists = await this.prismaClient.userAccount.findUnique({
+      where: { email: createUserDto.email },
+      select: { id: true },
+    });
+    if (emailExists) {
+      throw new BadRequestException('Um usuário com esse email já existe.');
+    }
+
+    // hash e criação
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+    const shouldBeSuperAdmin =
+      createUserDto.profile === Profile.Professor
+        ? await this.checkProfessorShouldBeSuperAdmin()
+        : false;
+
+    const user = await this.prismaClient.userAccount.create({
       data: {
-        ...createUserDto,
+        name: createUserDto.name,
+        email: createUserDto.email,
         password: hashedPassword,
+        profile: createUserDto.profile ?? Profile.Listener,
         level: shouldBeSuperAdmin ? UserLevel.Superadmin : UserLevel.Default,
-        isActive: createUserDto.profile === Profile.Professor && !shouldBeSuperAdmin ? false : true,
+        registrationNumber,
+        registrationNumberType,
+        isActive:
+          createUserDto.profile === Profile.Professor && !shouldBeSuperAdmin
+            ? false
+            : true,
       },
     });
 
-    // ENVIO DE CONFIRMAÇÃO DE EMAIL ASYNC DEVIDO A FALHAS
-    if (createdUser.isVerified === false) {
-      void (async () => {
-        try {
-          const token = await this.generateEmailToken(createdUser.id);
-          await this.mailingService.sendEmailConfirmation(createdUser.email, token);
-          await this.prismaClient.emailVerification.create({
-            data: {
-              userId: createdUser.id,
-              emailVerificationToken: token,
-              emailVerificationSentAt: new Date(),
-            },
-          });
-        } catch (e) {
-          console.error('Erro ao enviar email de confirmação:', e);
-        }
-      })();
+    // Fluxo de verificação por e-mail
+    if (!user.isVerified) {
+      const token = await this.generateEmailToken(user.id);
+      await this.prismaClient.emailVerification.create({
+        data: {
+          userId: user.id,
+          emailVerificationToken: token,
+          emailVerificationSentAt: new Date(),
+        },
+      });
+      try {
+        await this.mailingService.sendEmailConfirmation(user.email, token);
+      } catch (err) {
+        console.warn('Falha ao enviar e-mail de confirmação:', user.email, err);
+      }
     }
 
-    const responseUserDto = new ResponseUserDto(createdUser);
-
-    return responseUserDto;
+    return new ResponseUserDto(user);
   }
 
   async findByEmail(email: string) {
@@ -352,6 +371,7 @@ export class UserService {
         email: true,
         password: true,
         registrationNumber: true,
+        registrationNumberType: true,
         photoFilePath: true,
         profile: true,
         level: true,
