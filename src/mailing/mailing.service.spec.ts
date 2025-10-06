@@ -3,10 +3,15 @@ import { MailingService } from './mailing.service';
 import { EventEditionService } from '../event-edition/event-edition.service';
 import { CommitteeMemberService } from '../committee-member/committee-member.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ScoringService } from '../scoring/scoring.service';
 import { AppException } from '../exceptions/app.exception';
 import { createTransport } from 'nodemailer';
 
 jest.mock('nodemailer', () => ({
+  __esModule: true,
+  default: {
+    createTransport: jest.fn(),
+  },
   createTransport: jest.fn(),
 }));
 
@@ -28,9 +33,17 @@ describe('MailingService', () => {
       sendMail: jest.fn(),
     };
 
-    (createTransport as jest.Mock).mockImplementation(
-      () => mailerTransportMock,
-    );
+    const createTransportMock = jest.fn(() => mailerTransportMock);
+    (createTransport as jest.Mock).mockImplementation(createTransportMock);
+
+    // Mock the default import nodemailer.createTransport
+    jest.doMock('nodemailer', () => ({
+      __esModule: true,
+      default: {
+        createTransport: createTransportMock,
+      },
+      createTransport: createTransportMock,
+    }));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -38,6 +51,13 @@ describe('MailingService', () => {
         EventEditionService,
         CommitteeMemberService,
         PrismaService,
+        {
+          provide: ScoringService,
+          useValue: {
+            calculateAndAverageScoreForAPresentation: jest.fn(),
+            updateScoringOfPresentation: jest.fn(),
+          },
+        },
         { provide: 'EMAIL_ERROR_SERVICE', useValue: mockEmailErrorService },
         {
           provide: 'EMAIL_SERVER_LIMIT_SERVICE',

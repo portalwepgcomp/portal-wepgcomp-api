@@ -1,7 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CertificateService } from './certificate.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { Profile, UserLevel, PresentationStatus } from '@prisma/client';
+import {
+  Profile,
+  UserLevel,
+  PresentationStatus,
+  RegistrationNumberType,
+} from '@prisma/client';
 import * as fontkit from '@pdf-lib/fontkit';
 import { PDFDocument } from 'pdf-lib';
 import { AppException } from '../exceptions/app.exception';
@@ -61,6 +66,9 @@ describe('CertificateService', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
     },
+    presentationBlock: {
+      findMany: jest.fn(),
+    },
     presentation: {
       findMany: jest.fn(),
     },
@@ -99,15 +107,20 @@ describe('CertificateService', () => {
         password:
           '$2b$10$kwFkaLgZTaeM/7KNz5EE0Og.2CDlFC8m96o5ZbzlSfVJ.5kqUT3L2',
         registrationNumber: null,
+        registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: null,
         profile: Profile.DoctoralStudent,
         level: UserLevel.Default,
         isActive: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: true,
         mainAuthored: [{ title: 'Sample Title' }],
         panelistAwards: [],
+        panelistParticipations: [],
         certificates: [],
       };
 
@@ -177,6 +190,10 @@ describe('CertificateService', () => {
         .mocked(prismaService.presentation.findMany)
         .mockResolvedValue(presentationsMock);
 
+      jest
+        .mocked(prismaService.presentationBlock.findMany)
+        .mockResolvedValue([]);
+
       jest.mocked(prismaService.userAccount.findFirst).mockResolvedValue({
         id: '28e4d7a0-c005-4397-93cc-69f74065bcbc',
         name: 'Professor Superadmin',
@@ -184,10 +201,14 @@ describe('CertificateService', () => {
         password:
           '$2b$10$ezvAid85jjfWat5xm240Qe3cpY.5KE2B.yp3CDxdHF3Ghuloz6omK',
         registrationNumber: '123456',
+        registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: null,
         profile: Profile.Professor,
         level: UserLevel.Superadmin,
         isActive: true,
+        isTeacherActive: true,
+        isSuperadmin: true,
+        isAdmin: true,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: true,
@@ -225,6 +246,7 @@ describe('CertificateService', () => {
         profile: Profile.Professor,
         level: UserLevel.Default,
         isActive: true,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: true,
@@ -266,6 +288,104 @@ describe('CertificateService', () => {
     });
 
     it('should call metadata methods', async () => {
+      const userMock = {
+        id: 'cc59c311-6fb5-46dd-a648-121df2e55290',
+        name: 'Doutorando Default 3',
+        email: 'docdefault3@example.com',
+        password:
+          '$2b$10$kwFkaLgZTaeM/7KNz5EE0Og.2CDlFC8m96o5ZbzlSfVJ.5kqUT3L2',
+        registrationNumber: null,
+        registrationNumberType: RegistrationNumberType.CPF,
+        photoFilePath: null,
+        profile: Profile.DoctoralStudent,
+        level: UserLevel.Default,
+        isActive: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isVerified: true,
+        mainAuthored: [{ title: 'Sample Title' }],
+        panelistAwards: [],
+        panelistParticipations: [],
+        certificates: [],
+      };
+
+      const eventEditionMock = {
+        id: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
+        name: 'Sample Event Edition',
+        description: 'This is a description of the event edition.',
+        callForPapersText: 'Call for papers details...',
+        partnersText: 'Partners information...',
+        location: 'Conference Hall 1',
+        startDate: new Date('2025-01-01T10:00:00Z'),
+        endDate: new Date('2025-01-03T18:00:00Z'),
+        submissionStartDate: new Date('2025-01-01T00:00:00Z'),
+        submissionDeadline: new Date('2025-01-15T23:59:59Z'),
+        isEvaluationRestrictToLoggedUsers: true,
+        presentationDuration: 30,
+        presentationsPerPresentationBlock: 5,
+        coordinatorId: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
+        isActive: true,
+        createdAt: new Date('2024-12-01T10:00:00Z'),
+        updatedAt: new Date('2024-12-01T10:00:00Z'),
+      };
+
+      const presentationsMock = [
+        {
+          id: '1',
+          submissionId: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
+          presentationBlockId: 'a1234567-1234-5678-1234-567812345678',
+          positionWithinBlock: 1,
+          status: PresentationStatus.ToPresent,
+          publicAverageScore: 0,
+          evaluatorsAverageScore: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+
+      // Set up the same mocks as the first test
+      jest
+        .mocked(prismaService.userAccount.findUnique)
+        .mockResolvedValue(userMock);
+      jest
+        .mocked(prismaService.eventEdition.findUnique)
+        .mockResolvedValue(eventEditionMock);
+      jest
+        .mocked(prismaService.presentation.findMany)
+        .mockResolvedValue(presentationsMock);
+      jest
+        .mocked(prismaService.presentationBlock.findMany)
+        .mockResolvedValue([]);
+      jest.mocked(prismaService.userAccount.findFirst).mockResolvedValue({
+        id: '28e4d7a0-c005-4397-93cc-69f74065bcbc',
+        name: 'Professor Superadmin',
+        email: 'profsuperadmin@example.com',
+        password:
+          '$2b$10$ezvAid85jjfWat5xm240Qe3cpY.5KE2B.yp3CDxdHF3Ghuloz6omK',
+        registrationNumber: '123456',
+        registrationNumberType: RegistrationNumberType.CPF,
+        photoFilePath: null,
+        profile: Profile.Professor,
+        level: UserLevel.Superadmin,
+        isActive: true,
+        isTeacherActive: true,
+        isSuperadmin: true,
+        isAdmin: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isVerified: true,
+      });
+
+      // Call the service method
+      await service.generateCertificateForUser(
+        userMock.id,
+        eventEditionMock.id,
+      );
+
+      // Get the mock PDF that was created during service execution
       const mockPDF = await PDFDocument.create();
 
       expect(mockPDF.setTitle).toHaveBeenCalledWith(
@@ -325,7 +445,7 @@ describe('CertificateService', () => {
         mockEvents[0],
       );
       expect(mailingService.sendEmail).toHaveBeenCalledWith({
-        from: `"${mockUsers[0].name}" <${mockUsers[0].email}>`,
+        from: 'wepgcomp@gmail.com',
         to: mockUsers[0].email,
         subject: 'Certificado',
         text: 'Seu certificado já está pronto para ser baixado na página do WEPGCOMP!',

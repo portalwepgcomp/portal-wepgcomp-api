@@ -5,7 +5,7 @@ import { CreatePresentationBlockDto } from './dto/create-presentation-block.dto'
 import { UpdatePresentationBlockDto } from './dto/update-presentation-block.dto';
 import { ResponsePresentationBlockDto } from './dto/response-presentation-block.dto';
 import { PresentationBlockType } from '@prisma/client';
-import { SwapPresentationsDto } from './dto/swap-presentations.dto';
+import { SwapMultiplePresentationsDto } from './dto/swap-presentations.dto';
 import { AppException } from '../exceptions/app.exception';
 
 describe('PresentationBlockController', () => {
@@ -157,9 +157,13 @@ describe('PresentationBlockController', () => {
   describe('swapPresentations', () => {
     it('should call the service with the correct parameters and return the result', async () => {
       const id = 'block1';
-      const swapPresentationsDto: SwapPresentationsDto = {
-        presentation1Id: 'presentation1',
-        presentation2Id: 'presentation2',
+      const swapPresentationsDto: SwapMultiplePresentationsDto = {
+        presentations: [
+          {
+            presentation1Id: 'presentation1',
+            presentation2Id: 'presentation2',
+          },
+        ],
       };
 
       const serviceResponse = {
@@ -184,9 +188,13 @@ describe('PresentationBlockController', () => {
 
     it('should throw an error if the service throws an exception', async () => {
       const id = 'block1';
-      const swapPresentationsDto: SwapPresentationsDto = {
-        presentation1Id: 'presentation1',
-        presentation2Id: 'presentation2',
+      const swapPresentationsDto: SwapMultiplePresentationsDto = {
+        presentations: [
+          {
+            presentation1Id: 'presentation1',
+            presentation2Id: 'presentation2',
+          },
+        ],
       };
 
       jest

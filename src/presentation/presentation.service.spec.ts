@@ -5,7 +5,12 @@ import { PresentationService } from './presentation.service';
 import { CreatePresentationDto } from './dto/create-presentation.dto';
 import { PresentationResponseDto } from './dto/response-presentation.dto';
 import { AppException } from '../exceptions/app.exception';
-import { PresentationStatus, Profile, UserLevel } from '@prisma/client';
+import {
+  PresentationStatus,
+  Profile,
+  UserLevel,
+  RegistrationNumberType,
+} from '@prisma/client';
 import { SubmissionStatus } from '@prisma/client';
 import { PresentationBlockType } from '@prisma/client';
 import { CreatePresentationWithSubmissionDto } from './dto/create-presentation-with-submission.dto';
@@ -976,6 +981,10 @@ describe('PresentationService', () => {
         updatedAt: new Date('2024-12-27T15:50:13.008Z'),
         isVerified: false,
         password: 'a',
+        registrationNumberType: RegistrationNumberType.CPF,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
       };
       const mockSubmissions = [
         {
@@ -1052,6 +1061,10 @@ describe('PresentationService', () => {
         updatedAt: new Date('2024-12-27T15:50:13.008Z'),
         isVerified: false,
         password: 'a',
+        registrationNumberType: RegistrationNumberType.CPF,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
       };
 
       jest
@@ -1082,6 +1095,10 @@ describe('PresentationService', () => {
         updatedAt: new Date('2024-12-27T15:50:13.008Z'),
         isVerified: false,
         password: 'a',
+        registrationNumberType: RegistrationNumberType.CPF,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
       };
 
       jest
@@ -1115,6 +1132,10 @@ describe('PresentationService', () => {
         updatedAt: new Date('2024-12-27T15:50:13.008Z'),
         isVerified: false,
         password: 'a',
+        registrationNumberType: RegistrationNumberType.CPF,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
       };
 
       const mockSubmissions = [

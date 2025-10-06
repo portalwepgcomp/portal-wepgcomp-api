@@ -56,7 +56,10 @@ export class MailingService {
         from: defaultEmailDto.from || process.env.SMTP_FROM_EMAIL,
         subject: defaultEmailDto.subject,
         text: defaultEmailDto.text,
-        html: applyEmailTemplate(defaultEmailDto.subject, defaultEmailDto.html || defaultEmailDto.text),
+        html: applyEmailTemplate(
+          defaultEmailDto.subject,
+          defaultEmailDto.html || defaultEmailDto.text,
+        ),
       };
 
       await this.transporter.sendMail(mailOptions);

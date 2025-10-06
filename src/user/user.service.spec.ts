@@ -36,6 +36,8 @@ describe('UserService', () => {
               setSuperAdmin: jest.fn(),
               delete: jest.fn(),
               findFirst: jest.fn(),
+              findMany: jest.fn(),
+              count: jest.fn(),
             },
             emailVerification: {
               findFirst: jest.fn(),
@@ -88,8 +90,10 @@ describe('UserService', () => {
 
       const createUserDto: CreateUserDto = {
         name: 'John',
-        email: 'existing@example.com',
+        email: 'existing@ufba.br',
         password: 'password123',
+        registrationNumber: 'REG123',
+        profile: Profile.Professor,
       };
 
       await expect(service.create(createUserDto)).rejects.toThrow(
@@ -98,16 +102,20 @@ describe('UserService', () => {
     });
 
     it('should throw an AppException if registration number already exists', async () => {
-      prismaService.userAccount.findUnique = jest
+      // Mock email check to return null (no email conflict)
+      prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(null);
+
+      // Mock registration number check to return a user (conflict exists)
+      prismaService.userAccount.findFirst = jest
         .fn()
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(true);
+        .mockResolvedValue({ id: 'existing-user-id' });
 
       const createUserDto: CreateUserDto = {
         name: 'Jane',
-        email: 'new@example.com',
+        email: 'new@ufba.br',
         password: 'password123',
-        registrationNumber: '2021001',
+        registrationNumber: 'REG456',
+        profile: Profile.Professor,
       };
 
       await expect(service.create(createUserDto)).rejects.toThrow(
@@ -122,8 +130,9 @@ describe('UserService', () => {
 
       const createUserDto: CreateUserDto = {
         name: 'Jane',
-        email: 'new@example.com',
+        email: 'new@ufba.br',
         password: 'password123',
+        profile: Profile.Professor,
       };
 
       await expect(service.create(createUserDto)).rejects.toThrow(
@@ -139,12 +148,16 @@ describe('UserService', () => {
       prismaService.userAccount.create = jest.fn().mockResolvedValue({
         id: '1',
         name: 'John',
-        email: 'newuser@example.com',
+        email: 'newuser@ufba.br',
         registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA',
         photoFilePath: null,
         profile: 'DoctoralStudent',
         level: 'Default',
         isActive: true,
+        isSuperadmin: false,
+        isTeacherActive: false,
+        isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -154,7 +167,7 @@ describe('UserService', () => {
 
       const createUserDto: CreateUserDto = {
         name: 'John',
-        email: 'newuser@example.com',
+        email: 'newuser@ufba.br',
         password: 'password123',
         registrationNumber: '2021001',
       };
@@ -164,10 +177,15 @@ describe('UserService', () => {
       expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
       expect(prismaService.userAccount.create).toHaveBeenCalledWith({
         data: {
-          ...createUserDto,
+          name: createUserDto.name,
+          email: createUserDto.email,
           password: hashedPassword,
-          level: 'Default',
+          profile: Profile.Listener,
+          level: UserLevel.Default,
+          registrationNumber: createUserDto.registrationNumber,
+          registrationNumberType: 'MATRICULA',
           isActive: true,
+          isTeacherActive: true,
         },
       });
       expect(result).toBeInstanceOf(ResponseUserDto);
@@ -180,11 +198,15 @@ describe('UserService', () => {
         id: '1',
         name: 'John',
         registrationNumber: '2021001',
-        email: 'newuser@example.com',
+        registrationNumberType: 'MATRICULA',
+        email: 'newuser@ufba.br',
         photoFilePath: null,
         profile: 'Professor',
         level: 'Superadmin', // Ensure level is Superadmin
         isActive: true,
+        isSuperadmin: true,
+        isTeacherActive: true,
+        isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -198,7 +220,7 @@ describe('UserService', () => {
 
       const createUserDto: CreateUserDto = {
         name: 'John',
-        email: 'newuser@example.com',
+        email: 'newuser@ufba.br',
         registrationNumber: '2021001',
         password: 'password123',
         profile: Profile.Professor,
@@ -213,9 +235,15 @@ describe('UserService', () => {
       // Verify the user was created with the correct level
       expect(prismaService.userAccount.create).toHaveBeenCalledWith({
         data: {
-          ...createUserDto,
+          name: createUserDto.name,
+          email: createUserDto.email,
           password: hashedPassword,
-          level: 'Superadmin',
+          profile: createUserDto.profile,
+          level: UserLevel.Superadmin,
+          registrationNumber: createUserDto.registrationNumber,
+          registrationNumberType: 'MATRICULA',
+          isActive: createUserDto.isActive,
+          isTeacherActive: true,
         },
       });
 
@@ -228,13 +256,17 @@ describe('UserService', () => {
       prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(null); // Ensure user does not exist
       prismaService.userAccount.create = jest.fn().mockResolvedValue({
         id: '1',
-        name: 'John',
+        name: 'Jane',
         registrationNumber: '2021001',
-        email: 'newuser@example.com',
+        registrationNumberType: 'MATRICULA',
+        email: 'newuser@ufba.br',
         photoFilePath: null,
         profile: 'Professor',
         level: 'Default', // Ensure level is Default
-        isActive: true,
+        isActive: false,
+        isSuperadmin: false,
+        isTeacherActive: false,
+        isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -248,7 +280,7 @@ describe('UserService', () => {
 
       const createUserDto: CreateUserDto = {
         name: 'Jane',
-        email: 'newuser@example.com',
+        email: 'newuser@ufba.br',
         registrationNumber: '2021001',
         password: 'password123',
         profile: Profile.Professor,
@@ -262,10 +294,15 @@ describe('UserService', () => {
       // Verify the user was created with the correct level
       expect(prismaService.userAccount.create).toHaveBeenCalledWith({
         data: {
-          ...createUserDto,
+          name: createUserDto.name,
+          email: createUserDto.email,
           password: hashedPassword,
-          level: 'Default',
+          profile: createUserDto.profile,
+          level: UserLevel.Default,
+          registrationNumber: createUserDto.registrationNumber,
+          registrationNumberType: 'MATRICULA',
           isActive: false,
+          isTeacherActive: false,
         },
       });
 
@@ -471,10 +508,15 @@ describe('UserService', () => {
         name: 'John',
         email: 'user@example.com',
         registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: null,
         profile: 'DoctoralStudent',
         level: 'Admin',
         isActive: true,
+        isSuperadmin: false,
+        isTeacherActive: false,
+        isAdmin: false,
+        isVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -629,10 +671,15 @@ describe('UserService', () => {
         name: 'John',
         email: 'user@example.com',
         registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: null,
         profile: 'DoctoralStudent',
         level: 'Admin',
         isActive: true,
+        isSuperadmin: false,
+        isTeacherActive: false,
+        isAdmin: true,
+        isVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -787,10 +834,15 @@ describe('UserService', () => {
         name: 'John',
         email: 'user@example.com',
         registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: null,
         profile: 'DoctoralStudent',
         level: 'Superadmin',
         isActive: true,
+        isSuperadmin: true,
+        isTeacherActive: false,
+        isAdmin: false,
+        isVerified: true,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -874,6 +926,7 @@ describe('UserService', () => {
           email: 'john@example.com',
           password: 'hashedPassword',
           registrationNumber: 'REG123',
+          registrationNumberType: 'MATRICULA' as any,
           photoFilePath: 'photo/path',
           profile: Profile.Professor,
           level: UserLevel.Admin,
@@ -881,6 +934,9 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
+          isSuperadmin: false,
+          isTeacherActive: true,
+          isAdmin: true,
         },
         {
           id: '2',
@@ -888,6 +944,7 @@ describe('UserService', () => {
           email: 'jane@example.com',
           password: 'hashedPassword',
           registrationNumber: 'REG456',
+          registrationNumberType: 'CPF' as any,
           photoFilePath: 'photo/path',
           profile: Profile.Listener,
           level: UserLevel.Default,
@@ -895,6 +952,9 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
+          isSuperadmin: false,
+          isTeacherActive: false,
+          isAdmin: false,
         },
       ];
 
@@ -912,6 +972,7 @@ describe('UserService', () => {
           email: true,
           password: true,
           registrationNumber: true,
+          registrationNumberType: true,
           photoFilePath: true,
           profile: true,
           level: true,
@@ -919,6 +980,9 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
+          isAdmin: true,
+          isSuperadmin: true,
+          isTeacherActive: true,
         },
       });
 
@@ -935,6 +999,7 @@ describe('UserService', () => {
           email: 'john@example.com',
           password: 'hashedPassword',
           registrationNumber: 'REG123',
+          registrationNumberType: 'MATRICULA' as any,
           photoFilePath: 'photo/path',
           profile: Profile.Professor,
           level: UserLevel.Admin,
@@ -942,6 +1007,9 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
+          isSuperadmin: false,
+          isTeacherActive: true,
+          isAdmin: true,
         },
       ];
 
@@ -959,6 +1027,7 @@ describe('UserService', () => {
           email: true,
           password: true,
           registrationNumber: true,
+          registrationNumberType: true,
           photoFilePath: true,
           profile: true,
           level: true,
@@ -966,6 +1035,9 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
+          isAdmin: true,
+          isSuperadmin: true,
+          isTeacherActive: true,
         },
       });
 
@@ -982,6 +1054,7 @@ describe('UserService', () => {
           email: 'jane@example.com',
           password: 'hashedPassword',
           registrationNumber: 'REG456',
+          registrationNumberType: 'CPF' as any,
           photoFilePath: 'photo/path',
           profile: Profile.Listener,
           level: UserLevel.Default,
@@ -989,6 +1062,9 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
+          isSuperadmin: false,
+          isTeacherActive: false,
+          isAdmin: false,
         },
       ];
 
@@ -1006,6 +1082,7 @@ describe('UserService', () => {
           email: true,
           password: true,
           registrationNumber: true,
+          registrationNumberType: true,
           photoFilePath: true,
           profile: true,
           level: true,
@@ -1013,6 +1090,9 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
+          isAdmin: true,
+          isSuperadmin: true,
+          isTeacherActive: true,
         },
       });
 
@@ -1029,6 +1109,7 @@ describe('UserService', () => {
           email: 'john@example.com',
           password: 'hashedPassword',
           registrationNumber: 'REG123',
+          registrationNumberType: 'MATRICULA' as any,
           photoFilePath: 'photo/path',
           profile: Profile.Professor,
           level: UserLevel.Admin,
@@ -1036,6 +1117,9 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
+          isSuperadmin: false,
+          isTeacherActive: true,
+          isAdmin: true,
         },
       ];
 
@@ -1053,6 +1137,7 @@ describe('UserService', () => {
           email: true,
           password: true,
           registrationNumber: true,
+          registrationNumberType: true,
           photoFilePath: true,
           profile: true,
           level: true,
@@ -1060,6 +1145,9 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
+          isAdmin: true,
+          isSuperadmin: true,
+          isTeacherActive: true,
         },
       });
 
@@ -1190,16 +1278,16 @@ describe('UserService', () => {
     it('should update the registration number for an existing user', async () => {
       const userId = 'user-id-1';
       const newRegistrationNumber = 'PROF1234';
-  
+
       // Mock do Prisma para simular a atualização do registro
       prismaService.userAccount.update = jest.fn().mockResolvedValue({
         id: userId,
         registrationNumber: newRegistrationNumber,
       });
-  
+
       // Chamada do método
       await service.updateRegistrationNumber(userId, newRegistrationNumber);
-  
+
       // Verificando se a função Prisma foi chamada corretamente
       expect(prismaService.userAccount.update).toHaveBeenCalledWith({
         where: { id: userId },
@@ -1207,19 +1295,21 @@ describe('UserService', () => {
       });
     });
   });
-  
+
   it('should throw an error if user is not found', async () => {
     const userId = 'nonexistent-user-id';
     const newRegistrationNumber = 'PROF1234';
-  
+
     // Mock do Prisma para simular que o usuário não foi encontrado
-    prismaService.userAccount.update = jest.fn().mockRejectedValue(new Error('User not found'));
-  
+    prismaService.userAccount.update = jest
+      .fn()
+      .mockRejectedValue(new Error('User not found'));
+
     // Esperando que uma exceção seja lançada
     await expect(
       service.updateRegistrationNumber(userId, newRegistrationNumber),
     ).rejects.toThrowError('User not found');
-  
+
     // Verificando se o Prisma foi chamado corretamente
     expect(prismaService.userAccount.update).toHaveBeenCalledWith({
       where: { id: userId },
@@ -1230,20 +1320,20 @@ describe('UserService', () => {
   it('should update the registration number to null', async () => {
     const userId = 'user-id-1';
     const registrationNumber = null; // Registro sendo setado para null
-  
+
     // Mock do Prisma para simular a atualização
     prismaService.userAccount.update = jest.fn().mockResolvedValue({
       id: userId,
       registrationNumber,
     });
-  
+
     // Chamada do método
     await service.updateRegistrationNumber(userId, registrationNumber);
-  
+
     // Verificando se a função Prisma foi chamada corretamente
     expect(prismaService.userAccount.update).toHaveBeenCalledWith({
       where: { id: userId },
       data: { registrationNumber },
     });
-  });  
+  });
 });

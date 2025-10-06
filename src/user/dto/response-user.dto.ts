@@ -11,6 +11,9 @@ export class ResponseUserDto {
   profile: Profile;
   level: UserLevel;
   isActive: boolean;
+  isTeacherActive: boolean;
+  isAdmin: boolean;
+  isSuperadmin: boolean;
   createdAt: Date;
   updatedAt: Date;
   isVerified: boolean;
@@ -20,11 +23,15 @@ export class ResponseUserDto {
     this.name = user.name;
     this.email = user.email;
     this.registrationNumber = user.registrationNumber;
-    this.registrationNumberType = user.registrationNumberType as RegistrationNumberType;
+    this.registrationNumberType =
+      user.registrationNumberType as RegistrationNumberType;
     this.photoFilePath = user.photoFilePath;
     this.profile = user.profile;
     this.level = user.level;
     this.isActive = user.isActive;
+    this.isTeacherActive = user.isTeacherActive ?? false;
+    this.isAdmin = user.isAdmin ?? false;
+    this.isSuperadmin = user.isSuperadmin ?? false;
     this.createdAt = user.createdAt;
     this.updatedAt = user.updatedAt;
     this.isVerified = user.isVerified;

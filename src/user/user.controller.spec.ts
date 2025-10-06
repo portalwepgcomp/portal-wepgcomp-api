@@ -25,7 +25,9 @@ describe('UserController', () => {
             setAdmin: jest.fn(),
             setSuperAdmin: jest.fn(),
             remove: jest.fn(),
-            activateProfessor: jest.fn(),
+            toggleUserActivation: jest.fn(),
+            approveTeacher: jest.fn(),
+            promoteToSuperadmin: jest.fn(),
             findAll: jest.fn(),
           },
         },
@@ -58,10 +60,14 @@ describe('UserController', () => {
         name: 'John Doe',
         email: 'johndoe@example.com',
         registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: 'user-photo-url',
         profile: Profile.DoctoralStudent,
         level: UserLevel.Default,
         isActive: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: false,
@@ -87,10 +93,15 @@ describe('UserController', () => {
         id: '1',
         name: 'John Doe',
         email: 'johndoe@example.com',
+        registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: 'user-photo-url',
         profile: Profile.Professor,
         level: UserLevel.Default,
         isActive: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: false,
@@ -118,10 +129,15 @@ describe('UserController', () => {
         id: '1',
         name: 'John Doe',
         email: 'johndoe@example.com',
+        registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: 'user-photo-url',
         profile: Profile.Professor,
         level: UserLevel.Admin,
         isActive: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: true,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: false,
@@ -147,10 +163,15 @@ describe('UserController', () => {
         id: '1',
         name: 'John Doe',
         email: 'johndoe@example.com',
+        registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA' as any,
         photoFilePath: 'user-photo-url',
         profile: Profile.Professor,
         level: UserLevel.Admin,
         isActive: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: true,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: false,
@@ -184,36 +205,6 @@ describe('UserController', () => {
     });
   });
 
-  describe('activateUser', () => {
-    it('should activate a user and return the result', async () => {
-      // Arrange
-      const userId = '1234';
-      const expectedResponse = {
-        id: '1234',
-        name: 'Jane Doe',
-        email: 'jane.doe@example.com',
-        password: 'password123',
-        registrationNumber: 'REG12345',
-        photoFilePath: 'photo/url/path',
-        profile: Profile.Professor,
-        level: UserLevel.Admin,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isVerified: false,
-      };
-
-      jest
-        .spyOn(userService, 'activateProfessor')
-        .mockResolvedValue(expectedResponse);
-
-      const result = await controller.activateUser(userId);
-
-      expect(userService.activateProfessor).toHaveBeenCalledWith(userId);
-      expect(result).toEqual(expectedResponse);
-    });
-  });
-
   describe('getUsers', () => {
     it('should return all users when no filters are applied', async () => {
       const usersMock = [
@@ -223,10 +214,13 @@ describe('UserController', () => {
           email: 'john@example.com',
           password: 'hashedPassword123',
           registrationNumber: '2023001',
+          registrationNumberType: 'MATRICULA' as any,
           photoFilePath: 'path/to/photo1.jpg',
           level: UserLevel.Admin,
           profile: Profile.Professor,
           isActive: true,
+          isTeacherActive: false,
+          isSuperadmin: false,
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
@@ -237,10 +231,13 @@ describe('UserController', () => {
           email: 'jane@example.com',
           password: 'hashedPassword456',
           registrationNumber: '2023002',
+          registrationNumberType: 'CPF' as any,
           photoFilePath: 'path/to/photo2.jpg',
           level: UserLevel.Default,
           profile: Profile.Listener,
           isActive: false,
+          isTeacherActive: false,
+          isSuperadmin: false,
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
@@ -249,13 +246,19 @@ describe('UserController', () => {
 
       jest
         .spyOn(userService, 'findAll')
-        .mockResolvedValue(usersMock.map((user) => new ResponseUserDto(user)));
+        .mockResolvedValue(
+          usersMock.map((user) => new ResponseUserDto(user as any)),
+        );
 
       const result = await controller.getUsers();
 
-      expect(userService.findAll).toHaveBeenCalledWith(undefined, undefined);
+      expect(userService.findAll).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        undefined,
+      );
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
 
@@ -279,13 +282,19 @@ describe('UserController', () => {
 
       jest
         .spyOn(userService, 'findAll')
-        .mockResolvedValue(usersMock.map((user) => new ResponseUserDto(user)));
+        .mockResolvedValue(
+          usersMock.map((user) => new ResponseUserDto(user as any)),
+        );
 
       const result = await controller.getUsers('Admin');
 
-      expect(userService.findAll).toHaveBeenCalledWith(['Admin'], undefined);
+      expect(userService.findAll).toHaveBeenCalledWith(
+        ['Admin'],
+        undefined,
+        undefined,
+      );
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
 
@@ -309,13 +318,19 @@ describe('UserController', () => {
 
       jest
         .spyOn(userService, 'findAll')
-        .mockResolvedValue(usersMock.map((user) => new ResponseUserDto(user)));
+        .mockResolvedValue(
+          usersMock.map((user) => new ResponseUserDto(user as any)),
+        );
 
       const result = await controller.getUsers(undefined, 'Listener');
 
-      expect(userService.findAll).toHaveBeenCalledWith(undefined, ['Listener']);
+      expect(userService.findAll).toHaveBeenCalledWith(
+        undefined,
+        ['Listener'],
+        undefined,
+      );
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
 
@@ -339,16 +354,19 @@ describe('UserController', () => {
 
       jest
         .spyOn(userService, 'findAll')
-        .mockResolvedValue(usersMock.map((user) => new ResponseUserDto(user)));
+        .mockResolvedValue(
+          usersMock.map((user) => new ResponseUserDto(user as any)),
+        );
 
       const result = await controller.getUsers('Admin', 'Professor');
 
       expect(userService.findAll).toHaveBeenCalledWith(
         ['Admin'],
         ['Professor'],
+        undefined,
       );
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
   });

@@ -7,7 +7,11 @@ import { MailingService } from '../mailing/mailing.service';
 import * as bcrypt from 'bcrypt';
 import { AppException } from '../exceptions/app.exception';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
-import { Profile, UserLevel } from '../user/dto/create-user.dto';
+import {
+  Profile,
+  UserLevel,
+  RegistrationNumberType,
+} from '../user/dto/create-user.dto';
 
 jest.mock('bcrypt');
 
@@ -110,11 +114,15 @@ describe('AuthService', () => {
         email: 'test@example.com',
         password: 'hashed',
         registrationNumber: '123456',
+        registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: '/path/to/photo',
         profile: Profile.DoctoralStudent,
         level: UserLevel.Default,
         isActive: true,
         isVerified: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -149,11 +157,15 @@ describe('AuthService', () => {
         email: 'test@example.com',
         password: 'hashed',
         registrationNumber: '123456',
+        registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: '/path/to/photo',
         profile: Profile.DoctoralStudent,
         level: UserLevel.Default,
         isActive: true,
         isVerified: true,
+        isTeacherActive: false,
+        isSuperadmin: false,
+        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -173,10 +185,13 @@ describe('AuthService', () => {
         { expiresIn: '1h' },
       );
       expect(mailingService.sendEmail).toHaveBeenCalledWith({
-        from: `"${mockUser.name}" <${mockUser.email}>`,
+        from: 'wepgcomp@gmail.com',
         to: mockUser.email,
         subject: 'Redefinição de senha: WEPGCOMP',
         text: `Link para redefinição de senha: ${process.env.FRONTEND_URL}/alterar-senha/${mockToken}`,
+        html: expect.stringContaining(
+          'Clique no botão abaixo para redefinir sua senha',
+        ),
       });
     });
 

@@ -778,10 +778,13 @@ describe('PresentationBlockService', () => {
       prismaService.$transaction = jest.fn().mockResolvedValue({});
 
       const result = await service.swapPresentations('block1', {
-        presentation1Id: 'presentation1',
-        presentation2Id: 'presentation2',
+        presentations: [
+          {
+            presentation1Id: 'presentation1',
+            presentation2Id: 'presentation2',
+          },
+        ],
       });
-
       expect(prismaService.presentation.findUnique).toHaveBeenCalledTimes(2);
       expect(prismaService.$transaction).toHaveBeenCalledWith([
         prismaService.presentation.update({
@@ -803,8 +806,12 @@ describe('PresentationBlockService', () => {
 
       await expect(
         service.swapPresentations('block1', {
-          presentation1Id: 'presentation1',
-          presentation2Id: 'presentation2',
+          presentations: [
+            {
+              presentation1Id: 'presentation1',
+              presentation2Id: 'presentation2',
+            },
+          ],
         }),
       ).rejects.toThrow(
         new AppException('Apresentação 1 não foi encontrada nesse bloco', 400),
@@ -827,8 +834,12 @@ describe('PresentationBlockService', () => {
 
       await expect(
         service.swapPresentations('block1', {
-          presentation1Id: 'presentation1',
-          presentation2Id: 'presentation2',
+          presentations: [
+            {
+              presentation1Id: 'presentation1',
+              presentation2Id: 'presentation2',
+            },
+          ],
         }),
       ).rejects.toThrow(
         new AppException('Apresentação 2 não foi encontrada nesse bloco', 400),
@@ -861,8 +872,12 @@ describe('PresentationBlockService', () => {
 
       await expect(
         service.swapPresentations('block1', {
-          presentation1Id: 'presentation1',
-          presentation2Id: 'presentation2',
+          presentations: [
+            {
+              presentation1Id: 'presentation1',
+              presentation2Id: 'presentation2',
+            },
+          ],
         }),
       ).rejects.toThrow(
         new AppException('Erro interno na troca de apresentações', 500),

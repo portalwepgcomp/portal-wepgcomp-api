@@ -85,9 +85,9 @@ describe('AwardedDoctoralStudentsService', () => {
       const result = await service.findTopEvaluatorsRanking(eventEditionId);
 
       expect(result).toHaveLength(3);
-      expect(result[0].evaluatorsAverageScore).toBe('10.00');
-      expect(result[1].evaluatorsAverageScore).toBe('8.00');
-      expect(result[2].evaluatorsAverageScore).toBe('6.00');
+      expect(result[0].evaluatorsAverageScore).toBe(10);
+      expect(result[1].evaluatorsAverageScore).toBe(8);
+      expect(result[2].evaluatorsAverageScore).toBe(6);
       expect(prismaService.presentation.findMany).toHaveBeenCalledWith({
         where: {
           presentationBlock: {
@@ -167,9 +167,9 @@ describe('AwardedDoctoralStudentsService', () => {
       const result = await service.findTopPublicRanking(eventEditionId);
 
       expect(result).toHaveLength(3);
-      expect(result[0].publicAverageScore).toBe('9.00');
-      expect(result[1].publicAverageScore).toBe('7.00');
-      expect(result[2].publicAverageScore).toBe('5.00');
+      expect(result[0].publicAverageScore).toBe(9);
+      expect(result[1].publicAverageScore).toBe(7);
+      expect(result[2].publicAverageScore).toBe(5);
       expect(prismaService.presentation.findMany).toHaveBeenCalledWith({
         where: {
           presentationBlock: {

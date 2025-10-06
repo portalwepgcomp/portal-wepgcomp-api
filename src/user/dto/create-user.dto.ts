@@ -7,7 +7,6 @@ import {
   Length,
   ValidateIf,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
 
 export enum Profile {
   DoctoralStudent = 'DoctoralStudent',

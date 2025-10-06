@@ -4,8 +4,6 @@ import { PageSizes, PDFDocument, PDFFont, rgb, TextAlignment } from 'pdf-lib';
 import * as fontkit from '@pdf-lib/fontkit';
 import { AppException } from '../exceptions/app.exception';
 import { CommitteeLevel, Profile } from '@prisma/client';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { MailingService } from '../mailing/mailing.service';
 
@@ -38,7 +36,7 @@ export class CertificateService {
   constructor(
     private prismaClient: PrismaService,
     private mailingService: MailingService,
-  ) { }
+  ) {}
 
   async generateCertificateForUser(
     userId: string,
@@ -73,7 +71,7 @@ export class CertificateService {
     const panelistBlocks = await this.prismaClient.presentationBlock.findMany({
       where: {
         id: {
-          in: user.panelistParticipations.map(p => p.presentationBlockId),
+          in: user.panelistParticipations.map((p) => p.presentationBlockId),
         },
       },
     });
@@ -110,9 +108,9 @@ export class CertificateService {
     let texto = '';
     let panelistText = '';
     if (panelistBlocks.length > 0 || panelistBlocks !== null) {
-      panelistText = 'nos blocos de apresentação '
+      panelistText = 'nos blocos de apresentação ';
       if (panelistBlocks.length == 1) {
-        panelistText = 'no bloco de apresentação '
+        panelistText = 'no bloco de apresentação ';
       }
       for (let i = 0; i < panelistBlocks.length; i++) {
         const block = panelistBlocks[i];
@@ -130,8 +128,7 @@ export class CertificateService {
       }
     } else if (user.profile == Profile.Listener) {
       texto += `   Certificamos que ${user.name} participou como ouvinte do evento ${eventEdition.name}, promovido pelo Programa de Pós-Graduação em Ciência da Computação do Instituto de Computação da Universidade Federal da Bahia, no período de ${eventEdition.startDate.toLocaleDateString()} a ${eventEdition.endDate.toLocaleDateString()}.`;
-    }
-    else {
+    } else {
       texto += `    Certificamos que ${user.name} apresentou o trabalho de título "${userSubmission.title}" na categoria Apresentação Oral do evento ${eventEdition.name}, promovido pelo Programa de Pós-Graduação em Ciência da Computação do Instituto de Computação da Universidade Federal da Bahia, no período de ${eventEdition.startDate.toLocaleDateString()} a ${eventEdition.endDate.toLocaleDateString()}.`;
       if (userPublicAwardStandings <= 3 && userEvaluatorsAwardStandings <= 3) {
         texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha do Público, classificado em ${userPublicAwardStandings}º lugar na avaliação dos membros do público. Seu trabalho também recebeu o prêmio Escolha dos Avaliadores, sendo classificado em ${userEvaluatorsAwardStandings}º lugar na avaliação da banca avaliadora.`;
@@ -542,7 +539,6 @@ export class CertificateService {
           404,
         );
       }
-
     } else if (
       user.profile === Profile.DoctoralStudent &&
       !user.mainAuthored?.length
@@ -627,7 +623,7 @@ export class CertificateService {
             text,
           };
           this.mailingService.sendEmail(CertificateEmail);
-        } catch { }
+        } catch {}
       }
     }
   }
