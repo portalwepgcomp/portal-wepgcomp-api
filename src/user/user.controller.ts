@@ -11,13 +11,24 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { UserService } from './user.service';
-import { CreateUserDto, SetAdminDto } from './dto/create-user.dto';
+import {
+  CreateUserDto,
+  CreateProfessorByAdminDto,
+  SetAdminDto,
+} from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Profile, UserLevel } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
-import { ApiBearerAuth, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AppException } from '../exceptions/app.exception';
 
 @ApiTags('Users')
@@ -30,6 +41,50 @@ export class UserController {
   @Post('register')
   async create(@Body() createUserDto: CreateUserDto) {
     return await this.userService.create(createUserDto);
+  }
+
+  @Post('create-professor')
+  @UserLevels(UserLevel.Superadmin)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Criar professor por super administrador',
+    description:
+      'Permite que um super administrador crie um novo professor sem senha. Um email será enviado com credenciais temporárias.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Professor criado com sucesso',
+    schema: {
+      type: 'object',
+      properties: {
+        user: {
+          type: 'object',
+          description: 'Dados do usuário criado',
+        },
+        temporaryPassword: {
+          type: 'string',
+          description:
+            'Senha temporária gerada (para casos onde o email falha)',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados inválidos ou email/matrícula já existem',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Usuário não tem permissões de super administrador',
+  })
+  async createProfessor(
+    @Body() createProfessorDto: CreateProfessorByAdminDto,
+    @CurrentUser() currentUser: any,
+  ) {
+    return await this.userService.createProfessorByAdmin(
+      createProfessorDto,
+      currentUser.userId,
+    );
   }
 
   @Post('set-default')

@@ -5,7 +5,6 @@ import { CreateCommitteeMemberDto } from './dto/create-committee-member.dto';
 import { UpdateCommitteeMemberDto } from './dto/update-committee-member.dto';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { CommitteeLevel, CommitteeRole, UserLevel } from '@prisma/client';
-import { use } from 'passport';
 
 describe('CommitteeMemberService', () => {
   let service: CommitteeMemberService;

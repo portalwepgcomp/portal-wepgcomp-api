@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   CreateUserDto,
+  CreateProfessorByAdminDto,
   RegistrationNumberType,
   Profile,
   UserLevel,
@@ -17,6 +18,7 @@ import { AppException } from '../exceptions/app.exception';
 import { MailingService } from '../mailing/mailing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { generateRandomPassword } from '../utils/password.util';
 
 @Injectable()
 export class UserService {
@@ -132,6 +134,90 @@ export class UserService {
     }
 
     return new ResponseUserDto(user);
+  }
+
+  async createProfessorByAdmin(
+    createProfessorDto: CreateProfessorByAdminDto,
+    adminUserId: string,
+  ): Promise<{ user: ResponseUserDto; temporaryPassword: string }> {
+    // Validate admin permissions
+    const adminUser = await this.prismaClient.userAccount.findUnique({
+      where: { id: adminUserId },
+      select: { id: true, name: true, level: true },
+    });
+
+    if (!adminUser || adminUser.level !== UserLevel.Superadmin) {
+      throw new AppException(
+        'Apenas super administradores podem criar professores.',
+        403,
+      );
+    }
+
+    // Validate @ufba.br email
+    if (!createProfessorDto.email.toLowerCase().endsWith('@ufba.br')) {
+      throw new BadRequestException(
+        'Apenas e-mails @ufba.br podem ser cadastrados para professores.',
+      );
+    }
+
+    // Check for duplicate email
+    const emailExists = await this.prismaClient.userAccount.findUnique({
+      where: { email: createProfessorDto.email },
+      select: { id: true },
+    });
+    if (emailExists) {
+      throw new BadRequestException('Um usuário com esse email já existe.');
+    }
+
+    // Check for duplicate registration number
+    const registrationExists = await this.prismaClient.userAccount.findFirst({
+      where: { registrationNumber: createProfessorDto.registrationNumber },
+      select: { id: true },
+    });
+    if (registrationExists) {
+      throw new BadRequestException('Um usuário com essa matrícula já existe.');
+    }
+
+    // Generate random password
+    const temporaryPassword = generateRandomPassword(12);
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
+
+    // Create professor user
+    const user = await this.prismaClient.userAccount.create({
+      data: {
+        name: createProfessorDto.name,
+        email: createProfessorDto.email,
+        password: hashedPassword,
+        profile: Profile.Professor,
+        level: UserLevel.Default, // Professors start as default level
+        registrationNumber: createProfessorDto.registrationNumber,
+        registrationNumberType:
+          createProfessorDto.registrationNumberType ??
+          RegistrationNumberType.MATRICULA,
+        photoFilePath: createProfessorDto.photoFilePath,
+        isActive: true, // Professors created by admin are immediately active
+        isVerified: true, // Skip email verification for admin-created users
+      },
+    });
+
+    // Send welcome email with credentials
+    try {
+      await this.mailingService.sendProfessorWelcomeEmail(
+        user.email,
+        user.name,
+        adminUser.name,
+        temporaryPassword,
+      );
+    } catch (err) {
+      console.warn('Falha ao enviar e-mail de boas-vindas:', user.email, err);
+      // We don't throw here because the user was created successfully
+      // The admin can manually share the credentials if needed
+    }
+
+    return {
+      user: new ResponseUserDto(user),
+      temporaryPassword, // Return this so admin can see it if email fails
+    };
   }
 
   async findByEmail(email: string) {

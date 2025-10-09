@@ -14,7 +14,12 @@ import {
   UpdateEventEditionDto,
   UpdateFromEventEditionFormDto,
 } from './dto/update-event-edition.dto';
-import { CommitteeLevel, CommitteeRole, Prisma, UserLevel } from '@prisma/client';
+import {
+  CommitteeLevel,
+  CommitteeRole,
+  Prisma,
+  UserLevel,
+} from '@prisma/client';
 import { Cron } from '@nestjs/schedule';
 import { ScoringService } from '../scoring/scoring.service';
 import { AppException } from '../exceptions/app.exception';
@@ -173,7 +178,7 @@ export class EventEditionService {
           },
         })
       : [];
-  
+
     const rooms = activeEvent
       ? createEventEditionDto.roomName
         ? [{ name: createEventEditionDto.roomName, description: '' }]
@@ -181,11 +186,15 @@ export class EventEditionService {
             where: { eventEditionId: activeEvent.id },
             select: { name: true, description: true },
           })
-      : [{ name: createEventEditionDto.roomName || 'Auditório Principal', description: '' }];
-  
+      : [
+          {
+            name: createEventEditionDto.roomName || 'Auditório Principal',
+            description: '',
+          },
+        ];
+
     return { evaluationCriteria, rooms };
   }
-  
 
   private validateSubmissionPeriod(
     createEventEditionDto: CreateEventEditionDto | UpdateEventEditionDto,
@@ -627,17 +636,17 @@ export class EventEditionService {
       const eventToDelete = await prisma.eventEdition.findUnique({
         where: { id },
       });
-  
+
       if (!eventToDelete) {
         throw new BadRequestException(
           'Não existe nenhum evento com esse identificador',
         );
       }
-  
+
       const deletedEvent = await prisma.eventEdition.delete({
         where: { id },
       });
-  
+
       // Caso o evento deletado fosse ativo, reativar o evento anterior
       if (eventToDelete.isActive) {
         const previousEvent = await prisma.eventEdition.findFirst({
@@ -646,7 +655,7 @@ export class EventEditionService {
           },
           orderBy: { startDate: 'desc' },
         });
-  
+
         if (previousEvent) {
           await prisma.eventEdition.update({
             where: { id: previousEvent.id },
@@ -654,7 +663,7 @@ export class EventEditionService {
           });
         }
       }
-  
+
       return new EventEditionResponseDto(deletedEvent);
     });
   }

@@ -102,6 +102,42 @@ export class MailingService {
     }
   }
 
+  async sendProfessorWelcomeEmail(
+    professorEmail: string,
+    professorName: string,
+    adminName: string,
+    temporaryPassword: string,
+  ): Promise<void> {
+    const htmlContent = `
+      <h2>Bem-vindo ao Sistema WEPGCOMP!</h2>
+      <p>Olá <strong>${professorName}</strong>,</p>
+      <p>Seu cadastro foi criado no sistema WEPGCOMP - Portal do Workshop de Estudantes de Pós-graduação em Ciência da Computação por ${adminName} (Super Administrador).</p>
+      <p><strong>Suas credenciais de acesso:</strong></p>
+      <p><strong>Email:</strong> ${professorEmail}</p>
+      <p><strong>Senha temporária:</strong> ${temporaryPassword}</p>
+      <p><strong>Importante:</strong> Recomendamos que você altere sua senha no primeiro acesso através do seu perfil por motivos de segurança.</p>
+      <p>Para acessar o sistema, faça login com seu email e a senha temporária fornecida acima.</p>
+      <p>Se você tiver alguma dúvida, entre em contato com o administrador do sistema.</p>
+    `;
+
+    const mailOptions = {
+      to: professorEmail,
+      from: process.env.SMTP_FROM_EMAIL,
+      subject: 'Bem-vindo ao WEPGCOMP - Credenciais de Acesso',
+      html: applyEmailTemplate('Bem-vindo ao WEPGCOMP', htmlContent),
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+    } catch (error: any) {
+      console.error('Nodemailer professor welcome error:', error);
+      throw new AppException(
+        `Erro ao enviar email de boas-vindas: ${error.message}`,
+        500,
+      );
+    }
+  }
+
   async sendEmailConfirmation(email: string, token: string): Promise<void> {
     const confirmationUrl = `${process.env.FRONTEND_URL}/users/confirm-email?token=${token}`;
 

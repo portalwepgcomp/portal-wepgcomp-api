@@ -14,7 +14,7 @@ import { PresentationBlockService } from './presentation-block.service';
 import { CreatePresentationBlockDto } from './dto/create-presentation-block.dto';
 import { UpdatePresentationBlockDto } from './dto/update-presentation-block.dto';
 import { ResponsePresentationBlockDto } from './dto/response-presentation-block.dto';
-import { SwapMultiplePresentationsDto, SwapPresentationsDto } from './dto/swap-presentations.dto';
+import { SwapMultiplePresentationsDto } from './dto/swap-presentations.dto';
 
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -81,6 +81,7 @@ export class PresentationBlockController {
     let presentationBlock = null;
     try {
       presentationBlock = await this.presentationBlockService.findOne(id);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (error) {
       return null;
     }
