@@ -17,13 +17,14 @@ RUN npm ci --omit=dev --ignore-scripts
 FROM node:22-alpine AS runner
 WORKDIR /app
 RUN apk add --no-cache openssl curl
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 node
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY package*.json ./
+
 USER node
+
 EXPOSE 5000
 
 CMD ["node", "dist/main.js"]
