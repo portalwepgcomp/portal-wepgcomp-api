@@ -64,7 +64,7 @@ async function main() {
     {
       name: 'Bruno Pereira dos Santos',
       email: 'bruno.pereira@ufba.br',
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
       isVerified: true,
@@ -72,7 +72,7 @@ async function main() {
     {
       name: 'Rafael Augusto de Melo',
       email: 'rafael.melo@ufba.br',
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
       isVerified: true,
@@ -80,7 +80,7 @@ async function main() {
     {
       name: 'Robespierre Dantas da Rocha Pita',
       email: 'robespierre.dantas@ufba.br',
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
       isVerified: true,
@@ -88,7 +88,7 @@ async function main() {
     {
       name: 'Rodrigo Rocha Gomes e Souza',
       email: 'rodrigo.rocha@ufba.br',
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
       isVerified: true,
@@ -96,7 +96,7 @@ async function main() {
     {
       name: 'Bianco Oliveira',
       email: 'bianco.oliveira@ufba.br',
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.DoctoralStudent,
       level: UserLevel.Admin,
       isVerified: true,
@@ -104,7 +104,7 @@ async function main() {
     {
       name: 'Bruno Morais',
       email: 'bruno.morais@ufba.br',
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.DoctoralStudent,
       level: UserLevel.Admin,
       isVerified: true,
@@ -155,7 +155,7 @@ async function main() {
     return {
       name,
       email: `${emailName}@ufba.br`,
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.Professor,
       level: UserLevel.Default,
       isVerified: true,
@@ -594,7 +594,7 @@ async function main() {
     panelists.push({
       name: item.name,
       email: `${emailName}@ufba.br`,
-      password: '1234$Ad@',
+      password: process.env.SEED_PASSWORD,
       profile: Profile.DoctoralStudent,
       level: UserLevel.Default,
       isVerified: true,
