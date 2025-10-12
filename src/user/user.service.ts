@@ -139,7 +139,7 @@ export class UserService {
   async createProfessorByAdmin(
     createProfessorDto: CreateProfessorByAdminDto,
     adminUserId: string,
-  ): Promise<{ user: ResponseUserDto; temporaryPassword: string }> {
+  ): Promise<{ user: ResponseUserDto; emailSent: boolean }> {
     // Validate admin permissions
     const adminUser = await this.prismaClient.userAccount.findUnique({
       where: { id: adminUserId },
@@ -201,6 +201,7 @@ export class UserService {
     });
 
     // Send welcome email with credentials
+    let emailSent = false;
     try {
       await this.mailingService.sendProfessorWelcomeEmail(
         user.email,
@@ -208,15 +209,16 @@ export class UserService {
         adminUser.name,
         temporaryPassword,
       );
+      emailSent = true;
     } catch (err) {
       console.warn('Falha ao enviar e-mail de boas-vindas:', user.email, err);
       // We don't throw here because the user was created successfully
-      // The admin can manually share the credentials if needed
+      // The admin should check the emailSent flag and manually share credentials if needed
     }
 
     return {
       user: new ResponseUserDto(user),
-      temporaryPassword, // Return this so admin can see it if email fails
+      emailSent, // Indicates whether the email was sent successfully
     };
   }
 

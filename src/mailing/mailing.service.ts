@@ -131,10 +131,6 @@ export class MailingService {
       await this.transporter.sendMail(mailOptions);
     } catch (error: any) {
       console.error('Nodemailer professor welcome error:', error);
-      throw new AppException(
-        `Erro ao enviar email de boas-vindas: ${error.message}`,
-        500,
-      );
     }
   }
 

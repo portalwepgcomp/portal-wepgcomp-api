@@ -6,6 +6,7 @@ import {
   IsBoolean,
   Length,
   ValidateIf,
+  Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -41,7 +42,9 @@ export class CreateUserDto {
 
   @ValidateIf((object) => object.profile === Profile.DoctoralStudent)
   @IsString()
-  @Length(1, 20)
+  @Matches(/^\d{1,13}$/, {
+    message: 'Número de matrícula deve conter apenas dígitos (máximo 13)',
+  })
   registrationNumber?: string;
 
   @IsOptional()
@@ -89,12 +92,15 @@ export class CreateProfessorByAdminDto {
   email: string;
 
   @ApiProperty({
-    description: 'Número de matrícula SIAPE do professor',
-    example: '123456',
-    maxLength: 20,
+    description: 'Número de matrícula SIAPE do professor (até 13 dígitos)',
+    example: '1234567890123',
+    pattern: '^\\d{1,13}$',
+    maxLength: 13,
   })
   @IsString()
-  @Length(1, 20)
+  @Matches(/^\d{1,13}$/, {
+    message: 'Número de matrícula deve conter apenas dígitos (máximo 13)',
+  })
   registrationNumber: string;
 
   @ApiProperty({
