@@ -116,4 +116,18 @@ export class AuthService {
     const token = this.jwtService.sign(payload, { expiresIn: '1h' });
     return { token };
   }
+
+  async validateToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      return {
+        valid: true,
+        userId: payload.userId,
+        level: payload.level,
+        email: payload.email,
+      };
+    } catch {
+      throw new AppException('Token inválido ou expirado', 401);
+    }
+  }
 }

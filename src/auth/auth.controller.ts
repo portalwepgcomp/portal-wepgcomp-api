@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto, ResetPasswordDto, SignInDto } from './auth.dto';
 
@@ -27,5 +36,20 @@ export class AuthController {
   @Get('generate-token/:userId')
   generateToken(@Param('userId') userId: string) {
     return this.authService.generateToken(userId);
+  }
+
+  @Get('validate-token')
+  async validateToken(@Headers('authorization') authorization: string) {
+    if (!authorization) {
+      throw new UnauthorizedException('Token não fornecido');
+    }
+
+    const token = authorization.split(' ')[1];
+
+    if (!token) {
+      throw new UnauthorizedException('Token não fornecido');
+    }
+
+    return this.authService.validateToken(token);
   }
 }
