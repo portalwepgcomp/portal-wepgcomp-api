@@ -10,6 +10,15 @@ import {
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
+/**
+ * Database Seeding Script
+ *
+ * IMPORTANT: Set the SEED_PASSWORD environment variable before running this script:
+ * Example: SEED_PASSWORD=yourPasswordHere npm run seed
+ *
+ * If SEED_PASSWORD is not set, a default password 'defaultPassword123!' will be used.
+ */
+
 const prisma = new PrismaClient();
 
 function createEmailByName(name: string) {
@@ -22,8 +31,59 @@ function createEmailByName(name: string) {
     .join('.');
 }
 
+// Helper function to safely hash passwords with fallback
+function safeHashPassword(password?: string): string {
+  const passwordToHash =
+    password || process.env.SEED_PASSWORD || 'defaultPassword123!';
+
+  if (!passwordToHash) {
+    throw new Error(
+      'Password is required for hashing. Please set SEED_PASSWORD environment variable or provide a password.',
+    );
+  }
+
+  return bcrypt.hashSync(passwordToHash, 10);
+}
+
 async function main() {
   console.log('Seeding 2024 Edition...');
+
+  // Check if this edition already exists
+  const existingEdition = await prisma.eventEdition.findFirst({
+    where: { name: 'WEPGCOMP 2024' },
+  });
+
+  if (existingEdition) {
+    console.log('WEPGCOMP 2024 edition already exists.');
+
+    // Check if FORCE_RESEED environment variable is set
+    if (process.env.FORCE_RESEED === 'true') {
+      console.log('FORCE_RESEED=true detected. Cleaning existing data...');
+
+      // Delete in reverse order of dependencies
+      await prisma.evaluation.deleteMany();
+      await prisma.guidance.deleteMany();
+      await prisma.awardedPanelist.deleteMany();
+      await prisma.panelist.deleteMany();
+      await prisma.certificate.deleteMany();
+      await prisma.committeeMember.deleteMany();
+      await prisma.submission.deleteMany();
+      await prisma.presentation.deleteMany();
+      await prisma.presentationBlock.deleteMany();
+      await prisma.evaluationCriteria.deleteMany();
+      await prisma.room.deleteMany();
+      await prisma.emailVerification.deleteMany();
+      await prisma.userAccount.deleteMany();
+      await prisma.eventEdition.deleteMany();
+
+      console.log('Existing data cleaned. Proceeding with fresh seed...');
+    } else {
+      console.log(
+        'Skipping seed. To force re-seed, run: FORCE_RESEED=true npm run seed',
+      );
+      return;
+    }
+  }
 
   const edition2024 = await prisma.eventEdition.create({
     data: {
@@ -112,10 +172,22 @@ async function main() {
   ];
 
   const comiteeUsers = await prisma.userAccount.createManyAndReturn({
-    data: comiteeMembers.map((user) => ({
-      ...user,
-      password: bcrypt.hashSync(user.password, 10),
-    })),
+    data: comiteeMembers.map((user) => {
+      // Ensure password is never undefined or empty
+      const password =
+        user.password || process.env.SEED_PASSWORD || 'defaultPassword123!';
+
+      if (!password || password.trim() === '') {
+        throw new Error(
+          `Password is required for user: ${user.email}. Please set SEED_PASSWORD environment variable.`,
+        );
+      }
+
+      return {
+        ...user,
+        password: safeHashPassword(password),
+      };
+    }),
   });
 
   const committeeMembersData = comiteeUsers.map((user, index) => ({
@@ -163,10 +235,24 @@ async function main() {
   });
 
   await prisma.userAccount.createMany({
-    data: professors.map((professor) => ({
-      ...professor,
-      password: bcrypt.hashSync(professor.password, 10),
-    })),
+    data: professors.map((professor) => {
+      // Ensure password is never undefined or empty
+      const password =
+        professor.password ||
+        process.env.SEED_PASSWORD ||
+        'defaultPassword123!';
+
+      if (!password || password.trim() === '') {
+        throw new Error(
+          `Password is required for professor: ${professor.email}. Please set SEED_PASSWORD environment variable.`,
+        );
+      }
+
+      return {
+        ...professor,
+        password: safeHashPassword(password),
+      };
+    }),
   });
 
   const professorUsers = await prisma.userAccount.findMany({
@@ -601,7 +687,17 @@ async function main() {
     });
   }
   for (const user of panelists) {
-    user.password = bcrypt.hashSync(user.password, 10);
+    // Ensure password is never undefined or empty
+    const password =
+      user.password || process.env.SEED_PASSWORD || 'defaultPassword123!';
+
+    if (!password || password.trim() === '') {
+      throw new Error(
+        `Password is required for panelist: ${user.email}. Please set SEED_PASSWORD environment variable.`,
+      );
+    }
+
+    user.password = safeHashPassword(password);
   }
 
   const panelist_users = await prisma.userAccount.createManyAndReturn({

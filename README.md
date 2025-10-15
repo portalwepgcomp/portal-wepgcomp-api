@@ -24,10 +24,30 @@ $ npm install
 
 ## Configurar banco
 ### Execute e preencherá o banco de dados corretamente
-```
+
+**Importante:** Antes de executar o seed, configure a variável de ambiente `SEED_PASSWORD`:
+
+```bash
+# Defina a senha para os usuários do seed
+export SEED_PASSWORD=suaSenhaAqui
+
+# Em seguida, execute as migrações e o seed
 npm run prisma:migrate
 npm run seed
 ```
+
+**Nota:** Se a variável `SEED_PASSWORD` não for definida, o script usará a senha padrão `defaultPassword123!` para todos os usuários criados.
+
+### Re-executar o seed (limpar dados existentes)
+
+Se você precisar limpar os dados existentes e executar o seed novamente:
+
+```bash
+# Força a limpeza e re-criação dos dados
+FORCE_RESEED=true npm run seed
+```
+
+**Atenção:** O comando `FORCE_RESEED=true` irá **deletar todos os dados** do banco antes de recriar.
 
 ## Execução
 
