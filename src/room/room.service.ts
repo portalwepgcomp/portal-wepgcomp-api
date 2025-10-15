@@ -97,13 +97,14 @@ export class RoomService {
     const existingPresentation = await this.prismaClient.room.findUnique({
       where: { id },
     });
+
     if (!existingPresentation)
       throw new AppException('Sala não encontrada.', 404);
 
-    await this.prismaClient.presentation.delete({
+    await this.prismaClient.room.delete({
       where: { id },
     });
 
-    return { message: 'Apresentação removida com sucesso.' };
+    return { message: 'Sala removida com sucesso.' };
   }
 }
