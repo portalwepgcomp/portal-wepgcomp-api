@@ -17,7 +17,7 @@ CREATE TABLE Event_Edition (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE user_account_profile AS ENUM ('DoctoralStudent', 'Professor', 'Listener');
+CREATE TYPE user_account_profile AS ENUM ('Presenter', 'Professor', 'Listener');
 CREATE TYPE user_account_level AS ENUM ('Superadmin', 'Admin', 'Default');
 
 CREATE TABLE User_Account (
@@ -26,7 +26,7 @@ CREATE TABLE User_Account (
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     registration_number VARCHAR(20),
-    profile user_account_profile NOT NULL DEFAULT 'DoctoralStudent',
+    profile user_account_profile NOT NULL DEFAULT 'Presenter',
     level user_account_level NOT NULL DEFAULT 'Default',
     photo_file_path VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,

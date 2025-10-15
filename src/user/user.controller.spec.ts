@@ -50,7 +50,7 @@ describe('UserController', () => {
         password: 'Password@1234',
         registrationNumber: '2021001',
         photoFilePath: 'user-photo-url',
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
       };
@@ -62,7 +62,7 @@ describe('UserController', () => {
         registrationNumber: '2021001',
         registrationNumberType: 'MATRICULA' as any,
         photoFilePath: 'user-photo-url',
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
         isTeacherActive: false,

@@ -4,7 +4,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
-import { AwardedDoctoralStudentsModule } from './awarded-doctoral-students/awarded-doctoral-students.module';
+import { AwardedPresentersModule } from './awarded-presenters/awarded-presenters.module';
 import { AwardedPanelistsModule } from './awarded-panelists/awarded-panelists.module';
 import { CertificateModule } from './certificate/certificate.module';
 import { CommitteeMemberModule } from './committee-member/committee-member.module';
@@ -39,7 +39,7 @@ import { UserModule } from './user/user.module';
     RoomModule,
     GuidanceModule,
     AwardedPanelistsModule,
-    AwardedDoctoralStudentsModule,
+    AwardedPresentersModule,
     EvaluationCriteriaModule,
     CertificateModule,
     ScoringModule,

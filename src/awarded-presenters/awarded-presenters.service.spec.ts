@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { AwardedDoctoralStudentsService } from './awarded-doctoral-students.service';
+import { AwardedPresentersService } from './awarded-presenters.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   PresentationStatus,
@@ -10,8 +10,8 @@ import {
 
 jest.mock('../prisma/prisma.service');
 
-describe('AwardedDoctoralStudentsService', () => {
-  let service: AwardedDoctoralStudentsService;
+describe('AwardedPresentersService', () => {
+  let service: AwardedPresentersService;
   let prismaService: jest.Mocked<PrismaService>;
 
   const mockUser = {
@@ -20,7 +20,7 @@ describe('AwardedDoctoralStudentsService', () => {
     email: 'author1@example.com',
     registrationNumber: '12345',
     photoFilePath: null,
-    profile: Profile.DoctoralStudent,
+    profile: Profile.Presenter,
     level: UserLevel.Default,
     isActive: true,
     isVerified: true,
@@ -51,7 +51,7 @@ describe('AwardedDoctoralStudentsService', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        AwardedDoctoralStudentsService,
+        AwardedPresentersService,
         {
           provide: PrismaService,
           useValue: {
@@ -63,9 +63,7 @@ describe('AwardedDoctoralStudentsService', () => {
       ],
     }).compile();
 
-    service = module.get<AwardedDoctoralStudentsService>(
-      AwardedDoctoralStudentsService,
-    );
+    service = module.get<AwardedPresentersService>(AwardedPresentersService);
     prismaService = module.get(PrismaService);
   });
 

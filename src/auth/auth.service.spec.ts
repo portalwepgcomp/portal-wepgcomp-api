@@ -73,7 +73,7 @@ describe('AuthService', () => {
       const mockUser = {
         id: '1',
         name: 'Test User',
-        profile: 'DoctoralStudent',
+        profile: 'Presenter',
         isActive: true,
         level: 'Default',
         password: 'hashedPassword', // Simulated hashed password
@@ -97,7 +97,7 @@ describe('AuthService', () => {
       expect(result.data).toEqual({
         id: '1',
         name: 'Test User',
-        profile: 'DoctoralStudent',
+        profile: 'Presenter',
         isActive: true,
         level: 'Default',
       });
@@ -116,7 +116,7 @@ describe('AuthService', () => {
         registrationNumber: '123456',
         registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: '/path/to/photo',
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
         isVerified: true,
@@ -159,7 +159,7 @@ describe('AuthService', () => {
         registrationNumber: '123456',
         registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: '/path/to/photo',
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
         isVerified: true,

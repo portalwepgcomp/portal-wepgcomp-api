@@ -105,14 +105,13 @@ export class UserService {
         level: shouldBeSuperAdmin ? UserLevel.Superadmin : UserLevel.Default,
         registrationNumber,
         registrationNumberType,
-        isActive:
-          createUserDto.profile === Profile.Professor && !shouldBeSuperAdmin
-            ? false
-            : true,
+        isActive: true,
         isTeacherActive:
           createUserDto.profile === Profile.Professor && !shouldBeSuperAdmin
             ? false
             : true,
+        isPresenterActive:
+          createUserDto.profile === Profile.Presenter ? false : true,
       },
     });
 
@@ -476,6 +475,7 @@ export class UserService {
         isVerified: true,
         isActive: true,
         isTeacherActive: true,
+        isPresenterActive: true,
         isAdmin: true,
         isSuperadmin: true,
         createdAt: true,
@@ -569,6 +569,31 @@ export class UserService {
     return this.prismaClient.userAccount.update({
       where: { id: id },
       data: { isTeacherActive: true },
+    });
+  }
+
+  /**
+   * Approves a presenter - sets isPresenterActive to true
+   * Only Admin and Superadmin can approve presenters
+   */
+  async approvePresenter(id: string): Promise<UserAccount> {
+    const user = await this.prismaClient.userAccount.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    if (user.profile !== Profile.Presenter) {
+      throw new BadRequestException(
+        'Apenas apresentadores podem ser aprovados.',
+      );
+    }
+
+    return this.prismaClient.userAccount.update({
+      where: { id: id },
+      data: { isPresenterActive: true },
     });
   }
 

@@ -152,6 +152,20 @@ export class UserController {
   }
 
   /**
+   * Approves a user with the PRESENTER role.
+   * Only accessible by users with ADMIN or SUPERADMIN roles.
+   * @param id - The ID of the user to be approved.
+   */
+  @Patch(':id/approve-presenter')
+  @UseGuards(JwtAuthGuard, UserLevelGuard)
+  @UserLevels(UserLevel.Admin, UserLevel.Superadmin)
+  @ApiBearerAuth()
+  async approvePresenter(@Param('id') id: string) {
+    const result = await this.userService.approvePresenter(id);
+    return new ResponseUserDto(result);
+  }
+
+  /**
    * Promotes an approved teacher to ADMIN.
    * Only accessible by users who are SUPERADMINs.
    * @param id - The ID of the user to be promoted to admin.

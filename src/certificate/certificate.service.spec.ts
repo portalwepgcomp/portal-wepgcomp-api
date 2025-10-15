@@ -102,14 +102,14 @@ describe('CertificateService', () => {
     it('should generate a certificate PDF for the user', async () => {
       const userMock = {
         id: 'cc59c311-6fb5-46dd-a648-121df2e55290',
-        name: 'Doutorando Default 3',
+        name: 'Apresentador Default 3',
         email: 'docdefault3@example.com',
         password:
           '$2b$10$kwFkaLgZTaeM/7KNz5EE0Og.2CDlFC8m96o5ZbzlSfVJ.5kqUT3L2',
         registrationNumber: null,
         registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: null,
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
         isTeacherActive: false,
@@ -290,14 +290,14 @@ describe('CertificateService', () => {
     it('should call metadata methods', async () => {
       const userMock = {
         id: 'cc59c311-6fb5-46dd-a648-121df2e55290',
-        name: 'Doutorando Default 3',
+        name: 'Apresentador Default 3',
         email: 'docdefault3@example.com',
         password:
           '$2b$10$kwFkaLgZTaeM/7KNz5EE0Og.2CDlFC8m96o5ZbzlSfVJ.5kqUT3L2',
         registrationNumber: null,
         registrationNumberType: RegistrationNumberType.CPF,
         photoFilePath: null,
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
         isTeacherActive: false,
@@ -525,7 +525,7 @@ describe('CertificateService', () => {
           id: 2,
           name: 'User 2',
           email: 'user2@example.com',
-          profile: 'DoctoralStudent',
+          profile: 'Presenter',
           panelistParticipations: [],
           mainAuthored: [{ id: 1 }],
           panelistAwards: [],

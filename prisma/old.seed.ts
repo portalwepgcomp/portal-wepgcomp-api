@@ -32,10 +32,10 @@ async function main() {
       isVerified: true,
     },
     {
-      name: 'João DoutorandoAdmin',
+      name: 'João ApresentadorAdmin',
       email: 'docadmin@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Admin,
       isVerified: true,
     },
@@ -75,7 +75,7 @@ async function main() {
       name: 'Ana Rodrigues',
       email: 'docdefault@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -99,7 +99,7 @@ async function main() {
       name: 'Ludwig Wittgenstein',
       email: 'docdefault2@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -107,7 +107,7 @@ async function main() {
       name: 'Julia Kristeva',
       email: 'docdefault3@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -115,7 +115,7 @@ async function main() {
       name: 'Michel Foucault',
       email: 'docdefault4@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -123,7 +123,7 @@ async function main() {
       name: 'Rubem Alves',
       email: 'docdefault5@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -131,7 +131,7 @@ async function main() {
       name: 'Machado de Assis',
       email: 'docdefault6@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -139,7 +139,7 @@ async function main() {
       name: 'Clarice Lispector',
       email: 'docdefault7@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -147,7 +147,7 @@ async function main() {
       name: 'José Saramago',
       email: 'docdefault8@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -155,7 +155,7 @@ async function main() {
       name: 'Paulo Freire',
       email: 'docdefault9@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -163,7 +163,7 @@ async function main() {
       name: 'Virginia Woolf',
       email: 'docdefault10@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -171,7 +171,7 @@ async function main() {
       name: 'Simone de Beauvoir',
       email: 'docdefault11@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -179,7 +179,7 @@ async function main() {
       name: 'Hannah Arendt',
       email: 'docdefault12@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -187,7 +187,7 @@ async function main() {
       name: 'Jean-Paul Sartre',
       email: 'docdefault13@example.com',
       password: '1234$Ad@',
-      profile: Profile.DoctoralStudent,
+      profile: Profile.Presenter,
       level: UserLevel.Default,
       isVerified: true,
     },
@@ -213,7 +213,7 @@ async function main() {
   const adminDocUser = users.find(
     (user) =>
       user.level === UserLevel.Admin &&
-      user.profile === Profile.DoctoralStudent,
+      user.profile === Profile.Presenter,
   );
   const adminListUser = users.find(
     (user) =>
@@ -221,8 +221,8 @@ async function main() {
   );
   const professors = users.filter((user) => user.profile === Profile.Professor);
   const listeners = users.filter((user) => user.profile === Profile.Listener);
-  const doctoralStudents = users.filter(
-    (user) => user.profile === Profile.DoctoralStudent,
+  const presenters = users.filter(
+    (user) => user.profile === Profile.Presenter,
   );
 
   const eventEdition = await prisma.eventEdition.create({
@@ -320,7 +320,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[0].id,
-        mainAuthorId: doctoralStudents[0].id,
+        mainAuthorId: presenters[0].id,
         eventEditionId: eventEdition.id,
         title: 'The Impact of AI in Modern Research',
         abstract:
@@ -333,7 +333,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[1].id,
-        mainAuthorId: doctoralStudents[1].id,
+        mainAuthorId: presenters[1].id,
         eventEditionId: eventEdition.id,
         title: 'Quantum Computing Advances',
         abstract: 'Exploring the latest advancements in quantum computing.',
@@ -345,7 +345,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[2].id,
-        mainAuthorId: doctoralStudents[2].id,
+        mainAuthorId: presenters[2].id,
         eventEditionId: eventEdition.id,
         title: 'Blockchain Technology in Finance',
         abstract:
@@ -358,7 +358,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[0].id,
-        mainAuthorId: doctoralStudents[3].id,
+        mainAuthorId: presenters[3].id,
         eventEditionId: eventEdition.id,
         title: 'Machine Learning in Healthcare',
         abstract: 'Investigating ML applications in healthcare diagnosis.',
@@ -370,7 +370,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[1].id,
-        mainAuthorId: doctoralStudents[4].id,
+        mainAuthorId: presenters[4].id,
         eventEditionId: eventEdition.id,
         title: 'Cloud Computing Security',
         abstract: 'Analysis of security challenges in cloud computing.',
@@ -382,7 +382,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[2].id,
-        mainAuthorId: doctoralStudents[5].id,
+        mainAuthorId: presenters[5].id,
         eventEditionId: eventEdition.id,
         title: 'Internet of Things Networks',
         abstract: 'Study of IoT network architectures and protocols.',
@@ -394,7 +394,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[0].id,
-        mainAuthorId: doctoralStudents[6].id,
+        mainAuthorId: presenters[6].id,
         eventEditionId: eventEdition.id,
         title: 'Big Data Analytics',
         abstract: 'Exploring big data analytics and visualization tools.',
@@ -406,7 +406,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[1].id,
-        mainAuthorId: doctoralStudents[7].id,
+        mainAuthorId: presenters[7].id,
         eventEditionId: eventEdition.id,
         title: 'Cybersecurity in Modern Networks',
         abstract: 'Analysis of current cybersecurity challenges and solutions.',
@@ -418,7 +418,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[2].id,
-        mainAuthorId: doctoralStudents[8].id,
+        mainAuthorId: presenters[8].id,
         eventEditionId: eventEdition.id,
         title: 'Artificial Neural Networks',
         abstract: 'Study of ANN architectures and training algorithms.',
@@ -430,7 +430,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[0].id,
-        mainAuthorId: doctoralStudents[9].id,
+        mainAuthorId: presenters[9].id,
         eventEditionId: eventEdition.id,
         title: 'Software Engineering Practices',
         abstract: 'Analysis of software engineering methodologies and tools.',
@@ -442,7 +442,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[1].id,
-        mainAuthorId: doctoralStudents[10].id,
+        mainAuthorId: presenters[10].id,
         eventEditionId: eventEdition.id,
         title: 'Computer Vision Applications',
         abstract:
@@ -455,7 +455,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[2].id,
-        mainAuthorId: doctoralStudents[11].id,
+        mainAuthorId: presenters[11].id,
         eventEditionId: eventEdition.id,
         title: 'Natural Language Processing',
         abstract: 'Study of NLP algorithms and applications in text analysis.',
@@ -467,7 +467,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[0].id,
-        mainAuthorId: doctoralStudents[12].id,
+        mainAuthorId: presenters[12].id,
         eventEditionId: eventEdition.id,
         title: 'Distributed Systems Architectures',
         abstract:
@@ -480,7 +480,7 @@ async function main() {
     await prisma.submission.create({
       data: {
         advisorId: professors[1].id,
-        mainAuthorId: doctoralStudents[13].id,
+        mainAuthorId: presenters[13].id,
         eventEditionId: eventEdition.id,
         title: 'Mobile Computing Technologies',
         abstract: 'Exploring mobile computing technologies and applications.',
@@ -713,7 +713,7 @@ async function main() {
   await prisma.certificate.create({
     data: {
       eventEditionId: eventEdition.id,
-      userId: doctoralStudents[0].id,
+      userId: presenters[0].id,
       filePath: 'path/to/certificate2.pdf',
       isEmailSent: true,
     },
@@ -730,7 +730,7 @@ async function main() {
       authorGuidance:
         '<p><strong style="font-size: 24px;">Apresentação de </strong><strong style="font-size: 24px;">trabalhos</strong> </p><ul><li>O WEPGCOMP 2024 será presencial e, em casos excepcionais, apresentações poderão ser remotas.</li><li>Não haverá mudança de computador entre as apresentações.</li><li>Cada apresentação não deve ultrapassar os 10 minutos de duração. Na sequência da apresentação, os avaliadores terão 5 minutos para perguntas e sugestões.</li><li>O controle de tempo da apresentação será rigoroso:&nbsp;<strong>10 minutos para apresentação oral&nbsp;e&nbsp;5 minutos</strong> para perguntas.</li><li>Em caso de problemas técnicos, a apresentação será reagendada para o final da sessão ou para a sessão seguinte.</li></ul><p><strong style="font-size: 24px;">Boas Práticas para o(a) Apresentador(a):</strong> </p><ul><li>Estar presente e entrar em contato com o/a coordenadora da sua sessão&nbsp;<strong>antes do início da sessão em que fará a sua apresentação</strong>.</li><li>No caso de apresentação remota, testar a câmera e o microfone de seu computador ou smartphone, e sua conexão com a Internet, ao menos&nbsp;<strong>30 minutos antes</strong> do início da sua sessão. Em caso de problemas, entrar em contato com a coordenação da sessão (a ser divulgada na página do evento). Recomenda-se o uso de&nbsp;headset&nbsp;para diminuir a interferência de sons externos durante a apresentação.</li></ul>',
       reviewerGuidance:
-        '<h2 id="recomendações-para-os-avaliadores">Recomendações para os Avaliadores</h2><p>O objetivo principal do WEPGCOMP é tornar públicas as pesquisas de doutorado e o andamento de suas atividades. Não é necessário ser pesquisador nos temas das apresentações para avaliar o andamento do trabalho de doutorado.</p><p>Para as apresentações realizadas na(s) sessão(ões) em que participa como avaliador:</p><ul>  <li>Observar a data de ingresso do/a discente no PGCOMP e se é bolsista.</li>  <li>Fazer perguntas objetivas e comentários construtivos, considerando o estágio do trabalho: pré-qualificação, qualificação recente (no ano do evento) e pós-qualificação.    <ul>      <li>Espera-se que o doutorando em estágio de pré-qualificação tenha concluído as disciplinas e mostre que o tema da pesquisa está definido, com revisão da literatura em andamento (no mínimo).</li>    </ul>  </li>  <li>    <p>Se possível, olhar a apresentação do WEPGCOMP do ano anterior para avaliar o progresso do trabalho de pesquisa do discente.</p>  </li>  <li>Avaliar o trabalho pelo sistema (disponível em link na página do trabalho).</li></ul>',
+        '<h2 id="recomendações-para-os-avaliadores">Recomendações para os Avaliadores</h2><p>O objetivo principal do WEPGCOMP é tornar públicas as pesquisas de doutorado e o andamento de suas atividades. Não é necessário ser pesquisador nos temas das apresentações para avaliar o andamento do trabalho de doutorado.</p><p>Para as apresentações realizadas na(s) sessão(ões) em que participa como avaliador:</p><ul>  <li>Observar a data de ingresso do/a discente no PGCOMP e se é bolsista.</li>  <li>Fazer perguntas objetivas e comentários construtivos, considerando o estágio do trabalho: pré-qualificação, qualificação recente (no ano do evento) e pós-qualificação.    <ul>      <li>Espera-se que o apresentador em estágio de pré-qualificação tenha concluído as disciplinas e mostre que o tema da pesquisa está definido, com revisão da literatura em andamento (no mínimo).</li>    </ul>  </li>  <li>    <p>Se possível, olhar a apresentação do WEPGCOMP do ano anterior para avaliar o progresso do trabalho de pesquisa do discente.</p>  </li>  <li>Avaliar o trabalho pelo sistema (disponível em link na página do trabalho).</li></ul>',
     },
   });
 

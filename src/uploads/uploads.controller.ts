@@ -7,7 +7,7 @@ import {
   Post,
   Res,
   UploadedFile,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -23,7 +23,6 @@ import { fileValidationPipe, multerOptions } from './config/multer.options';
 
 @Controller('uploads')
 export class UploadsController {
-  
   @Post()
   @UseInterceptors(FileInterceptor('file', multerOptions))
   @ApiConsumes('multipart/form-data')
@@ -35,10 +34,11 @@ export class UploadsController {
     },
   })
   @ApiResponse({ status: 201, description: 'Arquivo carregado com sucesso!' })
-  @ApiResponse({ status: 400, description: 'Arquivo inválido (tamanho ou tipo).' })
-  uploadFile(
-    @UploadedFile(fileValidationPipe) file: Express.Multer.File,
-  ) {
+  @ApiResponse({
+    status: 400,
+    description: 'Arquivo inválido (tamanho ou tipo).',
+  })
+  uploadFile(@UploadedFile(fileValidationPipe) file: Express.Multer.File) {
     return {
       message: 'Arquivo enviado com sucesso!',
       key: file.filename,
@@ -71,6 +71,4 @@ export class UploadsController {
     const file = createReadStream(filePath);
     file.pipe(res);
   }
-
-
 }

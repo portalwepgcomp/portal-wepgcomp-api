@@ -1050,11 +1050,11 @@ describe('PresentationService', () => {
     it('should throw AppException if user is not a professor', async () => {
       const mockUser = {
         id: 'ac3c4dca-c531-44f2-b7f8-3e606d37baf1',
-        name: 'Doctoral Student Default',
+        name: 'Presenter Default',
         email: 'docdefault@example.com',
         registrationNumber: null,
         photoFilePath: null,
-        profile: Profile.DoctoralStudent,
+        profile: Profile.Presenter,
         level: UserLevel.Default,
         isActive: true,
         createdAt: new Date('2024-12-27T15:50:13.008Z'),

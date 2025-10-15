@@ -14,7 +14,7 @@ model UserAccount {
   password                String                  @map("password") @db.VarChar(255)
   registrationNumber      String?                 @unique @map("registration_number") @db.VarChar(20)
   photoFilePath           String?                 @map("photo_file_path") @db.VarChar(255)
-  profile                 Profile                 @default(DoctoralStudent) @map("profile")
+  profile                 Profile                 @default(Presenter) @map("profile")
   level                   UserLevel               @default(Default) @map("level")
   isActive                Boolean                 @default(true) @map("is_active")
   createdAt               DateTime                @default(now()) @map("created_at")
@@ -24,6 +24,7 @@ model UserAccount {
   isAdmin                 Boolean                 @default(false) @map("is_admin")
   isSuperadmin            Boolean                 @default(false) @map("is_superadmin")
   isTeacherActive         Boolean                 @default(false) @map("is_teacher_active")
+  isPresenterActive       Boolean                 @default(false) @map("is_presenter_active")
   panelistAwards          AwardedPanelist[]
   certificates            Certificate[]
   committeeMemberships    CommitteeMember[]
@@ -251,7 +252,7 @@ model Guidance {
 }
 
 enum Profile {
-  DoctoralStudent
+  Presenter
   Professor
   Listener
 

@@ -47,7 +47,7 @@ describe('CertificateController', () => {
     it('should return a PDF as a response', async () => {
       const userMock = {
         id: 'cc59c311-6fb5-46dd-a648-121df2e55290',
-        name: 'Doutorando Default 3',
+        name: 'Apresentador Default 3',
       };
       const eventEditionMock = {
         id: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
@@ -83,7 +83,7 @@ describe('CertificateController', () => {
     it('should throw an error if the service fails', async () => {
       const userMock = {
         id: 'cc59c311-6fb5-46dd-a648-121df2e55290',
-        name: 'Doutorando Default 3',
+        name: 'Apresentador Default 3',
       };
       const eventEditionMock = {
         id: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',

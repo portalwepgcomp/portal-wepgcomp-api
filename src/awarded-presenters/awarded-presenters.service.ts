@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { RankingResponseDtoDto } from './dto/reponse-awarded-doctoral-students.dto';
+import { RankingResponseDtoDto } from './dto/response-awarded-presenters.dto';
 
 @Injectable()
-export class AwardedDoctoralStudentsService {
+export class AwardedPresentersService {
   constructor(private prismaClient: PrismaService) {}
 
   async findTopEvaluatorsRanking(

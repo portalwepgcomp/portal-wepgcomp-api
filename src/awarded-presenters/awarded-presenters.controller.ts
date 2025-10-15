@@ -1,11 +1,11 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { AwardedDoctoralStudentsService } from './awarded-doctoral-students.service';
-import { RankingResponseDtoDto } from './dto/reponse-awarded-doctoral-students.dto';
-@Controller('awarded-doctoral-students')
-export class AwardedDoctoralStudentsController {
+import { AwardedPresentersService } from './awarded-presenters.service';
+import { RankingResponseDtoDto } from './dto/response-awarded-presenters.dto';
+@Controller('awarded-presenters')
+export class AwardedPresentersController {
   constructor(
-    private readonly awardedDoctoralStudentsService: AwardedDoctoralStudentsService,
+    private readonly awardedPresentersService: AwardedPresentersService,
   ) {}
 
   @Get('top-panelists/:eventEditionId')
@@ -30,7 +30,7 @@ export class AwardedDoctoralStudentsController {
     @Query('limit') limit?: string,
   ): Promise<RankingResponseDtoDto[]> {
     const parsedLimit = limit ? parseInt(limit, 10) : undefined;
-    return this.awardedDoctoralStudentsService.findTopEvaluatorsRanking(
+    return this.awardedPresentersService.findTopEvaluatorsRanking(
       eventEditionId,
       parsedLimit,
     );
@@ -58,7 +58,7 @@ export class AwardedDoctoralStudentsController {
     @Query('limit') limit?: string,
   ): Promise<RankingResponseDtoDto[]> {
     const parsedLimit = limit ? parseInt(limit, 10) : undefined;
-    return this.awardedDoctoralStudentsService.findTopPublicRanking(
+    return this.awardedPresentersService.findTopPublicRanking(
       eventEditionId,
       parsedLimit,
     );

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PageSizes, PDFDocument, PDFFont, rgb, TextAlignment } from 'pdf-lib';
+import { PDFDocument, rgb, PageSizes, PDFFont, TextAlignment } from 'pdf-lib';
 import * as fontkit from '@pdf-lib/fontkit';
 import { AppException } from '../exceptions/app.exception';
 import { CommitteeLevel, Profile } from '@prisma/client';
@@ -550,7 +550,7 @@ export class CertificateService {
    * - When user is not found (404)
    * - When event edition is not found (404)
    * - When user is a Listener profile (400)
-   * - When user is a Doctoral Student without submissions (400)
+   * - When user is a Presenter without submissions (400)
    * - When user is a Professor without panel participations (400)
    *
    */
@@ -571,12 +571,12 @@ export class CertificateService {
         );
       }
     } else if (
-      user.profile === Profile.DoctoralStudent &&
+      user.profile === Profile.Presenter &&
       !user.mainAuthored?.length
       // TODO: check presentation status when we're certain that it's being updated
     ) {
       throw new AppException(
-        'Doutorando não tem submissões, portanto não pode receber certificado',
+        'Apresentador não tem submissões, portanto não pode receber certificado',
         404,
       );
     } else if (

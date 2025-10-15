@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "profile" AS ENUM ('DoctoralStudent', 'Professor', 'Listener');
+CREATE TYPE "profile" AS ENUM ('Presenter', 'Professor', 'Listener');
 
 -- CreateEnum
 CREATE TYPE "user_level" AS ENUM ('Superadmin', 'Admin', 'Default');
@@ -30,7 +30,7 @@ CREATE TABLE "user_account" (
     "password" VARCHAR(255) NOT NULL,
     "registration_number" VARCHAR(20),
     "photo_file_path" VARCHAR(255),
-    "profile" "profile" NOT NULL DEFAULT 'DoctoralStudent',
+    "profile" "profile" NOT NULL DEFAULT 'Presenter',
     "level" "user_level" NOT NULL DEFAULT 'Default',
     "is_active" BOOLEAN NOT NULL DEFAULT true,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,

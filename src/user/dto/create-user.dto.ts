@@ -11,7 +11,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 
 export enum Profile {
-  DoctoralStudent = 'DoctoralStudent',
+  Presenter = 'Presenter',
   Professor = 'Professor',
   Listener = 'Listener',
 }
@@ -40,7 +40,7 @@ export class CreateUserDto {
   @Length(1, 255)
   password: string;
 
-  @ValidateIf((object) => object.profile === Profile.DoctoralStudent)
+  @ValidateIf((object) => object.profile === Profile.Presenter)
   @IsString()
   @Matches(/^\d{1,13}$/, {
     message: 'Número de matrícula deve conter apenas dígitos (máximo 13)',

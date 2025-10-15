@@ -6,22 +6,22 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserLevel } from '@prisma/client'; // Enum gerado pelo Prisma
+import { Profile } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
-export class UserLevelGuard implements CanActivate {
+export class ProfileAccessGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private prismaService: PrismaService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredLevels = this.reflector.get<UserLevel[]>(
-      'levels',
+    const requiredProfiles = this.reflector.get<Profile[]>(
+      'profiles',
       context.getHandler(),
     );
-    if (!requiredLevels) {
+    if (!requiredProfiles) {
       return true;
     }
 
@@ -37,8 +37,11 @@ export class UserLevelGuard implements CanActivate {
       where: { id: user.userId },
       select: {
         id: true,
-        level: true,
+        profile: true,
         isActive: true,
+        isTeacherActive: true,
+        isPresenterActive: true,
+        level: true,
       },
     });
 
@@ -52,8 +55,20 @@ export class UserLevelGuard implements CanActivate {
       throw new ForbiddenException('Conta de usuário inativa');
     }
 
-    if (!requiredLevels.includes(userData.level)) {
-      throw new ForbiddenException('Acesso negado: permissões insuficientes');
+    // Check if user profile is in required profiles
+    if (!requiredProfiles.includes(userData.profile)) {
+      throw new ForbiddenException(
+        'Acesso negado: perfil de usuário insuficiente',
+      );
+    }
+
+    // Check profile-specific approval status
+    if (userData.profile === Profile.Professor && !userData.isTeacherActive) {
+      throw new ForbiddenException('Acesso negado: professor não aprovado');
+    }
+
+    if (userData.profile === Profile.Presenter && !userData.isPresenterActive) {
+      throw new ForbiddenException('Acesso negado: apresentador não aprovado');
     }
 
     return true;
