@@ -3,22 +3,22 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  CreateUserDto,
-  CreateProfessorByAdminDto,
-  RegistrationNumberType,
-  Profile,
-  UserLevel,
-  SetAdminDto,
-} from './dto/create-user.dto';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { Prisma, UserAccount } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AppException } from '../exceptions/app.exception';
 import { MailingService } from '../mailing/mailing.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { ResponseUserDto } from './dto/response-user.dto';
 import { generateRandomPassword } from '../utils/password.util';
+import {
+  CreateProfessorByAdminDto,
+  CreateUserDto,
+  Profile,
+  RegistrationNumberType,
+  SetAdminDto,
+  UserLevel,
+} from './dto/create-user.dto';
+import { ResponseUserDto } from './dto/response-user.dto';
 
 @Injectable()
 export class UserService {

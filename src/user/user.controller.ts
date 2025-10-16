@@ -109,7 +109,7 @@ export class UserController {
   }
 
   @Delete('delete/:id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Superadmin)
   @ApiBearerAuth()
   async remove(@Param('id') id: string) {
     return await this.userService.remove(id);
