@@ -18,13 +18,22 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { createReadStream, existsSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { extname, join } from 'path';
 import { fileValidationPipe, multerOptions } from './config/multer.options';
+import { diskStorage } from 'multer';
 
 @Controller('uploads')
 export class UploadsController {
   @Post()
-  @UseInterceptors(FileInterceptor('file', multerOptions))
+  @UseInterceptors(FileInterceptor('file', {
+  storage: diskStorage({
+    destination: './storage',
+    filename: (req, file, cb) => {
+      const safe = tratarNomeArquivo(file.originalname || `arquivo${extname(file.originalname || '.pdf')}`);
+      cb(null, safe);
+    },
+  }),
+}))
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Faz upload de um arquivo PDF' })
   @ApiBody({
@@ -43,7 +52,9 @@ export class UploadsController {
       message: 'Arquivo enviado com sucesso!',
       key: file.filename,
       mimetype: file.mimetype,
+      originalname: file.originalname,
       size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+      url: `/uploads/${file.filename}`,
     };
   }
 
@@ -71,4 +82,11 @@ export class UploadsController {
     const file = createReadStream(filePath);
     file.pipe(res);
   }
+}
+
+function tratarNomeArquivo(name: string): string {
+  return name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9_.-]/g, '');
 }
