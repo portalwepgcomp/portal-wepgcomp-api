@@ -6,7 +6,6 @@ import {
   IsInt,
   Min,
   Max,
-  MinLength,
   IsNotEmpty,
   isISO8601,
 } from 'class-validator';
@@ -40,11 +39,6 @@ export class CreatePresentationBlockDto {
 
   @IsOptional()
   @IsString()
-  @MinLength(2, {
-    // 2 characters is a reasonable minimum length taking into account someone might use
-    // a company's abbreviation here, like IBM or AWS.
-    message: 'O nome do palestrante deve ter no mínimo 2 caracteres.',
-  })
   speakerName?: string;
 
   @IsNotEmpty()
