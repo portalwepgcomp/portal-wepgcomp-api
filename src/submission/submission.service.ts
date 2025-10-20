@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Profile, Submission, SubmissionStatus } from '@prisma/client';
+import { UploadsService } from 'src/uploads/uploads.service';
 import { AppException } from '../exceptions/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -11,7 +12,7 @@ import { UpdateSubmissionDto } from './dto/update-submission.dto';
 
 @Injectable()
 export class SubmissionService {
-  constructor(private prismaClient: PrismaService) {}
+  constructor(private prismaClient: PrismaService, private uploadService: UploadsService) {}
 
   async create(createSubmissionDto: CreateSubmissionDto) {
     const {
@@ -385,6 +386,11 @@ export class SubmissionService {
 
     if (!submission) {
       throw new AppException('Submissão não encontrada.', 404);
+    }
+
+    const {success} = await this.uploadService.deleteFile(submission.pdfFile);
+    if (!success) {
+      console.error(`Falha ao deletar o arquivo PDF associado à submissão ${id} | caminho do arquivo: ${submission.pdfFile}`);
     }
 
     return this.prismaClient.submission.delete({
