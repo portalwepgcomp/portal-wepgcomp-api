@@ -18,8 +18,9 @@ export class ResponseUserDto {
   createdAt: Date;
   updatedAt: Date;
   isVerified: boolean;
+  hasSubmission: boolean;
 
-  constructor(user: UserAccount) {
+  constructor(user: UserAccount, hasSubmission = false) {
     this.id = user.id;
     this.name = user.name;
     this.email = user.email;
@@ -37,5 +38,6 @@ export class ResponseUserDto {
     this.createdAt = user.createdAt;
     this.updatedAt = user.updatedAt;
     this.isVerified = user.isVerified;
+    this.hasSubmission = hasSubmission;
   }
 }

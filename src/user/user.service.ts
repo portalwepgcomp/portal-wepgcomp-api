@@ -483,7 +483,18 @@ export class UserService {
       },
     });
 
-    return users.map((user) => new ResponseUserDto(user as any));
+    const userIds = users.map((u) => u.id);
+
+    const submissions = await this.prismaClient.submission.findMany({
+      where: { mainAuthorId: { in: userIds } },
+      select: { mainAuthorId: true },
+    });
+    const usersWithSubmission = new Set(submissions.map((s) => s.mainAuthorId));
+
+    return users.map((user) => ({
+      ...new ResponseUserDto(user as any),
+      hasSubmission: usersWithSubmission.has(user.id),
+    }));
   }
 
   private async generateEmailToken(userId: string): Promise<string> {
