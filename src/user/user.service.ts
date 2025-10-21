@@ -19,6 +19,9 @@ import {
   UserLevel,
 } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserFieldCalculator } from './utils/user-field-calculator';
+import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 
 @Injectable()
 export class UserService {
@@ -26,7 +29,7 @@ export class UserService {
     private prismaClient: PrismaService,
     private jwtService: JwtService,
     private mailingService: MailingService,
-  ) {}
+  ) { }
 
   async create(createUserDto: CreateUserDto) {
     // Validacao de e-mail @ufba.br para quem nao eh de fora.
@@ -838,4 +841,131 @@ export class UserService {
       data: updateData,
     });
   }
+
+  async editUserBySuperAdmin(email: string, updateUserDto: UpdateUserDto, superadminEmail: string): Promise<ResponseUpdatedUserDto> {
+    const decodedEmail = decodeURIComponent(email);
+
+    const existingUser = await this.findUserByEmailOrFail(decodedEmail);
+
+    await this.validateEmailRules(updateUserDto, existingUser);
+
+    await this.validateBusinessRules(decodedEmail, updateUserDto, existingUser);
+
+    const processedData = this.processUpdateData(updateUserDto, existingUser);
+
+    processedData.updatedBy = superadminEmail;
+
+    const updatedUser = await this.updateUser(decodedEmail, processedData);
+
+    return new ResponseUpdatedUserDto(updatedUser);
+  }
+
+  private async findUserByEmailOrFail(email: string): Promise<UserAccount> {
+    const user = await this.prismaClient.userAccount.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado.');
+    }
+
+    return user;
+  }
+
+  private async validateEmailRules(
+    updateData: UpdateUserDto,
+    existingUser: UserAccount
+  ): Promise<void> {
+    if (updateData.email && updateData.email !== existingUser.email) {
+      const finalProfile = updateData.profile ?? existingUser.profile;
+
+      if (finalProfile !== Profile.Listener) {
+        if (!updateData.email.toLowerCase().endsWith('@ufba.br')) {
+          throw new BadRequestException(
+            'Apenas usuários com perfil "Listener" podem ter email diferente de @ufba.br.'
+          );
+        }
+      }
+
+      const emailExists = await this.prismaClient.userAccount.findUnique({
+        where: { email: updateData.email },
+        select: { id: true }
+      });
+
+      if (emailExists) {
+        throw new BadRequestException('Este email já está em uso por outro usuário.');
+      }
+    }
+  }
+
+  private async validateBusinessRules(
+    email: string,
+    updateData: UpdateUserDto,
+    existingUser: UserAccount
+  ): Promise<void> {
+    await this.validateRegistrationNumberUniqueness(updateData, existingUser);
+
+    if (updateData.profile) {
+      const emailToValidate = updateData.email ?? email;
+      this.validateProfileEmailRequirements(emailToValidate, updateData.profile);
+    }
+  }
+
+
+  private processUpdateData(updateData: UpdateUserDto, existingUser: UserAccount): any {
+    const cleanData = this.removeUndefinedFields(updateData);
+    const derivedFields = UserFieldCalculator.calculateDerivedFields(
+      updateData.profile ?? existingUser.profile,
+      updateData.level ?? existingUser.level,
+      updateData
+    );
+
+    return { ...cleanData, ...derivedFields };
+  }
+
+  private async updateUser(email: string, data: any): Promise<UserAccount> {
+    return this.prismaClient.userAccount.update({
+      where: { email },
+      data,
+    });
+  }
+
+  private async validateRegistrationNumberUniqueness(
+    updateData: UpdateUserDto,
+    existingUser: UserAccount
+  ): Promise<void> {
+    if (!updateData.registrationNumber || updateData.registrationNumber === existingUser.registrationNumber) {
+      return;
+    }
+
+    const exists = await this.prismaClient.userAccount.findFirst({
+      where: {
+        registrationNumber: updateData.registrationNumber,
+        id: { not: existingUser.id }
+      },
+      select: { id: true },
+    });
+
+    if (exists) {
+      throw new BadRequestException('Um usuário com essa matrícula já existe.');
+    }
+  }
+
+  private validateProfileEmailRequirements(email: string, profile?: Profile): void {
+    if (profile && profile !== Profile.Listener) {
+      if (!email.toLowerCase().endsWith('@ufba.br')) {
+        throw new BadRequestException(
+          `${profile} deve ter um email @ufba.br`,
+        );
+      }
+    }
+  }
+
+  private removeUndefinedFields(data: any): any {
+    return Object.fromEntries(
+      Object.entries(data).filter(([_, value]) => value !== undefined)
+    );
+  }
+
+
 }

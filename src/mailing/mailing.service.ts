@@ -1,14 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import nodemailer from 'nodemailer';
-import {
-  ContactRequestDto,
-  ContactResponseDto,
-  DefaultEmailDto,
-  DefaultEmailResponseDto,
-} from './mailing.dto';
-import { EventEditionService } from '../event-edition/event-edition.service';
 import { CommitteeMemberService } from '../committee-member/committee-member.service';
+import { EventEditionService } from '../event-edition/event-edition.service';
 import { AppException } from '../exceptions/app.exception';
+import {
+    ContactRequestDto,
+    ContactResponseDto,
+    DefaultEmailDto,
+    DefaultEmailResponseDto,
+} from './mailing.dto';
 
 function applyEmailTemplate(subject: string, htmlContent: string): string {
   return `

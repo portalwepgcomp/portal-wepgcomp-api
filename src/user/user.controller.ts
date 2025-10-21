@@ -1,27 +1,17 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
-  Param,
-  Post,
-  UseGuards,
-  Patch,
   Get,
-  Query,
   HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
-import { UserService } from './user.service';
-import {
-  CreateUserDto,
-  CreateProfessorByAdminDto,
-  SetAdminDto,
-} from './dto/create-user.dto';
-import { ResponseUserDto } from './dto/response-user.dto';
-import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Profile, UserLevel } from '@prisma/client';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -29,13 +19,26 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Profile, UserLevel } from '@prisma/client';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { AppException } from '../exceptions/app.exception';
+import {
+  CreateProfessorByAdminDto,
+  CreateUserDto,
+  SetAdminDto,
+} from './dto/create-user.dto';
+import { ResponseUserDto } from './dto/response-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) { }
 
   @Public()
   @Post('register')
@@ -293,4 +296,34 @@ export class UserController {
       );
     }
   }
+
+  @Patch('edit/:email')
+  @UserLevels(UserLevel.Superadmin)
+  @ApiBearerAuth()
+  async editUserBySuperAdmin(
+    @Param('email') rawEmail: string,
+    @Body() updateUserDto: UpdateUserDto,
+    @Req() req: Request & { user: any }
+  ) {
+    const email = this.parseEmailParam(rawEmail);
+    this.validateUpdateData(updateUserDto);
+
+    return await this.userService.editUserBySuperAdmin(email, updateUserDto, req.user.email);
+  }
+
+  private parseEmailParam(rawEmail: string): string {
+    try {
+      return decodeURIComponent(rawEmail);
+    } catch (error) {
+      throw new BadRequestException('Email inválido no parâmetro da URL.');
+    }
+  }
+  private validateUpdateData(updateUserDto: UpdateUserDto): void {
+    const hasData = Object.values(updateUserDto).some(value => value !== undefined);
+    if (!hasData) {
+      throw new BadRequestException('Nenhum campo fornecido para atualização.');
+    }
+  }
+
+
 }
