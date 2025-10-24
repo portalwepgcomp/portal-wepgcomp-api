@@ -79,7 +79,7 @@ async function main() {
       console.log('Existing data cleaned. Proceeding with fresh seed...');
     } else {
       console.log(
-        'Skipping seed. To force re-seed, run: FORCE_RESEED=true npm run seed',
+        'Skipping seed. To force re-seed, run: FORCE_RESEED=true npm run seed.',
       );
       return;
     }

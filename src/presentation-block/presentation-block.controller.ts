@@ -45,8 +45,12 @@ export class PresentationBlockController {
       eventEditionId,
     );
 
+    const sortedBlocks = presentationBlocks.sort(
+      (a, b) =>
+        new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+    );
     return Promise.all(
-      presentationBlocks.map((block) =>
+      sortedBlocks.map((block) =>
         ResponsePresentationBlockDto.create(block, (id) => this.userLoader(id)),
       ),
     );
