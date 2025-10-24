@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { Prisma, UserAccount } from '@prisma/client';
+import { UserAccount } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AppException } from '../exceptions/app.exception';
 import { MailingService } from '../mailing/mailing.service';
@@ -15,7 +15,6 @@ import {
   CreateUserDto,
   Profile,
   RegistrationNumberType,
-  SetAdminDto,
   UserLevel,
 } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
@@ -29,7 +28,7 @@ export class UserService {
     private prismaClient: PrismaService,
     private jwtService: JwtService,
     private mailingService: MailingService,
-  ) { }
+  ) {}
 
   async create(createUserDto: CreateUserDto) {
     // Validacao de e-mail @ufba.br para quem nao eh de fora.
@@ -242,150 +241,6 @@ export class UserService {
     });
 
     return professorsCount > 0 ? false : true;
-  }
-
-  async setDefault(setDefaultDto: SetAdminDto): Promise<ResponseUserDto> {
-    const { requestUserId, targetUserId } = setDefaultDto;
-
-    const requestUser = await this.prismaClient.userAccount.findFirst({
-      where: {
-        id: requestUserId,
-      },
-    });
-
-    if (!requestUser) {
-      throw new AppException('Usuário solicitante não encontrado.', 404);
-    }
-
-    if (!this.isAdmin(requestUser)) {
-      throw new AppException(
-        'O usuário não possui privilégios de administrador ou super administrador.',
-        403,
-      );
-    }
-
-    const targetUser = await this.prismaClient.userAccount.findFirst({
-      where: {
-        id: targetUserId,
-      },
-    });
-
-    if (!targetUser) {
-      throw new AppException('Usuário-alvo não encontrado.', 404);
-    }
-
-    if (
-      targetUser.level === UserLevel.Superadmin &&
-      requestUser.level === UserLevel.Admin
-    ) {
-      throw new AppException(
-        'Um usuário administrador não tem permissão para rebaixar um super administrador.',
-        403,
-      );
-    }
-
-    const updatedTargetUser = await this.prismaClient.userAccount.update({
-      where: {
-        id: targetUserId,
-      },
-      data: {
-        level: UserLevel.Default,
-      },
-    });
-
-    const responseUserDto = new ResponseUserDto(updatedTargetUser);
-
-    return responseUserDto;
-  }
-
-  async setAdmin(setAdminDto: SetAdminDto): Promise<ResponseUserDto> {
-    const { requestUserId, targetUserId } = setAdminDto;
-
-    const requestUser = await this.prismaClient.userAccount.findFirst({
-      where: {
-        id: requestUserId,
-      },
-    });
-
-    if (!requestUser) {
-      throw new AppException('Usuário não encontrado.', 404);
-    }
-
-    if (!this.isAdmin(requestUser)) {
-      throw new AppException(
-        'O usuário não possui privilégios de administrador ou super administrador.',
-        403,
-      );
-    }
-
-    try {
-      const targetUser = await this.prismaClient.userAccount.update({
-        where: {
-          id: targetUserId,
-        },
-        data: {
-          level: UserLevel.Admin,
-        },
-      });
-
-      const responseUserDto = new ResponseUserDto(targetUser);
-
-      return responseUserDto;
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2025'
-      ) {
-        throw new AppException('Usuário-alvo não encontrado', 404);
-      }
-
-      throw new Error(e);
-    }
-  }
-
-  async setSuperAdmin(setAdminDto: SetAdminDto): Promise<ResponseUserDto> {
-    const { requestUserId, targetUserId } = setAdminDto;
-
-    const requestUser = await this.prismaClient.userAccount.findFirst({
-      where: {
-        id: requestUserId,
-      },
-    });
-
-    if (!requestUser) {
-      throw new AppException('Usuário não encontrado.', 404);
-    }
-
-    if (requestUser.level !== 'Superadmin') {
-      throw new AppException(
-        'O usuário não possui privilégios de super administrador.',
-        403,
-      );
-    }
-
-    try {
-      const targetUser = await this.prismaClient.userAccount.update({
-        where: {
-          id: targetUserId,
-        },
-        data: {
-          level: UserLevel.Superadmin,
-        },
-      });
-
-      const responseUserDto = new ResponseUserDto(targetUser);
-
-      return responseUserDto;
-    } catch (e) {
-      if (
-        e instanceof Prisma.PrismaClientKnownRequestError &&
-        e.code === 'P2025'
-      ) {
-        throw new AppException('Usuário-alvo não encontrado', 404);
-      }
-
-      throw new Error(e);
-    }
   }
 
   async remove(id: string) {
@@ -611,238 +466,11 @@ export class UserService {
     });
   }
 
-  /**
-   * Promotes a user to Admin - sets isAdmin to true and level to Admin
-   * Only Superadmin can promote to Admin
-   * User must be an approved teacher to become Admin
-   */
-  async promoteToAdmin(id: string): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    // Business rule: Only approved teachers can become admins
-    if (user.profile !== Profile.Professor || !user.isTeacherActive) {
-      throw new BadRequestException(
-        'Apenas professores aprovados podem ser promovidos a administradores.',
-      );
-    }
-
-    // Business rule: Cannot promote someone who is already an admin or superadmin
-    if (user.isAdmin || user.isSuperadmin) {
-      throw new BadRequestException('Usuário já possui cargo administrativo.');
-    }
-
-    return this.prismaClient.userAccount.update({
-      where: { id: id },
-      data: {
-        isAdmin: true,
-        level: UserLevel.Admin,
-      },
-    });
-  }
-
-  /**
-   * Promotes a user to Superadmin - sets isSuperadmin to true and level to Superadmin
-   * Only existing Superadmin can promote to Superadmin
-   * User must be an Admin to become Superadmin
-   */
-  async promoteToSuperadmin(id: string): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    // Business rule: Only Admins can become Superadmins
-    if (!user.isAdmin) {
-      throw new BadRequestException(
-        'Apenas administradores podem ser promovidos a superadministradores.',
-      );
-    }
-
-    // Business rule: Cannot promote someone who is already a superadmin
-    if (user.isSuperadmin) {
-      throw new BadRequestException('Usuário já é superadministrador.');
-    }
-
-    return this.prismaClient.userAccount.update({
-      where: { id: id },
-      data: {
-        isSuperadmin: true,
-        level: UserLevel.Superadmin,
-      },
-    });
-  }
-
-  /**
-   * Demotes a user by one level in the hierarchy
-   * Hierarchy: Superadmin → Admin → Approved Teacher → Default User
-   * Only Superadmin can demote other users
-   * Cannot demote the last Superadmin
-   */
-  async demoteUser(id: string): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    // Prevent demoting the last superadmin (check both boolean flag and level)
-    const isSuperadmin =
-      user.isSuperadmin || user.level === UserLevel.Superadmin;
-    if (isSuperadmin) {
-      const superadminCount = await this.prismaClient.userAccount.count({
-        where: {
-          OR: [{ isSuperadmin: true }, { level: UserLevel.Superadmin }],
-        },
-      });
-
-      if (superadminCount <= 1) {
-        throw new BadRequestException(
-          'Não é possível rebaixar o último superadministrador do sistema.',
-        );
-      }
-    }
-
-    // Determine current role and demotion target
-    let updateData: any = {};
-    let demotionMessage = '';
-
-    // Check for Admin (either by boolean flag or level)
-    const isAdmin = user.isAdmin || user.level === UserLevel.Admin;
-
-    if (isSuperadmin) {
-      // Superadmin → Admin (keep admin status)
-      updateData = {
-        isSuperadmin: false,
-        isAdmin: true, // Ensure admin flag is set correctly
-        level: UserLevel.Admin,
-        // Keep isTeacherActive as is
-      };
-      demotionMessage = 'Superadministrador rebaixado para Administrador';
-    } else if (isAdmin) {
-      // Admin → Approved Teacher (if they are a professor) or Default User
-      if (user.profile === Profile.Professor) {
-        updateData = {
-          isAdmin: false,
-          level: UserLevel.Default,
-          isTeacherActive: true, // Make them approved teacher
-        };
-        demotionMessage = 'Administrador rebaixado para Professor Aprovado';
-      } else {
-        // Non-professor admin becomes default user
-        updateData = {
-          isAdmin: false,
-          level: UserLevel.Default,
-          isTeacherActive: false, // Non-professors shouldn't have teacher status
-        };
-        demotionMessage = 'Administrador rebaixado para Usuário Padrão';
-      }
-    } else if (user.isTeacherActive && user.profile === Profile.Professor) {
-      // Approved Teacher → Default User (remove teacher approval)
-      updateData = {
-        isTeacherActive: false,
-        level: UserLevel.Default,
-      };
-      demotionMessage = 'Professor aprovado rebaixado para Usuário Padrão';
-    } else {
-      throw new BadRequestException(
-        'Usuário já está no nível mais baixo ou não possui cargo para ser rebaixado.',
-      );
-    }
-
-    const updatedUser = await this.prismaClient.userAccount.update({
-      where: { id: id },
-      data: updateData,
-    });
-
-    // Log the demotion for audit purposes
-    console.log(`Demotion: ${demotionMessage} - User ID: ${id}`);
-
-    return updatedUser;
-  }
-
-  /**
-   * Demotes a user to a specific level (for advanced use cases)
-   * Allows skipping levels in the hierarchy
-   */
-  async demoteUserToLevel(
-    id: string,
-    targetLevel: 'default' | 'teacher' | 'admin',
-  ): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    // Prevent demoting the last superadmin unless target is admin
-    if (user.isSuperadmin && targetLevel !== 'admin') {
-      const superadminCount = await this.prismaClient.userAccount.count({
-        where: { isSuperadmin: true },
-      });
-
-      if (superadminCount <= 1) {
-        throw new BadRequestException(
-          'Não é possível rebaixar o último superadministrador para níveis inferiores a administrador.',
-        );
-      }
-    }
-
-    let updateData: any = {};
-
-    switch (targetLevel) {
-      case 'default':
-        updateData = {
-          isSuperadmin: false,
-          isAdmin: false,
-          isTeacherActive: false,
-          level: UserLevel.Default,
-        };
-        break;
-      case 'teacher':
-        if (user.profile !== Profile.Professor) {
-          throw new BadRequestException(
-            'Apenas professores podem ser rebaixados para nível de professor aprovado.',
-          );
-        }
-        updateData = {
-          isSuperadmin: false,
-          isAdmin: false,
-          isTeacherActive: true,
-          level: UserLevel.Default,
-        };
-        break;
-      case 'admin':
-        updateData = {
-          isSuperadmin: false,
-          isAdmin: true,
-          level: UserLevel.Admin,
-          // Keep isTeacherActive as is
-        };
-        break;
-      default:
-        throw new BadRequestException('Nível de rebaixamento inválido.');
-    }
-
-    return this.prismaClient.userAccount.update({
-      where: { id: id },
-      data: updateData,
-    });
-  }
-
-  async editUserBySuperAdmin(email: string, updateUserDto: UpdateUserDto, superadminEmail: string): Promise<ResponseUpdatedUserDto> {
+  async editUserBySuperAdmin(
+    email: string,
+    updateUserDto: UpdateUserDto,
+    superadminEmail: string,
+  ): Promise<ResponseUpdatedUserDto> {
     const decodedEmail = decodeURIComponent(email);
 
     const existingUser = await this.findUserByEmailOrFail(decodedEmail);
@@ -874,7 +502,7 @@ export class UserService {
 
   private async validateEmailRules(
     updateData: UpdateUserDto,
-    existingUser: UserAccount
+    existingUser: UserAccount,
   ): Promise<void> {
     if (updateData.email && updateData.email !== existingUser.email) {
       const finalProfile = updateData.profile ?? existingUser.profile;
@@ -882,18 +510,20 @@ export class UserService {
       if (finalProfile !== Profile.Listener) {
         if (!updateData.email.toLowerCase().endsWith('@ufba.br')) {
           throw new BadRequestException(
-            'Apenas usuários com perfil "Listener" podem ter email diferente de @ufba.br.'
+            'Apenas usuários com perfil "Listener" podem ter email diferente de @ufba.br.',
           );
         }
       }
 
       const emailExists = await this.prismaClient.userAccount.findUnique({
         where: { email: updateData.email },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (emailExists) {
-        throw new BadRequestException('Este email já está em uso por outro usuário.');
+        throw new BadRequestException(
+          'Este email já está em uso por outro usuário.',
+        );
       }
     }
   }
@@ -901,23 +531,48 @@ export class UserService {
   private async validateBusinessRules(
     email: string,
     updateData: UpdateUserDto,
-    existingUser: UserAccount
+    existingUser: UserAccount,
   ): Promise<void> {
     await this.validateRegistrationNumberUniqueness(updateData, existingUser);
 
     if (updateData.profile) {
       const emailToValidate = updateData.email ?? email;
-      this.validateProfileEmailRequirements(emailToValidate, updateData.profile);
+      this.validateProfileEmailRequirements(
+        emailToValidate,
+        updateData.profile,
+      );
+    }
+
+    // Prevent demoting the last superadmin
+    if (updateData.level && updateData.level !== UserLevel.Superadmin) {
+      const isSuperadmin =
+        existingUser.isSuperadmin ||
+        existingUser.level === UserLevel.Superadmin;
+      if (isSuperadmin) {
+        const superadminCount = await this.prismaClient.userAccount.count({
+          where: {
+            OR: [{ isSuperadmin: true }, { level: UserLevel.Superadmin }],
+          },
+        });
+
+        if (superadminCount <= 1) {
+          throw new BadRequestException(
+            'Não é possível rebaixar o último superadministrador do sistema.',
+          );
+        }
+      }
     }
   }
 
-
-  private processUpdateData(updateData: UpdateUserDto, existingUser: UserAccount): any {
+  private processUpdateData(
+    updateData: UpdateUserDto,
+    existingUser: UserAccount,
+  ): any {
     const cleanData = this.removeUndefinedFields(updateData);
     const derivedFields = UserFieldCalculator.calculateDerivedFields(
       updateData.profile ?? existingUser.profile,
       updateData.level ?? existingUser.level,
-      updateData
+      updateData,
     );
 
     return { ...cleanData, ...derivedFields };
@@ -932,16 +587,19 @@ export class UserService {
 
   private async validateRegistrationNumberUniqueness(
     updateData: UpdateUserDto,
-    existingUser: UserAccount
+    existingUser: UserAccount,
   ): Promise<void> {
-    if (!updateData.registrationNumber || updateData.registrationNumber === existingUser.registrationNumber) {
+    if (
+      !updateData.registrationNumber ||
+      updateData.registrationNumber === existingUser.registrationNumber
+    ) {
       return;
     }
 
     const exists = await this.prismaClient.userAccount.findFirst({
       where: {
         registrationNumber: updateData.registrationNumber,
-        id: { not: existingUser.id }
+        id: { not: existingUser.id },
       },
       select: { id: true },
     });
@@ -951,21 +609,20 @@ export class UserService {
     }
   }
 
-  private validateProfileEmailRequirements(email: string, profile?: Profile): void {
+  private validateProfileEmailRequirements(
+    email: string,
+    profile?: Profile,
+  ): void {
     if (profile && profile !== Profile.Listener) {
       if (!email.toLowerCase().endsWith('@ufba.br')) {
-        throw new BadRequestException(
-          `${profile} deve ter um email @ufba.br`,
-        );
+        throw new BadRequestException(`${profile} deve ter um email @ufba.br`);
       }
     }
   }
 
   private removeUndefinedFields(data: any): any {
     return Object.fromEntries(
-      Object.entries(data).filter(([_, value]) => value !== undefined)
+      Object.entries(data).filter(([, value]) => value !== undefined),
     );
   }
-
-
 }

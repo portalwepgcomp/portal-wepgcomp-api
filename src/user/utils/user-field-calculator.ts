@@ -1,5 +1,5 @@
-import { Profile, UserAccount, UserLevel } from "@prisma/client";
-import { RegistrationNumberType } from "../dto/create-user.dto";
+import { Profile, UserAccount, UserLevel } from '@prisma/client';
+import { RegistrationNumberType } from '../dto/create-user.dto';
 
 export class UserFieldCalculator {
   static calculateDerivedFields(
@@ -46,7 +46,11 @@ export class UserFieldCalculator {
     }
   }
 
-  private static setProfileFlags(derived: any, profile: Profile, updateData: any): void {
+  private static setProfileFlags(
+    derived: any,
+    profile: Profile,
+    updateData: any,
+  ): void {
     switch (profile) {
       case Profile.Professor:
         if (!updateData.hasOwnProperty('isTeacherActive')) {
