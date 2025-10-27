@@ -333,6 +333,10 @@ export class EventEditionService {
           });
 
         if (existingMember) {
+          // Se já existe e é coordenador, pula sem erro (permite coordenador na comissão)
+          if (existingMember.level === CommitteeLevel.Coordinator) {
+            return;
+          }
           throw new BadRequestException(
             'Um usuário só pode assumir um cargo na comissão organizadora.',
           );
