@@ -4,7 +4,7 @@ export class ResponseSubmissionDto {
   id: string;
   advisorId: string;
   mainAuthorId: string;
-  mainAuthor: {
+  mainAuthor?: {
     name: string;
     email: string;
   };
@@ -20,7 +20,7 @@ export class ResponseSubmissionDto {
   status: SubmissionStatus;
   createdAt: Date;
   updatedAt: Date;
-  advisor: {
+  advisor?: {
     name: string;
     email: string;
   };
@@ -33,9 +33,19 @@ export class ResponseSubmissionDto {
   ) {
     this.id = submission.id;
     this.advisorId = submission.advisorId;
-    this.advisor = submission.advisor;
     this.mainAuthorId = submission.mainAuthorId;
-    this.mainAuthor = submission.mainAuthor;
+    this.mainAuthor = submission.mainAuthor
+      ? {
+          name: submission.mainAuthor.name,
+          email: submission.mainAuthor.email,
+        }
+      : null;
+    this.advisor = submission.advisor
+      ? {
+          name: submission.advisor.name,
+          email: submission.advisor.email,
+        }
+      : null;
     this.eventEditionId = submission.eventEditionId;
     this.title = submission.title;
     this.abstract = submission.abstract;

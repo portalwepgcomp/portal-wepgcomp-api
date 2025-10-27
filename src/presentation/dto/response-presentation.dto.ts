@@ -56,9 +56,19 @@ export class PresentationResponseDto {
     this.submission = {
       id: presentation.submission.id,
       advisorId: presentation.submission.advisorId,
-      advisor: presentation.submission.advisor,
+      advisor: presentation.submission.advisor
+        ? {
+            name: presentation.submission.advisor.name,
+            email: presentation.submission.advisor.email,
+          }
+        : null,
       mainAuthorId: presentation.submission.mainAuthorId,
-      mainAuthor: presentation.submission.mainAuthor,
+      mainAuthor: presentation.submission.mainAuthor
+        ? {
+            name: presentation.submission.mainAuthor.name,
+            email: presentation.submission.mainAuthor.email,
+          }
+        : null,
       eventEditionId: presentation.submission.eventEditionId,
       title: presentation.submission.title,
       abstract: presentation.submission.abstract,
