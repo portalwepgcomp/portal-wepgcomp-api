@@ -19,6 +19,7 @@ export class UploadsService {
   private readonly storagePath = join(process.cwd(), 'storage');
 
   uploadFile(file: Express.Multer.File) {
+    console.log('Arquivo recebido:', file.filename);
     return {
       message: 'Arquivo enviado com sucesso!',
       key: file.filename,
@@ -46,6 +47,7 @@ export class UploadsService {
       }
 
       unlinkSync(filePath);
+      console.log('Arquivo deletado:', filename);
       return { 
         success: true,
         message: 'Arquivo deletado com sucesso!'

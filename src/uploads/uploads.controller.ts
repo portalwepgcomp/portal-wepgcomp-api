@@ -1,15 +1,12 @@
 import {
-  BadRequestException,
   Controller,
   Delete,
   Get,
-  InternalServerErrorException,
-  NotFoundException,
   Param,
   Post,
   Res,
   UploadedFile,
-  UseInterceptors,
+  UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -30,15 +27,13 @@ import { UploadsService } from './uploads.service';
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
-  private readonly storagePath = join(process.cwd(), 'storage');
-
   @Post()
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
       destination: join(process.cwd(), 'storage'),
       filename: (req, file, cb) => {
-        const safe = tratarNomeArquivo(file.originalname || `arquivo${extname(file.originalname || '.pdf')}`);
+        const safe = formatArchiveName(file.originalname);
         cb(null, safe);
       },
     }),
@@ -83,9 +78,17 @@ export class UploadsController {
   }
 }
 
-function tratarNomeArquivo(name: string): string {
-  return name
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+function formatArchiveName(name: string): string {
+  if (!name) return `arquivo_${Date.now()}.pdf`;
+
+  const extension = extname(name).toLowerCase();
+  let baseName = name.substring(0, name.length - extension.length);
+
+  baseName = baseName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '_')
     .replace(/[^a-zA-Z0-9_.-]/g, '');
+
+  return `${baseName.toLowerCase()}${extension}`;
 }
