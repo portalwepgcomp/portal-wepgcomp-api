@@ -468,6 +468,7 @@ export class UserService {
 
   async editUserBySuperAdmin(
     email: string,
+
     updateUserDto: UpdateUserDto,
     superadminEmail: string,
   ): Promise<ResponseUpdatedUserDto> {
@@ -624,5 +625,18 @@ export class UserService {
     return Object.fromEntries(
       Object.entries(data).filter(([, value]) => value !== undefined),
     );
+  }
+
+  public async findById(userId: string) {
+    const user = await this.prismaClient.userAccount.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      // Dispara a exceção 404 Not Found
+      throw new NotFoundException(`Usuário com ID ${userId} não encontrado.`);
+    }
+
+    return user;
   }
 }

@@ -248,4 +248,12 @@ export class UserController {
       throw new BadRequestException('Nenhum campo fornecido para atualização.');
     }
   }
+
+  @Get(':id')
+  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @ApiBearerAuth()
+  async getById(@Param('id') id: string) {
+    const result = await this.userService.findById(id);
+    return new ResponseUserDto(result);
+  }
 }
