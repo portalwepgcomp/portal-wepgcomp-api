@@ -10,12 +10,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiQuery } from '@nestjs/swagger';
-import { UserLevel, Profile } from '@prisma/client';
+import { UserLevel } from '@prisma/client';
 import { UserLevels } from '../auth/decorators/user-level.decorator';
-import { RequiredProfiles } from '../auth/decorators/profile-access.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import {
   CreateSubmissionDto,
   CreateSubmissionInCurrentEventDto,
@@ -27,18 +26,16 @@ import { SubmissionService } from './submission.service';
 @Controller('submission')
 @UseGuards(JwtAuthGuard, UserLevelGuard, ProfileAccessGuard)
 export class SubmissionController {
-  constructor(private readonly submissionService: SubmissionService) {}
+  constructor(private readonly submissionService: SubmissionService) { }
 
   @Post()
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  @RequiredProfiles(Profile.Presenter, Profile.Professor)
   create(@Body() createSubmissionDto: CreateSubmissionDto) {
     return this.submissionService.create(createSubmissionDto);
   }
 
   @Post('/create-in-current-event')
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  @RequiredProfiles(Profile.Presenter, Profile.Professor)
   createInCurrentEvent(
     @Body()
     createSubmissionInCurrentEventDto: CreateSubmissionInCurrentEventDto,
@@ -81,7 +78,6 @@ export class SubmissionController {
 
   @Patch(':id')
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  @RequiredProfiles(Profile.Presenter, Profile.Professor)
   update(
     @Param('id') id: string,
     @Body() updateSubmissionDto: UpdateSubmissionDto,
@@ -91,7 +87,6 @@ export class SubmissionController {
 
   @Delete(':id')
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  @RequiredProfiles(Profile.Presenter, Profile.Professor)
   remove(@Param('id') id: string) {
     return this.submissionService.remove(id);
   }
