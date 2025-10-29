@@ -27,6 +27,13 @@ export enum RegistrationNumberType {
   MATRICULA = 'MATRICULA',
 }
 
+enum Subprofile {
+  Doctorate = 'Doctorate',
+  Master = 'Master',
+  Bachelor = 'Bachelor',
+  Other = 'Other',
+}
+
 export class CreateUserDto {
   @IsString()
   @Length(1, 255)
@@ -46,6 +53,10 @@ export class CreateUserDto {
     message: 'Número de matrícula deve conter apenas dígitos (máximo 13)',
   })
   registrationNumber?: string;
+
+  @IsOptional()
+  @IsEnum(Subprofile)
+  subprofile?: Subprofile;
 
   @IsOptional()
   @IsEnum(RegistrationNumberType)

@@ -32,7 +32,12 @@ export class UserService {
 
   async create(createUserDto: CreateUserDto) {
     // Validacao de e-mail @ufba.br para quem nao eh de fora.
-    if (createUserDto.profile !== Profile.Listener) {
+    if (
+      createUserDto.profile === Profile.Presenter ||
+      createUserDto.profile === Profile.Professor ||
+      (createUserDto.profile === Profile.Listener &&
+        createUserDto.subprofile !== 'Other')
+    ) {
       if (!createUserDto.email.toLowerCase().endsWith('@ufba.br')) {
         throw new BadRequestException(
           'Apenas e-mails @ufba.br podem ser cadastrados.',
@@ -57,7 +62,9 @@ export class UserService {
       createUserDto.registrationNumberType ??
       (registrationNumber
         ? createUserDto.profile === Profile.Listener
-          ? RegistrationNumberType.CPF
+          ? createUserDto.subprofile === 'Other'
+            ? RegistrationNumberType.CPF
+            : RegistrationNumberType.MATRICULA
           : RegistrationNumberType.MATRICULA
         : undefined);
 
@@ -104,6 +111,7 @@ export class UserService {
         email: createUserDto.email,
         password: hashedPassword,
         profile: createUserDto.profile ?? Profile.Listener,
+        subprofile: createUserDto.subprofile ?? null,
         level: shouldBeSuperAdmin ? UserLevel.Superadmin : UserLevel.Default,
         registrationNumber,
         registrationNumberType,
