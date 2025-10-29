@@ -6,4 +6,4 @@ import { AwardedPanelistsController } from './awarded-panelists.controller';
   controllers: [AwardedPanelistsController],
   providers: [AwardedPanelistsService],
 })
-export class  AwardedPanelistsModule {}
+export class AwardedPanelistsModule {}

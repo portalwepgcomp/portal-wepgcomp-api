@@ -58,9 +58,6 @@ export class AwardedPanelistsService {
     const panelistsToAdd = newAwardedPanelistIds.filter(
       (id) => !currentAwardedPanelistIds.includes(id),
     );
-    const panelistsToRemove = currentAwardedPanelistIds.filter(
-      (id) => !newAwardedPanelistIds.includes(id),
-    );
     const panelistsToMaintain = newAwardedPanelistIds.filter((id) =>
       currentAwardedPanelistIds.includes(id),
     );
@@ -76,40 +73,47 @@ export class AwardedPanelistsService {
 
     // Perform all database operations in a transaction
     const result = await this.prismaClient.$transaction(async (prisma) => {
-      if (panelistsToRemove.length > 0) {
-        await prisma.awardedPanelist.deleteMany({
-          where: {
-            eventEditionId,
-            userId: { in: panelistsToRemove },
-          },
-        });
-      }
-
       await Promise.all(
         panelistsToAdd.map((userId) =>
           prisma.awardedPanelist.create({
             data: {
               eventEditionId,
               userId,
+              votes: 1,
             },
           }),
         ),
       );
-
+      if (panelistsToMaintain.length > 0) {
+        await Promise.all(
+          panelistsToMaintain.map((userId) =>
+            prisma.awardedPanelist.update({
+              where: {
+                eventEditionId_userId: {
+                  eventEditionId,
+                  userId,
+                },
+              },
+              data: {
+                votes: {
+                  increment: 1,
+                },
+              },
+            }),
+          ),
+        );
+      }
       return {
         added: panelistsToAdd,
-        removed: panelistsToRemove,
         maintained: panelistsToMaintain,
       };
     });
 
     const addedPanelists = result?.added || [];
-    const removedPanelists = result?.removed || [];
     const maintainedPanelists = result?.maintained || [];
 
     return new CreateAwardedPanelistsResponseDto({
       addedPanelists,
-      removedPanelists,
       maintainedPanelists,
     });
   }
@@ -143,9 +147,12 @@ export class AwardedPanelistsService {
         user: true,
       },
     });
-
     return awardedPanelists.map(
-      (panelist) => new ResponsePanelistUserDto(panelist.user),
+      (panelist) =>
+        new ResponsePanelistUserDto({
+          ...panelist.user,
+          votes: panelist.votes,
+        }),
     );
   }
 
