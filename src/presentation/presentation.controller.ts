@@ -1,34 +1,34 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Patch,
-  Param,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
   Put,
-  UseGuards,
-  Request,
   Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { PresentationService } from './presentation.service';
-import { CreatePresentationDto } from './dto/create-presentation.dto';
-import { UpdatePresentationDto } from './dto/update-presentation.dto';
-import { CreatePresentationWithSubmissionDto } from './dto/create-presentation-with-submission.dto';
-import { UpdatePresentationWithSubmissionDto } from './dto/update-presentation-with-submission.dto';
+import { ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { UserLevel } from '@prisma/client';
+import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
-import { PresentationResponseDto } from './dto/response-presentation.dto';
 import {
   BookmarkedPresentationResponseDto,
   BookmarkedPresentationsResponseDto,
   BookmarkPresentationRequestDto,
   BookmarkPresentationResponseDto,
 } from './dto/bookmark-presentation.dto';
-import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
-import { UserLevel } from '@prisma/client';
-import { ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { CreatePresentationWithSubmissionDto } from './dto/create-presentation-with-submission.dto';
+import { CreatePresentationDto } from './dto/create-presentation.dto';
 import { ListAdvisedPresentationsResponse } from './dto/list-advised-presentations.dto';
+import { PresentationResponseDto } from './dto/response-presentation.dto';
+import { UpdatePresentationWithSubmissionDto } from './dto/update-presentation-with-submission.dto';
+import { UpdatePresentationDto } from './dto/update-presentation.dto';
+import { PresentationService } from './presentation.service';
 
 @Controller('presentation')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
@@ -229,12 +229,8 @@ export class PresentationController {
     type: 'string',
     required: true,
   })
-  async resetEvaluatorsScores(
-    @Param('eventEditionId') eventEditionId: string,
-  ) {
-    return await this.presentationService.resetEvaluatorsScores(
-      eventEditionId,
-    );
+  async resetEvaluatorsScores(@Param('eventEditionId') eventEditionId: string) {
+    return await this.presentationService.resetEvaluatorsScores(eventEditionId);
   }
 
   @Post('reset-public-scores/:eventEditionId')
@@ -248,5 +244,19 @@ export class PresentationController {
   })
   async resetPublicScores(@Param('eventEditionId') eventEditionId: string) {
     return await this.presentationService.resetPublicScores(eventEditionId);
+  }
+
+  @Post('reset-committee-scores/:eventEditionId')
+  @UserLevels(UserLevel.Superadmin)
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'eventEditionId',
+    description:
+      'The ID of the event edition to reset committee member scores for',
+    type: 'string',
+    required: true,
+  })
+  async resetCommitteeScores(@Param('eventEditionId') eventEditionId: string) {
+    return await this.presentationService.resetCommitteeScores(eventEditionId);
   }
 }

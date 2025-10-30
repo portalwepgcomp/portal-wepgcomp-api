@@ -879,6 +879,35 @@ export class PresentationService {
     });
   }
 
+  async resetCommitteeScores(eventEditionId: string): Promise<void> {
+    this.logger.log(
+      `Resetting committee scores for event edition: ${eventEditionId}`,
+    );
+
+    const eventEditionExists = await this.prismaClient.eventEdition.findUnique({
+      where: {
+        id: eventEditionId,
+      },
+    });
+
+    if (!eventEditionExists) {
+      this.logger.error(`Event edition not found: ${eventEditionId}`);
+      throw new AppException('Edição do evento não encontrada.', 404);
+    }
+
+    // Deletar todos os registros de avaliadores premiados (AwardedPanelist) do evento
+    // Isso remove todos os votos dos avaliadores
+    const deletedCount = await this.prismaClient.awardedPanelist.deleteMany({
+      where: {
+        eventEditionId: eventEditionId,
+      },
+    });
+
+    this.logger.log(
+      `Deleted ${deletedCount.count} awarded panelist records for event edition: ${eventEditionId}`,
+    );
+  }
+
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
   async calculateScoresForActiveEvent() {
     try {
