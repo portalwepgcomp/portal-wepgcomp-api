@@ -59,6 +59,5 @@ export class CreateSubmissionDto {
 
   @IsString()
   @IsOptional()
-  @IsUrl({}, { message: 'O link da apresentação deve ser uma URL válida.' })
   linkHostedFile?: string;
 }
