@@ -5,14 +5,13 @@ import { AppException } from '../exceptions/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateSubmissionDto,
-  CreateSubmissionInCurrentEventDto,
 } from './dto/create-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
 
 @Injectable()
 export class SubmissionService {
-  constructor(private prismaClient: PrismaService, private uploadService: UploadsService) {}
+  constructor(private prismaClient: PrismaService, private uploadService: UploadsService) { }
 
   async create(createSubmissionDto: CreateSubmissionDto) {
     const {
@@ -27,6 +26,7 @@ export class SubmissionService {
       proposedPositionWithinBlock,
       status,
       coAdvisor,
+      linkHostedFile
     } = createSubmissionDto;
 
     const users = await this.prismaClient.userAccount.findMany({
@@ -152,6 +152,7 @@ export class SubmissionService {
         proposedPositionWithinBlock,
         status: submissionStatus,
         coAdvisor,
+        linkHostedFile,
       },
     });
 
@@ -174,9 +175,9 @@ export class SubmissionService {
       },
       orderBy: orderByProposedPresentation
         ? [
-            { proposedPresentationBlockId: { sort: 'asc', nulls: 'last' } },
-            { proposedPositionWithinBlock: { sort: 'asc', nulls: 'last' } },
-          ]
+          { proposedPresentationBlockId: { sort: 'asc', nulls: 'last' } },
+          { proposedPositionWithinBlock: { sort: 'asc', nulls: 'last' } },
+        ]
         : undefined,
     });
 
@@ -188,8 +189,8 @@ export class SubmissionService {
         }),
         submission.advisorId
           ? this.prismaClient.userAccount.findUnique({
-              where: { id: submission.advisorId },
-            })
+            where: { id: submission.advisorId },
+          })
           : null,
       ]);
 
@@ -239,6 +240,7 @@ export class SubmissionService {
       proposedPositionWithinBlock,
       status,
       coAdvisor,
+      linkHostedFile,
     } = updateSubmissionDto;
 
     const existingSubmission = await this.prismaClient.submission.findUnique({
@@ -375,6 +377,7 @@ export class SubmissionService {
         proposedPositionWithinBlock,
         status: submissionStatus,
         coAdvisor,
+        linkHostedFile,
       },
     });
   }
@@ -388,7 +391,7 @@ export class SubmissionService {
       throw new AppException('Submissão não encontrada.', 404);
     }
 
-    const {success} = await this.uploadService.deleteFile(submission.pdfFile);
+    const { success } = await this.uploadService.deleteFile(submission.pdfFile);
     if (!success) {
       console.error(`Falha ao deletar o arquivo PDF associado à submissão ${id} | caminho do arquivo: ${submission.pdfFile}`);
     }
@@ -437,22 +440,4 @@ export class SubmissionService {
     return proposedStartTime;
   }
 
-  async createInCurrentEvent(
-    createSubmissionInCurrentEventDto: CreateSubmissionInCurrentEventDto,
-  ) {
-    const event = await this.prismaClient.eventEdition.findFirst({
-      where: {
-        isActive: true,
-      },
-    });
-
-    if (!event) {
-      throw new AppException('Não existe nenhum evento ativo no momento.', 404);
-    }
-
-    return this.create({
-      ...createSubmissionInCurrentEventDto,
-      eventEditionId: event.id,
-    });
-  }
 }

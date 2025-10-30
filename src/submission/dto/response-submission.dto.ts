@@ -12,6 +12,7 @@ export class ResponseSubmissionDto {
   title: string;
   abstract: string;
   pdfFile: string;
+  linkHostedFile?: string;
   phoneNumber: string;
   proposedPresentationBlockId?: string;
   proposedPositionWithinBlock?: number;
@@ -58,5 +59,6 @@ export class ResponseSubmissionDto {
     this.status = submission.status;
     this.createdAt = submission.createdAt;
     this.updatedAt = submission.updatedAt;
+    this.linkHostedFile = submission.linkHostedFile;
   }
 }

@@ -16,8 +16,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import {
-  CreateSubmissionDto,
-  CreateSubmissionInCurrentEventDto,
+  CreateSubmissionDto
 } from './dto/create-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
@@ -32,17 +31,6 @@ export class SubmissionController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   create(@Body() createSubmissionDto: CreateSubmissionDto) {
     return this.submissionService.create(createSubmissionDto);
-  }
-
-  @Post('/create-in-current-event')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  createInCurrentEvent(
-    @Body()
-    createSubmissionInCurrentEventDto: CreateSubmissionInCurrentEventDto,
-  ) {
-    return this.submissionService.createInCurrentEvent(
-      createSubmissionInCurrentEventDto,
-    );
   }
 
   @Get()
