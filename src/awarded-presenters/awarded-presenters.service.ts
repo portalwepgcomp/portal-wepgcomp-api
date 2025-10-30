@@ -8,7 +8,7 @@ export class AwardedPresentersService {
 
   async findTopEvaluatorsRanking(
     eventEditionId: string,
-    limit: number = 3,
+    limit?: number,
   ): Promise<RankingResponseDtoDto[]> {
     const presentations = await this.prismaClient.presentation.findMany({
       where: {
@@ -22,7 +22,7 @@ export class AwardedPresentersService {
       orderBy: {
         evaluatorsAverageScore: 'desc',
       },
-      take: limit,
+      ...(limit && { take: limit }),
       include: {
         submission: {
           include: {
@@ -39,7 +39,7 @@ export class AwardedPresentersService {
 
   async findTopPublicRanking(
     eventEditionId: string,
-    limit: number = 3,
+    limit?: number,
   ): Promise<RankingResponseDtoDto[]> {
     const presentations = await this.prismaClient.presentation.findMany({
       where: {
@@ -53,7 +53,7 @@ export class AwardedPresentersService {
       orderBy: {
         publicAverageScore: 'desc',
       },
-      take: limit,
+      ...(limit && { take: limit }),
       include: {
         submission: {
           include: {

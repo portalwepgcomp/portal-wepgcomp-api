@@ -10,9 +10,9 @@ export class AwardedPresentersController {
 
   @Get('top-panelists/:eventEditionId')
   @ApiOperation({
-    summary: 'Get top submissions ranked by panelists',
+    summary: 'Get all submissions ranked by panelists',
     description:
-      'Retrieve top submissions for a specific event edition, ranked by panelists',
+      'Retrieve all submissions for a specific event edition, ranked by panelists (evaluators average score)',
   })
   @ApiParam({
     name: 'eventEditionId',
@@ -21,7 +21,7 @@ export class AwardedPresentersController {
   })
   @ApiQuery({
     name: 'limit',
-    description: 'Number of top submissions to retrieve (default: 3)',
+    description: 'Number of top submissions to retrieve (default: all)',
     required: false,
     type: 'number',
   })
@@ -38,9 +38,9 @@ export class AwardedPresentersController {
 
   @Get('top-audience/:eventEditionId')
   @ApiOperation({
-    summary: 'Get top submissions ranked by audience',
+    summary: 'Get all submissions ranked by audience',
     description:
-      'Retrieve top submissions for a specific event edition, ranked by audience',
+      'Retrieve all submissions for a specific event edition, ranked by audience (public average score)',
   })
   @ApiParam({
     name: 'eventEditionId',
@@ -49,7 +49,7 @@ export class AwardedPresentersController {
   })
   @ApiQuery({
     name: 'limit',
-    description: 'Number of top submissions to retrieve (default: 3)',
+    description: 'Number of top submissions to retrieve (default: all)',
     required: false,
     type: 'number',
   })

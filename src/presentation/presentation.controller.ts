@@ -219,4 +219,34 @@ export class PresentationController {
   async calculateAllScores(@Param('eventEditionId') eventEditionId: string) {
     return await this.presentationService.recalculateAllScores(eventEditionId);
   }
+
+  @Post('reset-evaluators-scores/:eventEditionId')
+  @UserLevels(UserLevel.Superadmin)
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'eventEditionId',
+    description: 'The ID of the event edition to reset evaluators scores for',
+    type: 'string',
+    required: true,
+  })
+  async resetEvaluatorsScores(
+    @Param('eventEditionId') eventEditionId: string,
+  ) {
+    return await this.presentationService.resetEvaluatorsScores(
+      eventEditionId,
+    );
+  }
+
+  @Post('reset-public-scores/:eventEditionId')
+  @UserLevels(UserLevel.Superadmin)
+  @ApiBearerAuth()
+  @ApiParam({
+    name: 'eventEditionId',
+    description: 'The ID of the event edition to reset public scores for',
+    type: 'string',
+    required: true,
+  })
+  async resetPublicScores(@Param('eventEditionId') eventEditionId: string) {
+    return await this.presentationService.resetPublicScores(eventEditionId);
+  }
 }

@@ -1,24 +1,27 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { CreatePresentationDto } from './dto/create-presentation.dto';
-import { CreatePresentationWithSubmissionDto } from './dto/create-presentation-with-submission.dto';
-import { SubmissionService } from '../submission/submission.service';
-import { ScoringService } from '../scoring/scoring.service';
+import {
+  PresentationBlockType,
+  PresentationStatus,
+  Profile,
+  SubmissionStatus,
+} from '@prisma/client';
 import { AppException } from '../exceptions/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdatePresentationDto } from './dto/update-presentation.dto';
-import { UpdatePresentationWithSubmissionDto } from './dto/update-presentation-with-submission.dto';
-import { PresentationStatus, Profile } from '@prisma/client';
-import { SubmissionStatus } from '@prisma/client';
-import { PresentationBlockType } from '@prisma/client';
-import { PresentationResponseDto } from './dto/response-presentation.dto';
+import { ScoringService } from '../scoring/scoring.service';
+import { SubmissionService } from '../submission/submission.service';
 import {
   BookmarkedPresentationResponseDto,
   BookmarkedPresentationsResponseDto,
   BookmarkPresentationRequestDto,
   BookmarkPresentationResponseDto,
 } from './dto/bookmark-presentation.dto';
+import { CreatePresentationWithSubmissionDto } from './dto/create-presentation-with-submission.dto';
+import { CreatePresentationDto } from './dto/create-presentation.dto';
 import { ListAdvisedPresentationsResponse } from './dto/list-advised-presentations.dto';
+import { PresentationResponseDto } from './dto/response-presentation.dto';
+import { UpdatePresentationWithSubmissionDto } from './dto/update-presentation-with-submission.dto';
+import { UpdatePresentationDto } from './dto/update-presentation.dto';
 
 @Injectable()
 export class PresentationService {
@@ -731,6 +734,149 @@ export class PresentationService {
     //}
 
     await this.scoringService.recalculateAllScores(eventEditionId);
+  }
+
+  async resetEvaluatorsScores(eventEditionId: string): Promise<void> {
+    const eventEditionExists = await this.prismaClient.eventEdition.findUnique({
+      where: {
+        id: eventEditionId,
+      },
+    });
+
+    if (!eventEditionExists) {
+      throw new AppException('Edição do evento não encontrada.', 404);
+    }
+
+    // Buscar todos os panelists do evento
+    const panelists = await this.prismaClient.panelist.findMany({
+      where: {
+        presentationBlock: {
+          eventEditionId: eventEditionId,
+        },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    const panelistUserIds = panelists.map((p) => p.userId);
+
+    // Buscar todas as submissions do evento
+    const submissions = await this.prismaClient.submission.findMany({
+      where: {
+        Presentation: {
+          some: {
+            presentationBlock: {
+              eventEditionId: eventEditionId,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const submissionIds = submissions.map((s) => s.id);
+
+    // Deletar avaliações de panelists
+    await this.prismaClient.evaluation.deleteMany({
+      where: {
+        submissionId: {
+          in: submissionIds,
+        },
+        userId: {
+          in: panelistUserIds,
+        },
+      },
+    });
+
+    // Resetar scores dos avaliadores
+    await this.prismaClient.presentation.updateMany({
+      where: {
+        presentationBlock: {
+          eventEditionId: eventEditionId,
+        },
+      },
+      data: {
+        evaluatorsAverageScore: null,
+      },
+    });
+  }
+
+  async resetPublicScores(eventEditionId: string): Promise<void> {
+    const eventEditionExists = await this.prismaClient.eventEdition.findUnique({
+      where: {
+        id: eventEditionId,
+      },
+    });
+
+    if (!eventEditionExists) {
+      throw new AppException('Edição do evento não encontrada.', 404);
+    }
+
+    // Buscar todos os panelists do evento
+    const panelists = await this.prismaClient.panelist.findMany({
+      where: {
+        presentationBlock: {
+          eventEditionId: eventEditionId,
+        },
+      },
+      select: {
+        userId: true,
+      },
+    });
+
+    const panelistUserIds = panelists.map((p) => p.userId);
+
+    // Buscar todas as submissions do evento
+    const submissions = await this.prismaClient.submission.findMany({
+      where: {
+        Presentation: {
+          some: {
+            presentationBlock: {
+              eventEditionId: eventEditionId,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    const submissionIds = submissions.map((s) => s.id);
+
+    // Deletar avaliações do público (quem NÃO é panelist)
+    await this.prismaClient.evaluation.deleteMany({
+      where: {
+        submissionId: {
+          in: submissionIds,
+        },
+        OR: [
+          {
+            userId: {
+              notIn: panelistUserIds,
+            },
+          },
+          {
+            userId: null, // Avaliações sem userId (público anônimo)
+          },
+        ],
+      },
+    });
+
+    // Resetar scores do público
+    await this.prismaClient.presentation.updateMany({
+      where: {
+        presentationBlock: {
+          eventEditionId: eventEditionId,
+        },
+      },
+      data: {
+        publicAverageScore: null,
+      },
+    });
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_2AM)
