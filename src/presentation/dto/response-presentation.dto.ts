@@ -1,6 +1,6 @@
 import {
-  Submission,
   Presentation,
+  Submission,
   SubmissionStatus,
   UserAccount,
 } from '@prisma/client';
@@ -23,6 +23,7 @@ export class PresentationResponseDto {
     mainAuthor?: {
       name: string;
       email: string;
+      photoFilePath?: string;
     };
     eventEditionId: string;
     title: string;
@@ -67,6 +68,7 @@ export class PresentationResponseDto {
         ? {
             name: presentation.submission.mainAuthor.name,
             email: presentation.submission.mainAuthor.email,
+            photoFilePath: presentation.submission.mainAuthor.photoFilePath,
           }
         : null,
       eventEditionId: presentation.submission.eventEditionId,
