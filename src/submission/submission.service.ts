@@ -179,6 +179,15 @@ export class SubmissionService {
           { proposedPositionWithinBlock: { sort: 'asc', nulls: 'last' } },
         ]
         : undefined,
+        include: {
+          mainAuthor: true,
+          advisor: true,
+          Presentation: {
+            include: {
+              presentationBlock: true,
+            },
+          },
+        },
     });
 
     const result: ResponseSubmissionDto[] = [];
