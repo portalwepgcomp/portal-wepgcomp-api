@@ -3,15 +3,16 @@ import { Profile, Submission, SubmissionStatus } from '@prisma/client';
 import { UploadsService } from 'src/uploads/uploads.service';
 import { AppException } from '../exceptions/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  CreateSubmissionDto,
-} from './dto/create-submission.dto';
+import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
 
 @Injectable()
 export class SubmissionService {
-  constructor(private prismaClient: PrismaService, private uploadService: UploadsService) { }
+  constructor(
+    private prismaClient: PrismaService,
+    private uploadService: UploadsService,
+  ) {}
 
   async create(createSubmissionDto: CreateSubmissionDto) {
     const {
@@ -26,7 +27,7 @@ export class SubmissionService {
       proposedPositionWithinBlock,
       status,
       coAdvisor,
-      linkHostedFile
+      linkHostedFile,
     } = createSubmissionDto;
 
     const users = await this.prismaClient.userAccount.findMany({
@@ -175,39 +176,30 @@ export class SubmissionService {
       },
       orderBy: orderByProposedPresentation
         ? [
-          { proposedPresentationBlockId: { sort: 'asc', nulls: 'last' } },
-          { proposedPositionWithinBlock: { sort: 'asc', nulls: 'last' } },
-        ]
+            { proposedPresentationBlockId: { sort: 'asc', nulls: 'last' } },
+            { proposedPositionWithinBlock: { sort: 'asc', nulls: 'last' } },
+          ]
         : undefined,
+      include: {
+        mainAuthor: true,
+        advisor: true,
+        Presentation: {
+          include: {
+            presentationBlock: true,
+          },
+        },
+      },
     });
 
-    const result: ResponseSubmissionDto[] = [];
-    for (const submission of submissions) {
-      const [mainAuthor, advisor] = await Promise.all([
-        this.prismaClient.userAccount.findUnique({
-          where: { id: submission.mainAuthorId },
-        }),
-        submission.advisorId
-          ? this.prismaClient.userAccount.findUnique({
-            where: { id: submission.advisorId },
-          })
-          : null,
-      ]);
-
-      const proposedStartTime = await this.calculateProposedStartTime(
-        submission,
-        eventEditionId,
-      );
-
-      result.push(
-        new ResponseSubmissionDto(
-          { ...submission, mainAuthor, advisor },
-          proposedStartTime,
-        ),
-      );
-    }
-
-    return result;
+    return Promise.all(
+      submissions.map(async (submission) => {
+        const proposedStartTime = await this.calculateProposedStartTime(
+          submission,
+          eventEditionId,
+        );
+        return new ResponseSubmissionDto(submission as any, proposedStartTime);
+      }),
+    );
   }
 
   async findOne(id: string): Promise<ResponseSubmissionDto> {
@@ -393,7 +385,9 @@ export class SubmissionService {
 
     const { success } = await this.uploadService.deleteFile(submission.pdfFile);
     if (!success) {
-      console.error(`Falha ao deletar o arquivo PDF associado à submissão ${id} | caminho do arquivo: ${submission.pdfFile}`);
+      console.error(
+        `Falha ao deletar o arquivo PDF associado à submissão ${id} | caminho do arquivo: ${submission.pdfFile}`,
+      );
     }
 
     return this.prismaClient.submission.delete({
@@ -439,5 +433,4 @@ export class SubmissionService {
 
     return proposedStartTime;
   }
-
 }

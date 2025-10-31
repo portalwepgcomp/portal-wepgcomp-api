@@ -1,4 +1,25 @@
-import { Submission, SubmissionStatus, UserAccount } from '@prisma/client';
+import {
+  PresentationStatus,
+  Submission,
+  SubmissionStatus,
+  UserAccount,
+  PresentationBlockType,
+  Presentation,
+} from '@prisma/client';
+
+export class ResponseBlockInfo {
+  id: string;
+  title: string;
+  roomId: string | null;
+  type: PresentationBlockType;
+
+  constructor(block: any) {
+    this.id = block.id;
+    this.title = block.title;
+    this.roomId = block.roomId;
+    this.type = block.type;
+  }
+}
 
 export class ResponseSubmissionDto {
   id: string;
@@ -26,10 +47,18 @@ export class ResponseSubmissionDto {
     name: string;
     email: string;
   };
+  block: ResponseBlockInfo | null;
+  presentationId: string | null;
+  presentationStatus: PresentationStatus | null;
+  presentationStartTime: Date | null;
 
   constructor(
     submission: Submission & { mainAuthor?: UserAccount } & {
       advisor?: UserAccount;
+    } & {
+      Presentation?: (Presentation & {
+        presentationBlock?: PresentationBlockType;
+      })[];
     },
     proposedStartTime?: Date,
   ) {
@@ -62,5 +91,25 @@ export class ResponseSubmissionDto {
     this.createdAt = submission.createdAt;
     this.updatedAt = submission.updatedAt;
     this.linkHostedFile = submission.linkHostedFile;
+
+    const mainPresentation =
+      submission.Presentation && submission.Presentation.length > 0
+        ? submission.Presentation[0]
+        : null;
+
+    if (mainPresentation) {
+      this.presentationId = mainPresentation.id;
+      this.presentationStatus = mainPresentation.status;
+      if (mainPresentation.presentationBlock) {
+        this.block = new ResponseBlockInfo(mainPresentation.presentationBlock);
+      } else {
+        this.block = null;
+      }
+    } else {
+      this.presentationId = null;
+      this.presentationStatus = null;
+      this.presentationStartTime = null;
+      this.block = null;
+    }
   }
 }
