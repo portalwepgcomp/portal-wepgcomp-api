@@ -6,6 +6,7 @@ import {
   Post,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -22,8 +23,12 @@ import { extname, join } from 'path';
 import { UserLevels } from 'src/auth/decorators/user-level.decorator';
 import { fileValidationPipe } from './config/multer.options';
 import { UploadsService } from './uploads.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { ProfileAccessGuard } from 'src/auth/guards/profile-access.guard';
+import { UserLevelGuard } from 'src/auth/guards/user-level.guard';
 
 @Controller('uploads')
+@UseGuards(JwtAuthGuard, UserLevelGuard, ProfileAccessGuard)
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 

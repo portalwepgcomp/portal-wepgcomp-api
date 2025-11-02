@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -17,10 +19,10 @@ import {
   RegistrationNumberType,
   UserLevel,
 } from './dto/create-user.dto';
+import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFieldCalculator } from './utils/user-field-calculator';
-import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 
 @Injectable()
 export class UserService {
