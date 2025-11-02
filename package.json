@@ -35,6 +35,7 @@
     "seed": "ts-node prisma/seed.ts"
   },
   "dependencies": {
+    "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^3.3.0",
     "@nestjs/core": "^10.0.0",
@@ -47,6 +48,7 @@
     "@pdf-lib/fontkit": "^1.1.1",
     "@prisma/client": "^5.20.0",
     "@vercel/postgres": "^0.10.0",
+    "axios": "^1.13.1",
     "backend": "file:",
     "bcrypt": "^5.1.1",
     "chokidar": "^3.6.0",

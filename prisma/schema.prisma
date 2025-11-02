@@ -13,6 +13,7 @@ model UserAccount {
   email                   String                  @unique @map("email") @db.VarChar(255)
   password                String                  @map("password") @db.VarChar(255)
   registrationNumber      String?                 @unique @map("registration_number") @db.VarChar(20)
+  linkLattes              String?                 @map("linkLattes") @db.VarChar(50)
   photoFilePath           String?                 @map("photo_file_path") @db.VarChar(255)
   profile                 Profile                 @default(Presenter) @map("profile")
   subprofile              Subprofile?

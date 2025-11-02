@@ -7,6 +7,7 @@ export class ResponseUserDto {
   email: string;
   registrationNumber?: string;
   registrationNumberType?: RegistrationNumberType;
+  linkLattes?: string;
   photoFilePath?: string;
   profile: Profile;
   level: UserLevel;
@@ -27,6 +28,7 @@ export class ResponseUserDto {
     this.registrationNumber = user.registrationNumber;
     this.registrationNumberType =
       user.registrationNumberType as RegistrationNumberType;
+    this.linkLattes = user.linkLattes;
     this.photoFilePath = user.photoFilePath;
     this.profile = user.profile;
     this.level = user.level;
@@ -41,4 +43,3 @@ export class ResponseUserDto {
     this.hasSubmission = hasSubmission;
   }
 }
-

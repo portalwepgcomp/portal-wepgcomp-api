@@ -71,6 +71,10 @@ export class CreateUserDto {
   profile?: Profile;
 
   @IsOptional()
+  @IsString()
+  linkLattes?: string;
+
+  @IsOptional()
   @IsEnum(UserLevel)
   level?: UserLevel;
 

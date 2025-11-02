@@ -24,6 +24,7 @@ export class PresentationResponseDto {
       name: string;
       email: string;
       photoFilePath?: string;
+      linkLattes?: string;
     };
     eventEditionId: string;
     title: string;
@@ -69,6 +70,7 @@ export class PresentationResponseDto {
             name: presentation.submission.mainAuthor.name,
             email: presentation.submission.mainAuthor.email,
             photoFilePath: presentation.submission.mainAuthor.photoFilePath,
+            linkLattes: presentation.submission.mainAuthor.linkLattes,
           }
         : null,
       eventEditionId: presentation.submission.eventEditionId,

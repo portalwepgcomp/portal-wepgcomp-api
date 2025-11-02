@@ -29,6 +29,7 @@ export class ResponseSubmissionDto {
     name: string;
     email: string;
     photoFilePath?: string;
+    linkLattes?: string;
   };
   eventEditionId: string;
   title: string;
@@ -70,6 +71,7 @@ export class ResponseSubmissionDto {
           name: submission.mainAuthor.name,
           email: submission.mainAuthor.email,
           photoFilePath: submission.mainAuthor.photoFilePath,
+          linkLattes: submission.mainAuthor.linkLattes,
         }
       : null;
     this.advisor = submission.advisor

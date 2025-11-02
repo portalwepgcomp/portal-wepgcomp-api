@@ -1,7 +1,5 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -23,6 +21,9 @@ import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFieldCalculator } from './utils/user-field-calculator';
+import { HttpService } from '@nestjs/axios';
+import { URL } from 'url';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -30,6 +31,7 @@ export class UserService {
     private prismaClient: PrismaService,
     private jwtService: JwtService,
     private mailingService: MailingService,
+    private readonly httpService: HttpService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -107,12 +109,27 @@ export class UserService {
         ? await this.checkProfessorShouldBeSuperAdmin()
         : false;
 
+    let lattesPhotoPath: string | undefined = undefined;
+
+    const linkLattes = createUserDto.linkLattes;
+
+    if (linkLattes) {
+      try {
+        lattesPhotoPath = await this.getLattesPhotoPath(
+          createUserDto.linkLattes,
+        );
+      } catch (error) {
+        console.warn(
+          `Falha ao buscar ID do Lattes para ${createUserDto.email}: ${error.message}. Usuário será criado sem Photo Path.`,
+        );
+      }
+    }
+
     const user = await this.prismaClient.userAccount.create({
       data: {
         name: createUserDto.name,
         email: createUserDto.email,
         password: hashedPassword,
-        profile: createUserDto.profile ?? Profile.Listener,
         subprofile: createUserDto.subprofile ?? null,
         level: shouldBeSuperAdmin ? UserLevel.Superadmin : UserLevel.Default,
         registrationNumber,
@@ -124,6 +141,9 @@ export class UserService {
             : true,
         isPresenterActive:
           createUserDto.profile === Profile.Presenter ? false : true,
+        photoFilePath: lattesPhotoPath,
+        profile: createUserDto.profile ?? Profile.Listener,
+        linkLattes: linkLattes,
       },
     });
 
@@ -337,6 +357,7 @@ export class UserService {
         password: true,
         registrationNumber: true,
         registrationNumberType: true,
+        linkLattes: true,
         photoFilePath: true,
         profile: true,
         level: true,
@@ -494,6 +515,29 @@ export class UserService {
 
     processedData.updatedBy = superadminEmail;
 
+    let photoPathToUpdate: string | null | undefined = undefined;
+
+    if ('linkLattes' in updateUserDto) {
+      const newLinkLattes = updateUserDto.linkLattes;
+
+      if (newLinkLattes) {
+        try {
+          photoPathToUpdate = await this.getLattesPhotoPath(newLinkLattes);
+        } catch (error) {
+          console.warn(
+            `Falha ao ATUALIZAR ID do Lattes para ${decodedEmail}: ${error.message}. Photo Path será removido.`,
+          );
+          photoPathToUpdate = null;
+        }
+      } else {
+        photoPathToUpdate = null;
+      }
+    }
+
+    if (photoPathToUpdate !== undefined) {
+      processedData.photoFilePath = photoPathToUpdate;
+    }
+
     const updatedUser = await this.updateUser(decodedEmail, processedData);
 
     return new ResponseUpdatedUserDto(updatedUser);
@@ -648,5 +692,39 @@ export class UserService {
     }
 
     return user;
+  }
+
+  private async getLattesPhotoPath(linkLattes: string): Promise<string> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(linkLattes, {
+          timeout: 7000,
+        }),
+      );
+      const idUrl = response.request.res.responseUrl;
+
+      if (!idUrl || !idUrl.includes('buscatextual.cnpq.br')) {
+        throw new Error(
+          'Não foi possível obter a URL final do Lattes ou a URL é inesperada.',
+        );
+      }
+
+      const parsedUrl = new URL(idUrl);
+      const id = parsedUrl.searchParams.get('id');
+
+      if (!id) {
+        throw new Error('Parâmetro "id" não encontrado na URL final.');
+      }
+
+      return `https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${id}`;
+    } catch (error) {
+      console.error(
+        `Erro ao buscar ID do Lattes para ${linkLattes}:`,
+        error.message,
+      );
+      throw new BadRequestException(
+        `Não foi possível processar o Lattes ID numérico: ${linkLattes}. Verifique o ID e tente novamente.`,
+      );
+    }
   }
 }
