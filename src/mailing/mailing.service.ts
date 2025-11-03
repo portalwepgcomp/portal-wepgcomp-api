@@ -34,7 +34,7 @@ export class MailingService {
   }
 
   async sendEmail(
-    defaultEmailDto: DefaultEmailDto,
+    defaultEmailDto: DefaultEmailDto, esqueciSenha?: boolean,
   ): Promise<DefaultEmailResponseDto> {
     try {
       const mailOptions = {
@@ -42,9 +42,9 @@ export class MailingService {
         from: defaultEmailDto.from || process.env.SMTP_FROM_EMAIL,
         subject: defaultEmailDto.subject,
         text: defaultEmailDto.text,
-        html: this.buildEmailTemplate(
+        html: !esqueciSenha ? this.buildEmailTemplate(
           defaultEmailDto.html || defaultEmailDto.text,
-        ),
+        ) : this.buildEmailTemplateEsqueciASenha(defaultEmailDto.html)
       };
 
       await this.transporter.sendMail(mailOptions);
@@ -298,6 +298,85 @@ export class MailingService {
           <div class="content">
             <div class="message">
               ${sanitizedMessage}
+            </div>
+          </div>
+          <div class="footer">
+            <p>Esta é uma mensagem automática do Portal WePGCOMP</p>
+            <p>Por favor, não responda a este e-mail</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+  }
+
+
+  private buildEmailTemplateEsqueciASenha(message: string): string {
+
+    return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+          }
+          .email-container {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+          }
+          .header {
+            background-color: #134252;
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+          }
+          .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+          }
+          .content {
+            padding: 30px;
+          }
+          .message {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #134252;
+            margin: 20px 0;
+          }
+          .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eee;
+          }
+          .footer p {
+            margin: 5px 0;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="email-container">
+          <div class="header">
+            <h1>Portal WePGCOMP</h1>
+          </div>
+          <div class="content">
+            <div class="message">
+              <p>Clique no botão abaixo para redefinir sua senha:</p>
+              <p><a href="${message}" style="background-color: #007bff; color: white; padding: 10px 15px; margin-top: 8px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
             </div>
           </div>
           <div class="footer">
