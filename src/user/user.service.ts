@@ -701,7 +701,7 @@ export class UserService {
           timeout: 7000,
         }),
       );
-      const idUrl = response.request.res.responseUrl;
+      const idUrl = (response as any).request.res.responseUrl;
 
       if (!idUrl || !idUrl.includes('buscatextual.cnpq.br')) {
         throw new Error(
