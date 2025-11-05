@@ -128,20 +128,20 @@ export class CertificateService {
 
     if (user.profile == Profile.Professor) {
       texto += `   Certificamos que ${user.name} participou como avaliador(a) em sessões de apresentações no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
-      if (user.panelistAwards.length) {
-        texto += ` Também ficamos felizes de informar que ${user.name} foi homenageado(a) como um dos melhores avaliadores pela comissão organizadora do ${eventEdition.name}.`;
-      }
+      // if (user.panelistAwards.length) {
+      //   texto += ` Também ficamos felizes de informar que ${user.name} foi homenageado(a) como um dos melhores avaliadores pela comissão organizadora do ${eventEdition.name}. `;
+      // }
     } else if (user.profile == Profile.Listener) {
-      texto += `   Certificamos que ${user.name} participou como ouvinte no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
+      texto += `   Certificamos que ${user.name} participou como ouvinte no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${dateHandler(eventEdition.startDate, eventEdition.endDate)}, com carga horária total de 10 horas.`;
     } else {
       texto += `    Certificamos que ${user.name} apresentou o trabalho "${userSubmission.title}" na categoria Apresentação Oral no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
-      if (userPublicAwardStandings <= 3 && userEvaluatorsAwardStandings <= 3) {
-        texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha do Público, classificado em ${userPublicAwardStandings}º lugar na avaliação dos membros do público. Seu trabalho também recebeu o prêmio Escolha dos Avaliadores, sendo classificado em ${userEvaluatorsAwardStandings}º lugar na avaliação da banca avaliadora.`;
-      } else if (userPublicAwardStandings <= 3) {
-        texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha do Público, classificado em ${userPublicAwardStandings}º lugar na avaliação dos membros do público.`;
-      } else if (userEvaluatorsAwardStandings <= 3) {
-        texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha dos Avaliadores, sendo classificado em ${userEvaluatorsAwardStandings}º lugar na avaliação da banca avaliadora.`;
-      }
+      // if (userPublicAwardStandings <= 3 && userEvaluatorsAwardStandings <= 3) {
+      //   texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha do Público, classificado em ${userPublicAwardStandings}º lugar na avaliação dos membros do público. Seu trabalho também recebeu o prêmio Escolha dos Avaliadores, sendo classificado em ${userEvaluatorsAwardStandings}º lugar na avaliação da banca avaliadora.`;
+      // } else if (userPublicAwardStandings <= 3) {
+      //   texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha do Público, classificado em ${userPublicAwardStandings}º lugar na avaliação dos membros do público.`;
+      // } else if (userEvaluatorsAwardStandings <= 3) {
+      //   texto += ` O trabalho de ${user.name} recebeu o prêmio Escolha dos Avaliadores, sendo classificado em ${userEvaluatorsAwardStandings}º lugar na avaliação da banca avaliadora.`;
+      // }
     }
     const regularFont = await this.getFontAndEmbed(fonts, 'regular', pdfDoc);
     page.drawText(texto, {
@@ -255,7 +255,9 @@ export class CertificateService {
     const title =
       userProfileType == Profile.Professor
         ? 'CERTIFICADO DE AVALIADOR'
-        : 'CERTIFICADO DE APRESENTAÇÃO';
+        : userProfileType == Profile.Presenter
+          ? 'CERTIFICADO DE APRESENTAÇÃO'
+          : 'CERTIFICADO DE PARTICIPAÇÃO';
 
     const title_width = font.widthOfTextAtSize(title, textSize);
 
@@ -552,7 +554,7 @@ export class CertificateService {
       const evaluationCount = await this.prismaClient.evaluation.count({
         where: { userId: user.id },
       });
-      if (evaluationCount < 10) {
+      if (evaluationCount < 2) {
         throw new AppException(
           'Usuário ouvinte deve avaliar ao menos 10 apresentações pare receber o certificado',
           404,
