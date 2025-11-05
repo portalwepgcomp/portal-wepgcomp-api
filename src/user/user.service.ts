@@ -35,6 +35,13 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
+    //Trava hardcoded para pessoas nao se inscreverem mais
+    if (true) {
+        throw new BadRequestException(
+          'Período de inscrições encerrado.',
+        );
+    }
+
     // Validacao de e-mail @ufba.br para quem nao eh de fora.
     if (
       createUserDto.profile === Profile.Presenter ||
