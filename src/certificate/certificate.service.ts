@@ -125,9 +125,15 @@ export class CertificateService {
 
       const startDay = start.getDate();
       const endDay = end.getDate();
-      const month = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(end);
+      const month = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
+        end,
+      );
       const year = end.getFullYear();
-
+      // remova o if abaixo após 2025. adicionei para tratar um erro que surgiu pois desenvolvemos já com o projeto em produção
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+      if (year == 2025) {
+        return `${startDay} a ${endDay - 1} de ${month} de ${year}`;
+      }
       return `${startDay} a ${endDay} de ${month} de ${year}`;
     }
 
