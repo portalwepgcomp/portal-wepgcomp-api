@@ -109,18 +109,23 @@ export class CertificateService {
     );
     let texto = '';
 
+    function parseLocalDate(dateStr) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+
     function dateHandler(
       startDate: string | Date,
       endDate: string | Date,
     ): string {
       const start =
-        typeof startDate === 'string' ? new Date(startDate) : startDate;
-      const end = typeof endDate === 'string' ? new Date(endDate) : endDate;
+        typeof startDate === 'string' ? parseLocalDate(startDate) : startDate;
+      const end =
+        typeof endDate === 'string' ? parseLocalDate(endDate) : endDate;
+
       const startDay = start.getDate();
       const endDay = end.getDate();
-      const month = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(
-        end,
-      );
+      const month = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(end);
       const year = end.getFullYear();
 
       return `${startDay} a ${endDay} de ${month} de ${year}`;
@@ -554,7 +559,7 @@ export class CertificateService {
       const evaluationCount = await this.prismaClient.evaluation.count({
         where: { userId: user.id },
       });
-      if (evaluationCount < 2) {
+      if (evaluationCount < 10) {
         throw new AppException(
           'Usuário ouvinte deve avaliar ao menos 10 apresentações pare receber o certificado',
           404,
