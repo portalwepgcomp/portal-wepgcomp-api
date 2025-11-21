@@ -7,6 +7,7 @@ import {
   IsISO8601,
   Min,
   IsUUID,
+  IsArray,
 } from 'class-validator';
 
 export class CreateEventEditionDto {
@@ -58,9 +59,10 @@ export class CreateEventEditionDto {
   @IsOptional()
   coordinatorId?: string;
 
-  @IsString()
   @IsOptional()
-  roomName?: string;
+  @IsArray()
+  @IsString({ each: true })
+  roomName?: string[];
 }
 
 export class CreateFromEventEditionFormDto {
@@ -112,7 +114,8 @@ export class CreateFromEventEditionFormDto {
   @IsISO8601()
   submissionDeadline: Date;
 
-  @IsString()
   @IsOptional()
-  roomName?: string;
+  @IsArray()
+  @IsString({ each: true })
+  roomName?: string[];
 }

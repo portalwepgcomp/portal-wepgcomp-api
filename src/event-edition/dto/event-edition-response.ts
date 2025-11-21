@@ -46,6 +46,9 @@ export class EventEditionResponseDto {
   @Expose()
   updatedAt: Date;
 
+  @Expose()
+  roomName: string[];
+
   constructor(partial: Partial<EventEditionResponseDto>) {
     Object.assign(this, partial);
   }

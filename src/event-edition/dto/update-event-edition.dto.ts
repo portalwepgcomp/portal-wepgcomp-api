@@ -8,6 +8,7 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  IsArray,
 } from 'class-validator';
 
 export class UpdateEventEditionDto extends PartialType(CreateEventEditionDto) {}
@@ -68,4 +69,9 @@ export class UpdateFromEventEditionFormDto {
   @IsISO8601()
   @IsOptional()
   submissionDeadline?: Date;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  roomName?: string[];
 }

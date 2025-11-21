@@ -61,7 +61,6 @@ export class EventEditionService {
       });
 
       if (activeEvent) {
-        // Desativa o evento atualmente ativo
         await prisma.eventEdition.update({
           where: { id: activeEvent.id },
           data: { isActive: false },
@@ -158,7 +157,12 @@ export class EventEditionService {
         }
       }
 
-      const eventResponseDto = new EventEditionResponseDto(createdEventEdition);
+      const dtoData = {
+        ...createdEventEdition,
+        roomName: rooms.map((room) => room.name),
+      };
+      const eventResponseDto = new EventEditionResponseDto(dtoData);
+
       await this.scoringService.scheduleEventFinalScoresRecalculation(
         createdEventEdition,
       );
@@ -180,18 +184,23 @@ export class EventEditionService {
       : [];
 
     const rooms = activeEvent
-      ? createEventEditionDto.roomName
-        ? [{ name: createEventEditionDto.roomName, description: '' }]
+      ? createEventEditionDto.roomName &&
+        createEventEditionDto.roomName.length > 0
+        ? createEventEditionDto.roomName.map((name) => ({
+            name,
+            description: '',
+          }))
         : await prisma.room.findMany({
             where: { eventEditionId: activeEvent.id },
             select: { name: true, description: true },
           })
-      : [
-          {
-            name: createEventEditionDto.roomName || 'Auditório Principal',
+      : createEventEditionDto.roomName &&
+          createEventEditionDto.roomName.length > 0
+        ? createEventEditionDto.roomName.map((name) => ({
+            name,
             description: '',
-          },
-        ];
+          }))
+        : [{ name: 'Auditório Principal', description: '' }];
 
     return { evaluationCriteria, rooms };
   }
@@ -308,9 +317,7 @@ export class EventEditionService {
       CommitteeRole.Communication,
     );
 
-    const eventResponseDto = new EventEditionResponseDto(eventEdition);
-
-    return eventResponseDto;
+    return eventEdition;
   }
 
   async createCommitteeMembersFromArray(
@@ -377,11 +384,24 @@ export class EventEditionService {
   }
 
   async getAll() {
-    const events = await this.prismaClient.eventEdition.findMany({});
+    const events = await this.prismaClient.eventEdition.findMany({
+      include: {
+        rooms: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
 
-    const eventsResponseDto = events.map(
-      (event) => new EventEditionResponseDto(event),
-    );
+    const eventsResponseDto = events.map((event) => {
+      const dtoData = {
+        ...event,
+        roomName: event.rooms.map((room) => room.name),
+      };
+
+      return new EventEditionResponseDto(dtoData);
+    });
 
     return eventsResponseDto;
   }
@@ -391,6 +411,13 @@ export class EventEditionService {
       where: {
         id,
       },
+      include: {
+        rooms: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
     if (!event) {
@@ -399,7 +426,11 @@ export class EventEditionService {
       );
     }
 
-    const eventResponseDto = new EventEditionResponseDto(event);
+    const dtoData = {
+      ...event,
+      roomName: event.rooms.map((room) => room.name),
+    };
+    const eventResponseDto = new EventEditionResponseDto(dtoData);
 
     return eventResponseDto;
   }
@@ -412,13 +443,24 @@ export class EventEditionService {
           lt: new Date(year + 1, 0, 1),
         },
       },
+      include: {
+        rooms: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
     if (!event) {
       throw new NotFoundException('Não há eventos para o ano informado');
     }
 
-    const eventResponseDto = new EventEditionResponseDto(event);
+    const dtoData = {
+      ...event,
+      roomName: event.rooms.map((room) => room.name),
+    };
+    const eventResponseDto = new EventEditionResponseDto(dtoData);
 
     return eventResponseDto;
   }
@@ -428,13 +470,24 @@ export class EventEditionService {
       where: {
         isActive: true,
       },
+      include: {
+        rooms: {
+          select: {
+            name: true,
+          },
+        },
+      },
     });
 
     if (!event) {
       throw new BadRequestException('Não existe nenhum evento ativo');
     }
 
-    const eventResponseDto = new EventEditionResponseDto(event);
+    const dtoData = {
+      ...event,
+      roomName: event.rooms.map((room) => room.name),
+    };
+    const eventResponseDto = new EventEditionResponseDto(dtoData);
 
     return eventResponseDto;
   }
@@ -443,7 +496,7 @@ export class EventEditionService {
     id: string,
     updateFromEventEditionFormDto: UpdateFromEventEditionFormDto,
   ): Promise<EventEditionResponseDto> {
-    const updatedEvent = await this.update(id, updateFromEventEditionFormDto);
+    await this.update(id, updateFromEventEditionFormDto);
 
     const {
       organizingCommitteeIds,
@@ -451,9 +504,48 @@ export class EventEditionService {
       administrativeSupportIds,
       communicationIds,
       coordinatorId,
+      roomName,
     } = updateFromEventEditionFormDto;
 
     this.validateSubmissionPeriod(updateFromEventEditionFormDto);
+
+    if (roomName) {
+      const oldRooms = await this.prismaClient.room.findMany({
+        where: {
+          eventEditionId: id,
+        },
+        select: {
+          id: true,
+        },
+      });
+      const oldRoomIds = oldRooms.map((room) => room.id);
+
+      await this.prismaClient.presentationBlock.deleteMany({
+        where: {
+          roomId: {
+            in: oldRoomIds,
+          },
+        },
+      });
+
+      await this.prismaClient.room.deleteMany({
+        where: {
+          eventEditionId: id,
+        },
+      });
+
+      await Promise.all(
+        roomName.map(async (name) => {
+          await this.prismaClient.room.create({
+            data: {
+              eventEditionId: id,
+              name: name,
+              description: '',
+            },
+          });
+        }),
+      );
+    }
 
     if (coordinatorId) {
       const coordinator = await this.prismaClient.userAccount.findUnique({
@@ -463,7 +555,6 @@ export class EventEditionService {
       });
 
       if (coordinator !== null) {
-        // Remove all roles for the user in this event edition
         await this.prismaClient.committeeMember.deleteMany({
           where: {
             eventEditionId: id,
@@ -471,7 +562,6 @@ export class EventEditionService {
           },
         });
 
-        // Remove existing coordinator if any
         await this.prismaClient.committeeMember.deleteMany({
           where: {
             eventEditionId: id,
@@ -480,7 +570,6 @@ export class EventEditionService {
           },
         });
 
-        // Add new coordinator
         await this.prismaClient.committeeMember.create({
           data: {
             eventEditionId: id,
@@ -490,7 +579,6 @@ export class EventEditionService {
           },
         });
 
-        // Update user level for the new coordinator
         await this.updateUserLevel(coordinatorId, CommitteeLevel.Coordinator);
       }
     }
@@ -519,9 +607,8 @@ export class EventEditionService {
       CommitteeRole.Communication,
     );
 
-    const eventResponseDto = new EventEditionResponseDto(updatedEvent);
-
-    return eventResponseDto;
+    const eventWithRooms = await this.getById(id);
+    return eventWithRooms;
   }
 
   async updateCommitteeMembersFromArray(
@@ -578,6 +665,8 @@ export class EventEditionService {
       'administrativeSupportIds',
       'communicationIds',
       'coordinatorId',
+      'roomName',
+      'rooms',
     ];
 
     const filteredData = Object.fromEntries(
@@ -586,14 +675,27 @@ export class EventEditionService {
       ),
     );
 
-    const updatedEvent = await this.prismaClient.eventEdition.update({
+    await this.prismaClient.eventEdition.update({
       where: {
         id,
       },
       data: filteredData,
     });
 
-    const eventResponseDto = new EventEditionResponseDto(updatedEvent);
+    const updatedEvent = await this.prismaClient.eventEdition.findUnique({
+      where: { id },
+      include: {
+        rooms: {
+          select: { name: true },
+        },
+      },
+    });
+
+    const dtoData = {
+      ...updatedEvent,
+      roomName: updatedEvent.rooms.map((room) => room.name),
+    };
+    const eventResponseDto = new EventEditionResponseDto(dtoData);
 
     await this.scoringService.handleEventUpdate(updatedEvent.id);
 
@@ -612,25 +714,36 @@ export class EventEditionService {
         'Não existe nenhum evento com esse identificador',
       );
     }
-    const updatedEvent = await this.prismaClient.$transaction(
-      async (prisma) => {
-        await prisma.eventEdition.updateMany({
-          where: {
-            isActive: true,
-            id: { not: id },
-          },
-          data: { isActive: false },
-        });
 
-        const updatedEvent = await prisma.eventEdition.update({
-          where: { id },
-          data: { isActive: true },
-        });
+    await this.prismaClient.$transaction(async (prisma) => {
+      await prisma.eventEdition.updateMany({
+        where: {
+          isActive: true,
+          id: { not: id },
+        },
+        data: { isActive: false },
+      });
 
-        return updatedEvent;
+      await prisma.eventEdition.update({
+        where: { id },
+        data: { isActive: true },
+      });
+    });
+
+    const updatedEvent = await this.prismaClient.eventEdition.findUnique({
+      where: { id },
+      include: {
+        rooms: {
+          select: { name: true },
+        },
       },
-    );
-    const eventResponseDto = new EventEditionResponseDto(updatedEvent);
+    });
+
+    const dtoData = {
+      ...updatedEvent,
+      roomName: updatedEvent.rooms.map((room) => room.name),
+    };
+    const eventResponseDto = new EventEditionResponseDto(dtoData);
 
     return eventResponseDto;
   }
@@ -639,6 +752,11 @@ export class EventEditionService {
     return this.prismaClient.$transaction(async (prisma) => {
       const eventToDelete = await prisma.eventEdition.findUnique({
         where: { id },
+        include: {
+          rooms: {
+            select: { name: true },
+          },
+        },
       });
 
       if (!eventToDelete) {
@@ -647,11 +765,10 @@ export class EventEditionService {
         );
       }
 
-      const deletedEvent = await prisma.eventEdition.delete({
+      await prisma.eventEdition.delete({
         where: { id },
       });
 
-      // Caso o evento deletado fosse ativo, reativar o evento anterior
       if (eventToDelete.isActive) {
         const previousEvent = await prisma.eventEdition.findFirst({
           where: {
@@ -668,7 +785,11 @@ export class EventEditionService {
         }
       }
 
-      return new EventEditionResponseDto(deletedEvent);
+      const dtoData = {
+        ...eventToDelete,
+        roomName: eventToDelete.rooms.map((room) => room.name),
+      };
+      return new EventEditionResponseDto(dtoData);
     });
   }
 
