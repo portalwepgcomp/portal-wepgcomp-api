@@ -6,6 +6,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class SubmissionService {
@@ -354,6 +356,27 @@ export class SubmissionService {
     }
 
     const submissionStatus = status || SubmissionStatus.Submitted;
+
+    if (pdfFile && existingSubmission.pdfFile) {
+      const oldPdfPath = path.join(
+        process.cwd(),
+        'storage',
+        existingSubmission.pdfFile,
+      );
+
+      if (fs.existsSync(oldPdfPath)) {
+        try {
+          fs.unlinkSync(oldPdfPath);
+          console.log('Arquivo antigo deletado:', oldPdfPath);
+        } catch (error) {
+          console.error('Erro ao deletar arquivo antigo:', error);
+          throw new AppException(
+            'Não foi possível substituir o arquivo PDF antigo.',
+            500,
+          );
+        }
+      }
+    }
 
     return this.prismaClient.submission.update({
       where: { id },
