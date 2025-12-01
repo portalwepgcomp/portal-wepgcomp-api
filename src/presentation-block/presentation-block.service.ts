@@ -362,8 +362,6 @@ export class PresentationBlockService {
     } = updatePresentationBlockDto;
 
     const result = await this.prismaClient.$transaction(async (tx) => {
-      // For each submission, do like in this.create() (if it exists, reassign to this presentationBlock, if it doesn't, create the presentation), and update the positionWithinBlock
-      // if the lenght == 0, delete all presentations
       if (submissions && submissions.length > 0) {
         // Find existing submissions
         const submissionsExist = await tx.submission.findMany({
@@ -382,15 +380,17 @@ export class PresentationBlockService {
           (a, b) => submissions.indexOf(a) - submissions.indexOf(b),
         );
 
-        // Find existing presentations
-        const existingPresentations = await tx.presentation.findMany({
-          where: {
-            submissionId: { in: submissionsExistIds },
-          },
+        // Find presentations currently in this block (todas, não só das novas submissions)
+        const currentBlockPresentations = await tx.presentation.findMany({
+          where: { presentationBlockId: id },
         });
 
-        // Update existing presentations
-        for (const presentation of existingPresentations) {
+        // Update existing presentations that remain na lista
+        const existingPresentationsForNewList = currentBlockPresentations.filter(
+          (p) => submissionsExistIds.includes(p.submissionId),
+        );
+
+        for (const presentation of existingPresentationsForNewList) {
           await tx.presentation.update({
             where: { id: presentation.id },
             data: {
@@ -402,10 +402,12 @@ export class PresentationBlockService {
           });
         }
 
-        // Create new presentations for submissions without one
+        // Create new presentations for submissions sem apresentação
         const submissionsWithoutPresentation = submissionsExistIds.filter(
           (subId) =>
-            !existingPresentations.some((pres) => pres.submissionId === subId),
+            !existingPresentationsForNewList.some(
+              (pres) => pres.submissionId === subId,
+            ),
         );
 
         if (submissionsWithoutPresentation.length > 0) {
@@ -418,7 +420,21 @@ export class PresentationBlockService {
             })),
           });
         }
+
+        // DELETE: remover apresentações que foram retiradas da lista (não constam em submissions)
+        const presentationsToDelete = currentBlockPresentations.filter(
+          (p) => !submissionsExistIds.includes(p.submissionId),
+        );
+
+        if (presentationsToDelete.length > 0) {
+          await tx.presentation.deleteMany({
+            where: {
+              id: { in: presentationsToDelete.map((p) => p.id) },
+            },
+          });
+        }
       } else {
+        // Se não há submissions (array vazio ou undefined), apague todas as apresentações do bloco
         await tx.presentation.deleteMany({
           where: {
             presentationBlockId: id,
