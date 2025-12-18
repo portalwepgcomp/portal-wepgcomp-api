@@ -510,32 +510,46 @@ export class EventEditionService {
     this.validateSubmissionPeriod(updateFromEventEditionFormDto);
 
     if (roomName) {
-      const oldRooms = await this.prismaClient.room.findMany({
-        where: {
-          eventEditionId: id,
-        },
-        select: {
-          id: true,
-        },
+      const currentRooms = await this.prismaClient.room.findMany({
+        where: { eventEditionId: id },
       });
-      const oldRoomIds = oldRooms.map((room) => room.id);
 
-      await this.prismaClient.presentationBlock.deleteMany({
-        where: {
-          roomId: {
-            in: oldRoomIds,
+      const roomsToDelete = currentRooms.filter(
+        (room) => !roomName.includes(room.name),
+      );
+
+      for (const room of roomsToDelete) {
+        const hasSessions = await this.prismaClient.presentationBlock.findFirst(
+          {
+            where: { roomId: room.id },
           },
-        },
-      });
+        );
 
-      await this.prismaClient.room.deleteMany({
-        where: {
-          eventEditionId: id,
-        },
-      });
+        if (hasSessions) {
+          throw new BadRequestException(
+            `Não é possível remover a sala "${room.name}" pois ela possui sessões associadas.`,
+          );
+        }
+      }
+      if (roomsToDelete.length > 0) {
+        const roomsToDeleteIds = roomsToDelete.map((r) => r.id);
+
+        await this.prismaClient.presentationBlock.deleteMany({
+          where: { roomId: { in: roomsToDeleteIds } },
+        });
+
+        await this.prismaClient.room.deleteMany({
+          where: { id: { in: roomsToDeleteIds } },
+        });
+      }
+
+      const currentRoomNames = currentRooms.map((r) => r.name);
+      const newRoomNamesToCreate = roomName.filter(
+        (name) => !currentRoomNames.includes(name),
+      );
 
       await Promise.all(
-        roomName.map(async (name) => {
+        newRoomNamesToCreate.map(async (name) => {
           await this.prismaClient.room.create({
             data: {
               eventEditionId: id,
@@ -658,6 +672,31 @@ export class EventEditionService {
         'Não existe nenhum evento com esse identificador',
       );
     }
+    if (updateEventEdition.roomName) {
+      const currentRooms = await this.prismaClient.room.findMany({
+        where: { eventEditionId: id },
+      });
+
+      const newRoomNames = updateEventEdition.roomName;
+      const roomsToDelete = currentRooms.filter(
+        (room) => !newRoomNames.includes(room.name),
+      );
+
+      for (const room of roomsToDelete) {
+        const hasSessions = await this.prismaClient.presentationBlock.findFirst(
+          {
+            where: { roomId: room.id },
+          },
+        );
+
+        if (hasSessions) {
+          throw new BadRequestException(
+            `Não é possível remover a sala "${room.name}" pois ela possui sessões associadas.`,
+          );
+        }
+      }
+    }
+
     this.validateSubmissionPeriod(updateEventEdition);
     const fieldsToIgnore = [
       'organizingCommitteeIds',

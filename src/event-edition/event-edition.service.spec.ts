@@ -13,7 +13,6 @@ const today = new Date();
 describe('EventEditionService', () => {
   let service: EventEditionService;
   let prismaService: PrismaService;
-  let scoringService: ScoringService;
 
   const mockPrismaService = {
     eventEdition: {
@@ -42,6 +41,9 @@ describe('EventEditionService', () => {
       update: jest.fn(),
       delete: jest.fn(),
     },
+    presentationBlock: {
+      findFirst: jest.fn(),
+    },
     $transaction: jest.fn(),
   };
 
@@ -66,7 +68,6 @@ describe('EventEditionService', () => {
 
     service = module.get<EventEditionService>(EventEditionService);
     prismaService = module.get<PrismaService>(PrismaService);
-    scoringService = module.get<ScoringService>(ScoringService);
   });
 
   afterEach(() => {
@@ -512,7 +513,9 @@ describe('EventEditionService', () => {
       Object.assign(updateDto, { name: 'Updated Event' });
 
       const updatedEvent = { ...event, ...updateDto };
+
       mockPrismaService.eventEdition.findUnique.mockResolvedValue(event);
+      mockPrismaService.room.findMany.mockResolvedValue([]);
       mockPrismaService.eventEdition.update.mockResolvedValue(updatedEvent);
 
       const result = await service.update('1', updateDto);
@@ -525,6 +528,36 @@ describe('EventEditionService', () => {
       await expect(
         service.update('1', new UpdateEventEditionDto()),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if trying to remove a room with associated sessions', async () => {
+      const eventId = '1';
+      const event = { id: eventId, name: 'Event 1' };
+
+      const updateDto = new UpdateEventEditionDto();
+      Object.assign(updateDto, {
+        rooms: [{ id: '1', name: 'Sala A' }],
+      });
+
+      mockPrismaService.eventEdition.findUnique.mockResolvedValue(event);
+
+      mockPrismaService.room.findMany.mockResolvedValue([
+        { id: '1', name: 'Sala A', eventEditionId: eventId },
+        { id: '2', name: 'Sala B', eventEditionId: eventId },
+      ]);
+
+      mockPrismaService.presentationBlock.findFirst.mockImplementation(
+        ({ where }) => {
+          if (where.roomId === '2') {
+            return Promise.resolve({ id: 'block1' });
+          }
+          return Promise.resolve(null);
+        },
+      );
+
+      await expect(service.update(eventId, updateDto)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
