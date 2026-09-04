@@ -1,3 +1,4 @@
+import { HttpService } from '@nestjs/axios';
 import {
   BadRequestException,
   Injectable,
@@ -6,6 +7,8 @@ import {
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { UserAccount } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { firstValueFrom } from 'rxjs';
+import { URL } from 'url';
 import { AppException } from '../exceptions/app.exception';
 import { MailingService } from '../mailing/mailing.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,9 +24,6 @@ import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFieldCalculator } from './utils/user-field-calculator';
-import { HttpService } from '@nestjs/axios';
-import { URL } from 'url';
-import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -35,11 +35,9 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    //Trava hardcoded para pessoas nao se inscreverem mais
-    if (true) {
-        throw new BadRequestException(
-          'Período de inscrições encerrado.',
-        );
+    const registrationOpen = process.env.REGISTRATION_OPEN === 'true';
+    if (!registrationOpen) {
+      throw new BadRequestException('Período de inscrições encerrado.');
     }
 
     // Validacao de e-mail @ufba.br para quem nao eh de fora.
