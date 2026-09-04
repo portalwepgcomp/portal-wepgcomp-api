@@ -244,7 +244,7 @@ describe('EvaluationCriteriaService', () => {
     });
 
     it('should handle empty list of criteria', async () => {
-      const criteriaList = [];
+      const criteriaList: any[] = [];
 
       await service.editFromList(criteriaList);
 

@@ -98,7 +98,6 @@ describe('AwardedPresentersService', () => {
         orderBy: {
           evaluatorsAverageScore: 'desc',
         },
-        take: 3,
         include: {
           submission: {
             include: {
@@ -180,7 +179,6 @@ describe('AwardedPresentersService', () => {
         orderBy: {
           publicAverageScore: 'desc',
         },
-        take: 3,
         include: {
           submission: {
             include: {

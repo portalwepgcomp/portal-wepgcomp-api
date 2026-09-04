@@ -2,6 +2,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SubmissionService } from '../submission/submission.service';
 import { ScoringService } from '../scoring/scoring.service';
 import { PresentationService } from './presentation.service';
+import { PresentationBookmarkService } from './presentation-bookmark.service';
+import { PresentationScoringService } from './presentation-scoring.service';
 import { CreatePresentationDto } from './dto/create-presentation.dto';
 import { PresentationResponseDto } from './dto/response-presentation.dto';
 import { AppException } from '../exceptions/app.exception';
@@ -73,10 +75,17 @@ describe('PresentationService', () => {
       recalculateAllScores: jest.fn(),
     } as any;
 
+    const bookmarkService = new PresentationBookmarkService(prismaService);
+    const scoringSubService = new PresentationScoringService(
+      prismaService,
+      scoringService,
+    );
+
     service = new PresentationService(
       prismaService,
       submissionService,
-      scoringService,
+      bookmarkService,
+      scoringSubService,
     );
   });
 
@@ -314,7 +323,7 @@ describe('PresentationService', () => {
       expect(result).toHaveProperty('submission');
       expect(result).toHaveProperty('presentation');
       expect(result.submission.id).toBe('submission1');
-      expect(result.presentation.submissionId).toBe('submission1');
+      expect(result.presentation?.submissionId).toBe('submission1');
     });
 
     it('should create only a submission if presentation details are not provided', async () => {
@@ -322,8 +331,8 @@ describe('PresentationService', () => {
         ...baseCreatePresentationWithSubmissionDto,
       };
 
-      delete createPresentationWithSubmissionDto.presentationBlockId;
-      delete createPresentationWithSubmissionDto.positionWithinBlock;
+      delete (createPresentationWithSubmissionDto as any).presentationBlockId;
+      delete (createPresentationWithSubmissionDto as any).positionWithinBlock;
 
       const mockSubmissionService = service['submissionService'] as any;
       mockSubmissionService.create = jest.fn().mockResolvedValue({
@@ -1027,10 +1036,10 @@ describe('PresentationService', () => {
 
       jest
         .spyOn(prismaService.userAccount, 'findUnique')
-        .mockResolvedValue(mockUser);
+        .mockResolvedValue(mockUser as any);
       jest
         .spyOn(prismaService.submission, 'findMany')
-        .mockResolvedValue(mockSubmissions);
+        .mockResolvedValue(mockSubmissions as any);
 
       const result = await service.listAdvisedPresentations(mockUserId);
 
@@ -1069,7 +1078,7 @@ describe('PresentationService', () => {
 
       jest
         .spyOn(prismaService.userAccount, 'findUnique')
-        .mockResolvedValue(mockUser);
+        .mockResolvedValue(mockUser as any);
 
       await expect(
         service.listAdvisedPresentations(mockUserId),
@@ -1103,7 +1112,7 @@ describe('PresentationService', () => {
 
       jest
         .spyOn(prismaService.userAccount, 'findUnique')
-        .mockResolvedValue(mockUser);
+        .mockResolvedValue(mockUser as any);
       jest.spyOn(prismaService.submission, 'findMany').mockResolvedValue([]);
 
       const result = await service.listAdvisedPresentations(mockUserId);
@@ -1179,10 +1188,10 @@ describe('PresentationService', () => {
 
       jest
         .spyOn(prismaService.userAccount, 'findUnique')
-        .mockResolvedValue(mockUser);
+        .mockResolvedValue(mockUser as any);
       jest
         .spyOn(prismaService.submission, 'findMany')
-        .mockResolvedValue(mockSubmissions);
+        .mockResolvedValue(mockSubmissions as any);
 
       const result = await service.listAdvisedPresentations(mockUserId);
 
@@ -1508,7 +1517,7 @@ describe('PresentationService', () => {
       const mockActiveEvent = {
         id: 'active1',
         name: 'Active Event',
-        endDate: new Date('2025-12-31'),
+        endDate: new Date('2030-12-31'),
       };
 
       (prismaService.eventEdition.findFirst as jest.Mock).mockResolvedValueOnce(

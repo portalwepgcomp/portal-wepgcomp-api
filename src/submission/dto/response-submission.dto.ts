@@ -77,29 +77,31 @@ export class ResponseSubmissionDto {
       ? {
           name: submission.mainAuthor.name,
           email: submission.mainAuthor.email,
-          photoFilePath: submission.mainAuthor.photoFilePath,
-          linkLattes: submission.mainAuthor.linkLattes,
+          photoFilePath: submission.mainAuthor.photoFilePath ?? undefined,
+          linkLattes: submission.mainAuthor.linkLattes ?? undefined,
         }
-      : null;
+      : undefined;
     this.advisor = submission.advisor
       ? {
           name: submission.advisor.name,
           email: submission.advisor.email,
         }
-      : null;
+      : undefined;
     this.eventEditionId = submission.eventEditionId;
     this.title = submission.title;
     this.abstract = submission.abstract;
     this.pdfFile = submission.pdfFile;
     this.phoneNumber = submission.phoneNumber;
-    this.proposedPresentationBlockId = submission.proposedPresentationBlockId;
-    this.proposedPositionWithinBlock = submission.proposedPositionWithinBlock;
-    this.proposedStartTime = proposedStartTime;
-    this.coAdvisor = submission.coAdvisor;
+    this.proposedPresentationBlockId =
+      submission.proposedPresentationBlockId ?? undefined;
+    this.proposedPositionWithinBlock =
+      submission.proposedPositionWithinBlock ?? undefined;
+    this.proposedStartTime = proposedStartTime ?? undefined;
+    this.coAdvisor = submission.coAdvisor ?? undefined;
     this.status = submission.status;
     this.createdAt = submission.createdAt;
     this.updatedAt = submission.updatedAt;
-    this.linkHostedFile = submission.linkHostedFile;
+    this.linkHostedFile = submission.linkHostedFile ?? undefined;
 
     const mainPresentation =
       submission.Presentation && submission.Presentation.length > 0

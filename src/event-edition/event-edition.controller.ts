@@ -66,8 +66,21 @@ export class EventEditionController {
   @Public()
   @Get()
   @ApiQuery({ name: 'search', required: false, type: String })
-  async getAll(@Query('search') search?: string) {
-    return await this.eventEditionService.getAll(search);
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'paginated', required: false, type: Boolean })
+  async getAll(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('paginated') paginated?: boolean,
+  ) {
+    return await this.eventEditionService.getAll(
+      search,
+      page ? Number(page) : undefined,
+      pageSize ? Number(pageSize) : undefined,
+      paginated !== undefined ? String(paginated) === 'true' : undefined,
+    );
   }
 
   @Public()

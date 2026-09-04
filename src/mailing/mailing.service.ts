@@ -11,15 +11,18 @@ import {
   SendGroupEmailDto,
 } from './mailing.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailingTemplateService } from './mailing-template.service';
 
 @Injectable()
 export class MailingService {
   private readonly logger = new Logger(MailingService.name);
   private readonly transporter: nodemailer.Transporter;
+
   constructor(
-    private eventEditionService: EventEditionService,
-    private committeeMemberService: CommitteeMemberService,
-    private prismaClient: PrismaService,
+    private readonly eventEditionService: EventEditionService,
+    private readonly committeeMemberService: CommitteeMemberService,
+    private readonly prismaClient: PrismaService,
+    private readonly templateService: MailingTemplateService,
   ) {
     // Nodemailer transporter setup
     this.transporter = nodemailer.createTransport({
@@ -34,7 +37,8 @@ export class MailingService {
   }
 
   async sendEmail(
-    defaultEmailDto: DefaultEmailDto, esqueciSenha?: boolean,
+    defaultEmailDto: DefaultEmailDto,
+    esqueciSenha?: boolean,
   ): Promise<DefaultEmailResponseDto> {
     try {
       const mailOptions = {
@@ -42,9 +46,13 @@ export class MailingService {
         from: defaultEmailDto.from || process.env.SMTP_FROM_EMAIL,
         subject: defaultEmailDto.subject,
         text: defaultEmailDto.text,
-        html: !esqueciSenha ? this.buildEmailTemplate(
-          defaultEmailDto.html || defaultEmailDto.text,
-        ) : this.buildEmailTemplateEsqueciASenha(defaultEmailDto.html)
+        html: !esqueciSenha
+          ? this.templateService.buildEmailTemplate(
+              defaultEmailDto.html || defaultEmailDto.text || '',
+            )
+          : this.templateService.buildEmailTemplateEsqueciASenha(
+              defaultEmailDto.html || '',
+            ),
       };
 
       await this.transporter.sendMail(mailOptions);
@@ -62,27 +70,23 @@ export class MailingService {
     const coordinator =
       await this.committeeMemberService.findCurrentCoordinator(eventEdition.id);
 
-    const htmlContent = `
-      <p><strong>Nome:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
-      <p><strong>Mensagem:</strong></p>
-      <p>${text.replace(/\n/g, '<br>')}</p>
-    `;
-
     const mailOptions = {
       to: coordinator.userEmail,
       from: process.env.SMTP_FROM_EMAIL,
       replyTo: email,
       subject: 'Contato: WEPGCOMP',
       text: `Nome: ${name}\nEmail: ${email}\n\nMensagem:\n${text}`,
-      html: this.buildEmailTemplate(htmlContent),
+      html: this.templateService.buildContactHtml(name, email, text),
     };
 
     try {
       await this.transporter.sendMail(mailOptions);
       return { message: 'Email sent successfully' };
     } catch (error) {
-      this.logger.error('Falha ao enviar email de contato', (error as Error)?.stack);
+      this.logger.error(
+        'Falha ao enviar email de contato',
+        (error as Error)?.stack,
+      );
       throw new AppException('Erro no envio de email.', 500);
     }
   }
@@ -93,23 +97,16 @@ export class MailingService {
     adminName: string,
     temporaryPassword: string,
   ): Promise<void> {
-    const htmlContent = `
-      <h2>Bem-vindo ao Sistema WEPGCOMP!</h2>
-      <p>Olá <strong>${professorName}</strong>,</p>
-      <p>Seu cadastro foi criado no sistema WEPGCOMP - Portal do Workshop de Estudantes de Pós-graduação em Ciência da Computação por ${adminName} (Super Administrador).</p>
-      <p><strong>Suas credenciais de acesso:</strong></p>
-      <p><strong>Email:</strong> ${professorEmail}</p>
-      <p><strong>Senha temporária:</strong> ${temporaryPassword}</p>
-      <p><strong>Importante:</strong> Recomendamos que você altere sua senha no primeiro acesso através do seu perfil por motivos de segurança.</p>
-      <p>Para acessar o sistema, faça login com seu email e a senha temporária fornecida acima.</p>
-      <p>Se você tiver alguma dúvida, entre em contato com o administrador do sistema.</p>
-    `;
-
     const mailOptions = {
       to: professorEmail,
       from: process.env.SMTP_FROM_EMAIL,
       subject: 'Bem-vindo ao WEPGCOMP - Credenciais de Acesso',
-      html: this.buildEmailTemplate(htmlContent),
+      html: this.templateService.buildProfessorWelcomeHtml(
+        professorName,
+        professorEmail,
+        adminName,
+        temporaryPassword,
+      ),
     };
 
     try {
@@ -125,19 +122,11 @@ export class MailingService {
   async sendEmailConfirmation(email: string, token: string): Promise<void> {
     const confirmationUrl = `${process.env.FRONTEND_URL}/users/confirm-email?token=${token}`;
 
-    const htmlContent = `
-      <h2>Confirmação de Cadastro</h2>
-      <p>Clique no link abaixo para confirmar seu cadastro:</p>
-      <p><a href="${confirmationUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Confirmar Cadastro</a></p>
-      <p>Ou copie e cole este link no seu navegador:</p>
-      <p>${confirmationUrl}</p>
-    `;
-
     const mailOptions = {
       to: email,
       from: process.env.SMTP_FROM_EMAIL,
       subject: 'Confirmação de Cadastro',
-      html: this.buildEmailTemplate(htmlContent),
+      html: this.templateService.buildEmailConfirmationHtml(confirmationUrl),
     };
 
     try {
@@ -151,7 +140,6 @@ export class MailingService {
     }
   }
 
-
   async sendGroupEmail(sendGroupEmailDto: SendGroupEmailDto) {
     const { subject, message, filters } = sendGroupEmailDto;
 
@@ -161,15 +149,15 @@ export class MailingService {
       };
 
       if (filters.roles && filters.roles.length > 0) {
-        whereClause.level = filters.roles.length === 1
-          ? filters.roles[0]
-          : { in: filters.roles };
+        whereClause.level =
+          filters.roles.length === 1 ? filters.roles[0] : { in: filters.roles };
       }
 
       if (filters.profiles && filters.profiles.length > 0) {
-        whereClause.profile = filters.profiles.length === 1
-          ? filters.profiles[0]
-          : { in: filters.profiles };
+        whereClause.profile =
+          filters.profiles.length === 1
+            ? filters.profiles[0]
+            : { in: filters.profiles };
       }
 
       const users = await this.prismaClient.userAccount.findMany({
@@ -207,7 +195,7 @@ export class MailingService {
             from: process.env.SMTP_FROM_EMAIL,
             bcc: batch,
             subject: subject,
-            html: this.buildEmailTemplate(message),
+            html: this.templateService.buildEmailTemplate(message),
             text: message,
           });
 
@@ -221,176 +209,12 @@ export class MailingService {
         success: true,
         sentCount,
         failedCount,
-        message: `Email enviado para ${sentCount} destinatário(s)${failedCount > 0 ? `. ${failedCount} falha(s)` : ''
-          }`,
+        message: `Email enviado para ${sentCount} destinatário(s)${
+          failedCount > 0 ? `. ${failedCount} falha(s)` : ''
+        }`,
       };
     } catch (error) {
       throw error;
     }
   }
-
-  private buildEmailTemplate(message: string): string {
-    const sanitizedMessage = message
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;')
-      .replace(/\n/g, '<br>');
-
-    return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-          }
-          .email-container {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          }
-          .header {
-            background-color: #134252;
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-          }
-          .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
-          }
-          .content {
-            padding: 30px;
-          }
-          .message {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 4px;
-            border-left: 4px solid #134252;
-            margin: 20px 0;
-          }
-          .footer {
-            text-align: center;
-            padding: 20px;
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #eee;
-          }
-          .footer p {
-            margin: 5px 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-container">
-          <div class="header">
-            <h1>Portal WePGCOMP</h1>
-          </div>
-          <div class="content">
-            <div class="message">
-              ${sanitizedMessage}
-            </div>
-          </div>
-          <div class="footer">
-            <p>Esta é uma mensagem automática do Portal WePGCOMP</p>
-            <p>Por favor, não responda a este e-mail</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `;
-  }
-
-
-  private buildEmailTemplateEsqueciASenha(message: string): string {
-
-    return `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-          }
-          .email-container {
-            background-color: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-          }
-          .header {
-            background-color: #134252;
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-          }
-          .header h1 {
-            margin: 0;
-            font-size: 24px;
-            font-weight: 600;
-          }
-          .content {
-            padding: 30px;
-          }
-          .message {
-            background-color: #f9f9f9;
-            padding: 20px;
-            border-radius: 4px;
-            border-left: 4px solid #134252;
-            margin: 20px 0;
-          }
-          .footer {
-            text-align: center;
-            padding: 20px;
-            font-size: 12px;
-            color: #666;
-            border-top: 1px solid #eee;
-          }
-          .footer p {
-            margin: 5px 0;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="email-container">
-          <div class="header">
-            <h1>Portal WePGCOMP</h1>
-          </div>
-          <div class="content">
-            <div class="message">
-              <p>Clique no botão abaixo para redefinir sua senha:</p>
-              <p><a href="${message}" style="background-color: #007bff; color: white; padding: 10px 15px; margin-top: 8px; text-decoration: none; border-radius: 5px;">Redefinir Senha</a></p>
-            </div>
-          </div>
-          <div class="footer">
-            <p>Esta é uma mensagem automática do Portal WePGCOMP</p>
-            <p>Por favor, não responda a este e-mail</p>
-          </div>
-        </div>
-      </body>
-    </html>
-  `;
-  }
-
-
 }

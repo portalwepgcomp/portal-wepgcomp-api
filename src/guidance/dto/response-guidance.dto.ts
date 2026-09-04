@@ -11,10 +11,10 @@ export class ResponseGuidanceDto {
 
   constructor(guidance: Guidance) {
     this.id = guidance.id;
-    this.summary = guidance.summary;
-    this.authorGuidance = guidance.authorGuidance;
-    this.reviewerGuidance = guidance.reviewerGuidance;
-    this.audienceGuidance = guidance.audienceGuidance;
+    this.summary = guidance.summary ?? '';
+    this.authorGuidance = guidance.authorGuidance ?? '';
+    this.reviewerGuidance = guidance.reviewerGuidance ?? '';
+    this.audienceGuidance = guidance.audienceGuidance ?? '';
     this.createdAt = guidance.createdAt;
     this.updatedAt = guidance.updatedAt;
   }

@@ -80,7 +80,7 @@ export class EvaluationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Find evaluations by user' })
-  async findByUser(@Request() req) {
+  async findByUser(@Request() req: any) {
     const userId = req.user.userId;
 
     return await this.evaluationService.findOne(userId);

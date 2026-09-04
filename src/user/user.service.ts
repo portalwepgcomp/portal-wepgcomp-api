@@ -4,48 +4,42 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
-import { UserAccount } from '@prisma/client';
+import {
+  Profile,
+  RegistrationNumberType,
+  UserAccount,
+  UserLevel,
+} from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { AppException } from '../exceptions/app.exception';
-import { MailingService } from '../mailing/mailing.service';
 import { PrismaService } from '../prisma/prisma.service';
-import { generateRandomPassword } from '../utils/password.util';
 import {
   CreateProfessorByAdminDto,
   CreateUserDto,
-  Profile,
-  RegistrationNumberType,
-  UserLevel,
 } from './dto/create-user.dto';
 import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UserFieldCalculator } from './utils/user-field-calculator';
-import { HttpService } from '@nestjs/axios';
-import { URL } from 'url';
-import { firstValueFrom } from 'rxjs';
+import { UserAdminService } from './user-admin.service';
+import { UserVerificationService } from './user-verification.service';
+import { PaginatedResponseDto } from '../shared/dto/paginated-response.dto';
 
 @Injectable()
 export class UserService {
   private readonly logger = new Logger(UserService.name);
 
   constructor(
-    private prismaClient: PrismaService,
-    private jwtService: JwtService,
-    private mailingService: MailingService,
-    private readonly httpService: HttpService,
+    private readonly prismaClient: PrismaService,
+    private readonly verificationService: UserVerificationService,
+    private readonly adminService: UserAdminService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    // Inscrições ficam fechadas por padrão. Para reabrir, defina
-    // REGISTRATION_OPEN=true no ambiente (substitui a antiga trava hardcoded).
     const registrationOpen = process.env.REGISTRATION_OPEN === 'true';
     if (!registrationOpen) {
       throw new BadRequestException('Período de inscrições encerrado.');
     }
 
-    // Validacao de e-mail @ufba.br para quem nao eh de fora.
     if (
       createUserDto.profile === Profile.Presenter ||
       createUserDto.profile === Profile.Professor ||
@@ -59,7 +53,6 @@ export class UserService {
       }
     }
 
-    // Validacao da senha mín 8, 1 letra, 1 número
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d).{8,}$/;
     if (!passwordRegex.test(createUserDto.password)) {
       throw new BadRequestException(
@@ -67,11 +60,9 @@ export class UserService {
       );
     }
 
-    // normaliza string vazia
     const registrationNumber =
       createUserDto.registrationNumber?.trim() || undefined;
 
-    // define tipo padrão se vier número e não informar tipo:
     const registrationNumberType =
       createUserDto.registrationNumberType ??
       (registrationNumber
@@ -82,14 +73,12 @@ export class UserService {
           : RegistrationNumberType.MATRICULA
         : undefined);
 
-    // ouvintes podem não enviar matrícula/CPF; demais perfis exigem número
     if (createUserDto.profile !== Profile.Listener && !registrationNumber) {
       throw new BadRequestException(
         'O número de matrícula é obrigatório para estudantes de doutorado e professores.',
       );
     }
 
-    // checagem de duplicidade por registration_number (independe do tipo)
     if (registrationNumber) {
       const exists = await this.prismaClient.userAccount.findFirst({
         where: { registrationNumber },
@@ -102,7 +91,6 @@ export class UserService {
       }
     }
 
-    // checagem de email duplicado
     const emailExists = await this.prismaClient.userAccount.findUnique({
       where: { email: createUserDto.email },
       select: { id: true },
@@ -111,7 +99,6 @@ export class UserService {
       throw new BadRequestException('Um usuário com esse email já existe.');
     }
 
-    // hash e criação
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
     const shouldBeSuperAdmin =
@@ -120,14 +107,12 @@ export class UserService {
         : false;
 
     let lattesPhotoPath: string | undefined = undefined;
-
     const linkLattes = createUserDto.linkLattes;
 
     if (linkLattes) {
       try {
-        lattesPhotoPath = await this.getLattesPhotoPath(
-          createUserDto.linkLattes,
-        );
+        lattesPhotoPath =
+          await this.adminService.getLattesPhotoPath(linkLattes);
       } catch {
         this.logger.warn(
           'Falha ao buscar foto do Lattes no cadastro. Usuário será criado sem photoPath.',
@@ -157,23 +142,8 @@ export class UserService {
       },
     });
 
-    // Fluxo de verificação por e-mail
     if (!user.isVerified) {
-      const token = await this.generateEmailToken(user.id);
-      await this.prismaClient.emailVerification.create({
-        data: {
-          userId: user.id,
-          emailVerificationToken: token,
-          emailVerificationSentAt: new Date(),
-        },
-      });
-      try {
-        await this.mailingService.sendEmailConfirmation(user.email, token);
-      } catch {
-        this.logger.warn(
-          `Falha ao enviar e-mail de confirmação (userId: ${user.id}).`,
-        );
-      }
+      await this.verificationService.createAndSendVerification(user);
     }
 
     return new ResponseUserDto(user);
@@ -183,98 +153,18 @@ export class UserService {
     createProfessorDto: CreateProfessorByAdminDto,
     adminUserId: string,
   ): Promise<{ user: ResponseUserDto; emailSent: boolean }> {
-    // Validate admin permissions
-    const adminUser = await this.prismaClient.userAccount.findUnique({
-      where: { id: adminUserId },
-      select: { id: true, name: true, level: true },
-    });
-
-    if (!adminUser || adminUser.level !== UserLevel.Superadmin) {
-      throw new AppException(
-        'Apenas super administradores podem criar professores.',
-        403,
-      );
-    }
-
-    // Validate @ufba.br email
-    if (!createProfessorDto.email.toLowerCase().endsWith('@ufba.br')) {
-      throw new BadRequestException(
-        'Apenas e-mails @ufba.br podem ser cadastrados para professores.',
-      );
-    }
-
-    // Check for duplicate email
-    const emailExists = await this.prismaClient.userAccount.findUnique({
-      where: { email: createProfessorDto.email },
-      select: { id: true },
-    });
-    if (emailExists) {
-      throw new BadRequestException('Um usuário com esse email já existe.');
-    }
-
-    // Check for duplicate registration number
-    const registrationExists = await this.prismaClient.userAccount.findFirst({
-      where: { registrationNumber: createProfessorDto.registrationNumber },
-      select: { id: true },
-    });
-    if (registrationExists) {
-      throw new BadRequestException('Um usuário com essa matrícula já existe.');
-    }
-
-    // Generate random password
-    const temporaryPassword = generateRandomPassword(12);
-    const hashedPassword = await bcrypt.hash(temporaryPassword, 10);
-
-    // Create professor user
-    const user = await this.prismaClient.userAccount.create({
-      data: {
-        name: createProfessorDto.name,
-        email: createProfessorDto.email,
-        password: hashedPassword,
-        profile: Profile.Professor,
-        level: UserLevel.Default, // Professors start as default level
-        registrationNumber: createProfessorDto.registrationNumber,
-        registrationNumberType:
-          createProfessorDto.registrationNumberType ??
-          RegistrationNumberType.MATRICULA,
-        photoFilePath: createProfessorDto.photoFilePath,
-        isActive: true, // Professors created by admin are immediately active
-        isVerified: true, // Skip email verification for admin-created users
-      },
-    });
-
-    // Send welcome email with credentials
-    let emailSent = false;
-    try {
-      await this.mailingService.sendProfessorWelcomeEmail(
-        user.email,
-        user.name,
-        adminUser.name,
-        temporaryPassword,
-      );
-      emailSent = true;
-    } catch {
-      this.logger.warn(
-        `Falha ao enviar e-mail de boas-vindas (userId: ${user.id}).`,
-      );
-      // We don't throw here because the user was created successfully
-      // The admin should check the emailSent flag and manually share credentials if needed
-    }
-
-    return {
-      user: new ResponseUserDto(user),
-      emailSent, // Indicates whether the email was sent successfully
-    };
+    return this.adminService.createProfessorByAdmin(
+      createProfessorDto,
+      adminUserId,
+    );
   }
 
   async findByEmail(email: string) {
-    const user = await this.prismaClient.userAccount.findUnique({
+    return this.prismaClient.userAccount.findUnique({
       where: {
         email,
       },
     });
-
-    return user;
   }
 
   async checkProfessorShouldBeSuperAdmin(): Promise<boolean> {
@@ -284,7 +174,7 @@ export class UserService {
       },
     });
 
-    return professorsCount > 0 ? false : true;
+    return professorsCount === 0;
   }
 
   async remove(id: string) {
@@ -308,44 +198,52 @@ export class UserService {
   }
 
   async toggleUserActivation(userId: string, activated: boolean) {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new AppException('Usuário não encontrado', 404);
-    }
-
-    if (activated && user.isActive) {
-      throw new AppException('O usuário já está ativo', 409);
-    }
-
-    if (!activated && !user.isActive) {
-      throw new AppException('O usuário já está desativado', 409);
-    }
-
-    const newStatus = activated ? true : false;
-
-    const updatedUser = await this.prismaClient.userAccount.update({
-      where: { id: userId },
-      data: {
-        isActive: newStatus,
-      },
-    });
-
-    return updatedUser;
+    return this.adminService.toggleUserActivation(userId, activated);
   }
 
   isAdmin(user: UserAccount): boolean {
     return ['Admin', 'Superadmin'].includes(user.level);
   }
 
+  /**
+   * Lista usuários com suporte a busca, filtros por papéis/perfis e paginação por envelope (P3.2).
+   */
   async findAll(
     roles?: string | string[],
     profiles?: string | string[],
     status?: string,
     search?: string,
-  ): Promise<ResponseUserDto[]> {
+    page?: number,
+    pageSize?: number,
+    paginated?: false,
+  ): Promise<ResponseUserDto[]>;
+  async findAll(
+    roles?: string | string[],
+    profiles?: string | string[],
+    status?: string,
+    search?: string,
+    page?: number,
+    pageSize?: number,
+    paginated?: true,
+  ): Promise<PaginatedResponseDto<ResponseUserDto>>;
+  async findAll(
+    roles?: string | string[],
+    profiles?: string | string[],
+    status?: string,
+    search?: string,
+    page?: number,
+    pageSize?: number,
+    paginated?: boolean,
+  ): Promise<ResponseUserDto[] | PaginatedResponseDto<ResponseUserDto>>;
+  async findAll(
+    roles?: string | string[],
+    profiles?: string | string[],
+    status?: string,
+    search?: string,
+    page?: number,
+    pageSize?: number,
+    paginated?: boolean,
+  ): Promise<ResponseUserDto[] | PaginatedResponseDto<ResponseUserDto>> {
     const whereClause: any = {};
     if (roles && Array.isArray(roles)) {
       whereClause.level = { in: roles as UserLevel[] };
@@ -360,7 +258,7 @@ export class UserService {
     }
 
     if (status) {
-      whereClause.isActive = status === 'Active' ? true : false;
+      whereClause.isActive = status === 'Active';
     }
 
     const searchTerm = typeof search === 'string' ? search.trim() : '';
@@ -371,8 +269,21 @@ export class UserService {
       ];
     }
 
+    const total =
+      typeof this.prismaClient.userAccount?.count === 'function'
+        ? await this.prismaClient.userAccount.count({ where: whereClause })
+        : 0;
+
+    const isPaginatedRequested = paginated === true || (page !== undefined && pageSize !== undefined);
+    const currentPage = page && page > 0 ? page : 1;
+    const limit = pageSize && pageSize > 0 ? pageSize : 20;
+    const skip = isPaginatedRequested ? (currentPage - 1) * limit : undefined;
+    const take = isPaginatedRequested ? limit : undefined;
+
     const users = await this.prismaClient.userAccount.findMany({
       where: whereClause,
+      skip,
+      take,
       select: {
         id: true,
         name: true,
@@ -400,63 +311,23 @@ export class UserService {
       where: { mainAuthorId: { in: userIds } },
       select: { mainAuthorId: true },
     });
+
     const usersWithSubmission = new Set(submissions.map((s) => s.mainAuthorId));
 
-    return users.map((user) => ({
+    const items = users.map((user) => ({
       ...new ResponseUserDto(user as any),
       hasSubmission: usersWithSubmission.has(user.id),
     }));
-  }
 
-  private async generateEmailToken(userId: string): Promise<string> {
-    const payload = { id: userId };
-    return this.jwtService.sign(payload, { expiresIn: '24h' });
-  }
+    if (paginated) {
+      return PaginatedResponseDto.create(items, total, currentPage, limit);
+    }
 
-  private async isTokenUsed(token: string): Promise<boolean> {
-    const tokenRecord = await this.prismaClient.emailVerification.findFirst({
-      where: {
-        emailVerificationToken: token,
-        emailVerifiedAt: {
-          not: null,
-        },
-      },
-    });
-
-    return !!tokenRecord;
+    return items;
   }
 
   async confirmEmail(token: string): Promise<boolean> {
-    try {
-      const tokenUsed = await this.isTokenUsed(token);
-      if (tokenUsed) {
-        throw new AppException('Token já utilizado.', 400);
-      }
-      const { id } = this.jwtService.verify(token);
-      const user = await this.prismaClient.$transaction(async (prisma) => {
-        const updatedUser = await prisma.userAccount.update({
-          where: { id },
-          data: { isVerified: true },
-        });
-
-        await prisma.emailVerification.update({
-          where: { userId: id },
-          data: { emailVerifiedAt: new Date() },
-        });
-
-        return updatedUser;
-      });
-
-      return !!user;
-    } catch (error) {
-      if (
-        error instanceof TokenExpiredError ||
-        error instanceof JsonWebTokenError
-      ) {
-        throw new AppException('Token inválido ou expirado.', 400);
-      }
-      throw error;
-    }
+    return this.verificationService.confirmEmail(token);
   }
 
   async updateRegistrationNumber(
@@ -469,237 +340,23 @@ export class UserService {
     });
   }
 
-  // --- ENHANCED ROLE MANAGEMENT SYSTEM ---
-
-  /**
-   * Approves a teacher - sets isTeacherActive to true
-   * Only Admin and Superadmin can approve teachers
-   */
   async approveTeacher(id: string): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    if (user.profile !== Profile.Professor) {
-      throw new BadRequestException('Apenas professores podem ser aprovados.');
-    }
-
-    return this.prismaClient.userAccount.update({
-      where: { id: id },
-      data: { isTeacherActive: true },
-    });
+    return this.adminService.approveTeacher(id);
   }
 
-  /**
-   * Approves a presenter - sets isPresenterActive to true
-   * Only Admin and Superadmin can approve presenters
-   */
   async approvePresenter(id: string): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    if (user.profile !== Profile.Presenter) {
-      throw new BadRequestException(
-        'Apenas apresentadores podem ser aprovados.',
-      );
-    }
-
-    return this.prismaClient.userAccount.update({
-      where: { id: id },
-      data: { isPresenterActive: true },
-    });
+    return this.adminService.approvePresenter(id);
   }
 
   async editUserBySuperAdmin(
     email: string,
-
     updateUserDto: UpdateUserDto,
     superadminEmail: string,
   ): Promise<ResponseUpdatedUserDto> {
-    const decodedEmail = decodeURIComponent(email);
-
-    const existingUser = await this.findUserByEmailOrFail(decodedEmail);
-
-    await this.validateEmailRules(updateUserDto, existingUser);
-
-    await this.validateBusinessRules(decodedEmail, updateUserDto, existingUser);
-
-    const processedData = this.processUpdateData(updateUserDto, existingUser);
-
-    processedData.updatedBy = superadminEmail;
-
-    let photoPathToUpdate: string | null | undefined = undefined;
-
-    if ('linkLattes' in updateUserDto) {
-      const newLinkLattes = updateUserDto.linkLattes;
-
-      if (newLinkLattes) {
-        try {
-          photoPathToUpdate = await this.getLattesPhotoPath(newLinkLattes);
-        } catch {
-          this.logger.warn(
-            'Falha ao atualizar foto do Lattes. Photo Path será removido.',
-          );
-          photoPathToUpdate = null;
-        }
-      } else {
-        photoPathToUpdate = null;
-      }
-    }
-
-    if (photoPathToUpdate !== undefined) {
-      processedData.photoFilePath = photoPathToUpdate;
-    }
-
-    const updatedUser = await this.updateUser(decodedEmail, processedData);
-
-    return new ResponseUpdatedUserDto(updatedUser);
-  }
-
-  private async findUserByEmailOrFail(email: string): Promise<UserAccount> {
-    const user = await this.prismaClient.userAccount.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado.');
-    }
-
-    return user;
-  }
-
-  private async validateEmailRules(
-    updateData: UpdateUserDto,
-    existingUser: UserAccount,
-  ): Promise<void> {
-    if (updateData.email && updateData.email !== existingUser.email) {
-      const finalProfile = updateData.profile ?? existingUser.profile;
-
-      if (finalProfile !== Profile.Listener) {
-        if (!updateData.email.toLowerCase().endsWith('@ufba.br')) {
-          throw new BadRequestException(
-            'Apenas usuários com perfil "Listener" podem ter email diferente de @ufba.br.',
-          );
-        }
-      }
-
-      const emailExists = await this.prismaClient.userAccount.findUnique({
-        where: { email: updateData.email },
-        select: { id: true },
-      });
-
-      if (emailExists) {
-        throw new BadRequestException(
-          'Este email já está em uso por outro usuário.',
-        );
-      }
-    }
-  }
-
-  private async validateBusinessRules(
-    email: string,
-    updateData: UpdateUserDto,
-    existingUser: UserAccount,
-  ): Promise<void> {
-    await this.validateRegistrationNumberUniqueness(updateData, existingUser);
-
-    if (updateData.profile) {
-      const emailToValidate = updateData.email ?? email;
-      this.validateProfileEmailRequirements(
-        emailToValidate,
-        updateData.profile,
-      );
-    }
-
-    // Prevent demoting the last superadmin
-    if (updateData.level && updateData.level !== UserLevel.Superadmin) {
-      const isSuperadmin =
-        existingUser.isSuperadmin ||
-        existingUser.level === UserLevel.Superadmin;
-      if (isSuperadmin) {
-        const superadminCount = await this.prismaClient.userAccount.count({
-          where: {
-            OR: [{ isSuperadmin: true }, { level: UserLevel.Superadmin }],
-          },
-        });
-
-        if (superadminCount <= 1) {
-          throw new BadRequestException(
-            'Não é possível rebaixar o último superadministrador do sistema.',
-          );
-        }
-      }
-    }
-  }
-
-  private processUpdateData(
-    updateData: UpdateUserDto,
-    existingUser: UserAccount,
-  ): any {
-    const cleanData = this.removeUndefinedFields(updateData);
-    const derivedFields = UserFieldCalculator.calculateDerivedFields(
-      updateData.profile ?? existingUser.profile,
-      updateData.level ?? existingUser.level,
-      updateData,
-    );
-
-    return { ...cleanData, ...derivedFields };
-  }
-
-  private async updateUser(email: string, data: any): Promise<UserAccount> {
-    return this.prismaClient.userAccount.update({
-      where: { email },
-      data,
-    });
-  }
-
-  private async validateRegistrationNumberUniqueness(
-    updateData: UpdateUserDto,
-    existingUser: UserAccount,
-  ): Promise<void> {
-    if (
-      !updateData.registrationNumber ||
-      updateData.registrationNumber === existingUser.registrationNumber
-    ) {
-      return;
-    }
-
-    const exists = await this.prismaClient.userAccount.findFirst({
-      where: {
-        registrationNumber: updateData.registrationNumber,
-        id: { not: existingUser.id },
-      },
-      select: { id: true },
-    });
-
-    if (exists) {
-      throw new BadRequestException('Um usuário com essa matrícula já existe.');
-    }
-  }
-
-  private validateProfileEmailRequirements(
-    email: string,
-    profile?: Profile,
-  ): void {
-    if (profile && profile !== Profile.Listener) {
-      if (!email.toLowerCase().endsWith('@ufba.br')) {
-        throw new BadRequestException(`${profile} deve ter um email @ufba.br`);
-      }
-    }
-  }
-
-  private removeUndefinedFields(data: any): any {
-    return Object.fromEntries(
-      Object.entries(data).filter(([, value]) => value !== undefined),
+    return this.adminService.editUserBySuperAdmin(
+      email,
+      updateUserDto,
+      superadminEmail,
     );
   }
 
@@ -709,41 +366,9 @@ export class UserService {
     });
 
     if (!user) {
-      // Dispara a exceção 404 Not Found
       throw new NotFoundException(`Usuário com ID ${userId} não encontrado.`);
     }
 
     return user;
-  }
-
-  private async getLattesPhotoPath(linkLattes: string): Promise<string> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.get(linkLattes, {
-          timeout: 7000,
-        }),
-      );
-      const idUrl = (response as any).request.res.responseUrl;
-
-      if (!idUrl || !idUrl.includes('buscatextual.cnpq.br')) {
-        throw new Error(
-          'Não foi possível obter a URL final do Lattes ou a URL é inesperada.',
-        );
-      }
-
-      const parsedUrl = new URL(idUrl);
-      const id = parsedUrl.searchParams.get('id');
-
-      if (!id) {
-        throw new Error('Parâmetro "id" não encontrado na URL final.');
-      }
-
-      return `https://servicosweb.cnpq.br/wspessoa/servletrecuperafoto?tipo=1&id=${id}`;
-    } catch {
-      this.logger.error('Erro ao buscar foto do Lattes.');
-      throw new BadRequestException(
-        `Não foi possível processar o Lattes ID numérico: ${linkLattes}. Verifique o ID e tente novamente.`,
-      );
-    }
   }
 }

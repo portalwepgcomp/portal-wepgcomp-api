@@ -1,23 +1,36 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './exceptions/filter';
+import { LoggingInterceptor } from './interceptors/logging.interceptor';
 
-function resolveCorsOrigins(): string[] | boolean {
-  // CORS_ORIGINS aceita uma lista separada por vírgula; cai para FRONTEND_URL.
-  const raw = process.env.CORS_ORIGINS ?? process.env.FRONTEND_URL ?? '';
-  const origins = raw
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean);
+function resolveCorsOrigins(): (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void {
+  return (origin, callback) => {
+    // Permite chamadas locais, server-to-server ou ferramentas como Postman/Curl sem header Origin
+    if (!origin) {
+      return callback(null, true);
+    }
 
-  // Sem configuração explícita: libera tudo apenas fora de produção.
-  if (origins.length === 0) {
-    return process.env.NODE_ENV === 'production' ? false : true;
-  }
+    const raw = process.env.CORS_ORIGINS ?? process.env.FRONTEND_URL ?? 'http://localhost:3000,http://127.0.0.1:3000';
+    const allowed = raw
+      .split(',')
+      .map((o) => o.trim())
+      .filter(Boolean);
 
-  return origins;
+    // Permite qualquer localhost/127.0.0.1 em desenvolvimento ou origens explicitamente configuradas
+    if (
+      allowed.includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:') ||
+      process.env.NODE_ENV !== 'production'
+    ) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('Bloqueado pela política de CORS.'), false);
+  };
 }
 
 async function bootstrap() {
@@ -30,19 +43,30 @@ async function bootstrap() {
   app.enableCors({
     origin: resolveCorsOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
     credentials: true,
   });
 
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      // Remove campos não declarados nos DTOs. forbidNonWhitelisted foi
-      // mantido desligado de propósito: vários DTOs ainda estão incompletos e
-      // o front pode enviar campos extras; rejeitar com 400 quebraria fluxos.
+      // Remove campos não declarados nos DTOs. forbidNonWhitelisted
+      // rejeita com 400 se o front enviar campos extras.
       whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new LoggingInterceptor());
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('WEPGCOMP API')
+    .setDescription('Portal WEPGCOMP - API documentation')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, document);
 
   await app.listen(process.env.PORT || 3000, '0.0.0.0');
 }

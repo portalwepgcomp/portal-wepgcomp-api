@@ -1,11 +1,22 @@
 import { Module } from '@nestjs/common';
-import { PresentationBlockService } from './presentation-block.service';
-import { PresentationBlockController } from './presentation-block.controller';
 import { ScoringModule } from '../scoring/scoring.module';
+import { PresentationBlockAllocationService } from './presentation-block-allocation.service';
+import { PresentationBlockController } from './presentation-block.controller';
+import { PresentationBlockTimeService } from './presentation-block-time.service';
+import { PresentationBlockService } from './presentation-block.service';
 
 @Module({
   controllers: [PresentationBlockController],
-  providers: [PresentationBlockService],
+  providers: [
+    PresentationBlockService,
+    PresentationBlockTimeService,
+    PresentationBlockAllocationService,
+  ],
   imports: [ScoringModule],
+  exports: [
+    PresentationBlockService,
+    PresentationBlockTimeService,
+    PresentationBlockAllocationService,
+  ],
 })
 export class PresentationBlockModule {}

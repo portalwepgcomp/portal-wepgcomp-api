@@ -256,25 +256,25 @@ async function main() {
     data: [
       {
         eventEditionId: eventEdition.id,
-        userId: superAdminUser.id,
+        userId: superAdminUser!.id,
         level: CommitteeLevel.Coordinator,
         role: CommitteeRole.OrganizingCommittee,
       },
       {
         eventEditionId: eventEdition.id,
-        userId: adminProfUser.id,
+        userId: adminProfUser!.id,
         level: CommitteeLevel.Committee,
         role: CommitteeRole.OrganizingCommittee,
       },
       {
         eventEditionId: eventEdition.id,
-        userId: adminDocUser.id,
+        userId: adminDocUser!.id,
         level: CommitteeLevel.Committee,
         role: CommitteeRole.StudentVolunteers,
       },
       {
         eventEditionId: eventEdition.id,
-        userId: adminListUser.id,
+        userId: adminListUser!.id,
         level: CommitteeLevel.Committee,
         role: CommitteeRole.StudentVolunteers,
       },

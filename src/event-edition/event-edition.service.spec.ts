@@ -1,9 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEditionService } from './event-edition.service';
+import { EventEditionCommitteeService } from './event-edition-committee.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateEventEditionDto } from './dto/create-event-edition.dto';
-import { UpdateEventEditionDto } from './dto/update-event-edition.dto';
+import {
+  UpdateEventEditionDto,
+  UpdateFromEventEditionFormDto,
+} from './dto/update-event-edition.dto';
 import { EventEditionResponseDto } from './dto/event-edition-response';
 import { ScoringService } from '../scoring/scoring.service';
 
@@ -51,6 +55,7 @@ describe('EventEditionService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EventEditionService,
+        EventEditionCommitteeService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -105,7 +110,12 @@ describe('EventEditionService', () => {
       mockPrismaService.eventEdition.create.mockResolvedValue(createdEvent);
 
       const result = await service.create(createDto);
-      expect(result).toEqual(new EventEditionResponseDto(createdEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({
+          ...createdEvent,
+          roomName: ['Auditório Principal'],
+        }),
+      );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalledWith({
         data: {
           ...createDto,
@@ -156,7 +166,12 @@ describe('EventEditionService', () => {
 
       const result = await service.create(createDto);
 
-      expect(result).toEqual(new EventEditionResponseDto(createdEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({
+          ...createdEvent,
+          roomName: ['Auditório Principal'],
+        }),
+      );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: 'Event with Coordinator',
@@ -198,7 +213,12 @@ describe('EventEditionService', () => {
 
       const result = await service.create(createDto);
 
-      expect(result).toEqual(new EventEditionResponseDto(createdEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({
+          ...createdEvent,
+          roomName: ['Auditório Principal'],
+        }),
+      );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalled();
       expect(mockPrismaService.userAccount.findUnique).toHaveBeenCalledWith({
         where: { id: 'invalid123' },
@@ -283,11 +303,19 @@ describe('EventEditionService', () => {
       mockPrismaService.evaluationCriteria.findMany.mockResolvedValue(
         evaluationCriteria,
       );
+      mockPrismaService.room.findMany.mockResolvedValue([
+        { name: 'Sala Copiada', description: '' },
+      ]);
       mockPrismaService.eventEdition.create.mockResolvedValue(createdEvent);
 
       const result = await service.create(createDto);
 
-      expect(result).toEqual(new EventEditionResponseDto(createdEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({
+          ...createdEvent,
+          roomName: ['Sala Copiada'],
+        }),
+      );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: 'Event with Criteria',
@@ -351,7 +379,12 @@ describe('EventEditionService', () => {
 
       const result = await service.create(createDto);
 
-      expect(result).toEqual(new EventEditionResponseDto(createdEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({
+          ...createdEvent,
+          roomName: ['Auditório Principal'],
+        }),
+      );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           name: 'Event without Active Event',
@@ -423,19 +456,23 @@ describe('EventEditionService', () => {
           name: 'Event 1',
           createdAt: new Date(),
           updatedAt: new Date(),
+          rooms: [],
         },
         {
           id: '2',
           name: 'Event 2',
           createdAt: new Date(),
           updatedAt: new Date(),
+          rooms: [],
         },
       ];
       mockPrismaService.eventEdition.findMany.mockResolvedValue(events);
 
       const result = await service.getAll();
       expect(result).toEqual(
-        events.map((event) => new EventEditionResponseDto(event)),
+        events.map(
+          (event) => new EventEditionResponseDto({ ...event, roomName: [] }),
+        ),
       );
       expect(mockPrismaService.eventEdition.findMany).toHaveBeenCalled();
     });
@@ -448,13 +485,21 @@ describe('EventEditionService', () => {
         name: 'Event 1',
         createdAt: new Date(),
         updatedAt: new Date(),
+        rooms: [],
       };
       mockPrismaService.eventEdition.findUnique.mockResolvedValue(event);
 
       const result = await service.getById('1');
-      expect(result).toEqual(new EventEditionResponseDto(event));
+      expect(result).toEqual(
+        new EventEditionResponseDto({ ...event, roomName: [] }),
+      );
       expect(mockPrismaService.eventEdition.findUnique).toHaveBeenCalledWith({
         where: { id: '1' },
+        include: {
+          rooms: {
+            select: { name: true },
+          },
+        },
       });
     });
 
@@ -474,17 +519,25 @@ describe('EventEditionService', () => {
         startDate: new Date(year, 0, 1),
         createdAt: new Date(),
         updatedAt: new Date(),
+        rooms: [],
       };
       mockPrismaService.eventEdition.findFirst.mockResolvedValue(event);
 
       const result = await service.getByYear(year);
 
-      expect(result).toEqual(new EventEditionResponseDto(event));
+      expect(result).toEqual(
+        new EventEditionResponseDto({ ...event, roomName: [] }),
+      );
       expect(mockPrismaService.eventEdition.findFirst).toHaveBeenCalledWith({
         where: {
           startDate: {
             gte: new Date(year, 0, 1),
             lt: new Date(year + 1, 0, 1),
+          },
+        },
+        include: {
+          rooms: {
+            select: { name: true },
           },
         },
       });
@@ -502,6 +555,11 @@ describe('EventEditionService', () => {
             lt: new Date(year + 1, 0, 1),
           },
         },
+        include: {
+          rooms: {
+            select: { name: true },
+          },
+        },
       });
     });
   });
@@ -512,14 +570,18 @@ describe('EventEditionService', () => {
       const updateDto = new UpdateEventEditionDto();
       Object.assign(updateDto, { name: 'Updated Event' });
 
-      const updatedEvent = { ...event, ...updateDto };
+      const updatedEvent = { ...event, ...updateDto, rooms: [] };
 
-      mockPrismaService.eventEdition.findUnique.mockResolvedValue(event);
+      mockPrismaService.eventEdition.findUnique
+        .mockResolvedValueOnce(event)
+        .mockResolvedValueOnce(updatedEvent);
       mockPrismaService.room.findMany.mockResolvedValue([]);
       mockPrismaService.eventEdition.update.mockResolvedValue(updatedEvent);
 
       const result = await service.update('1', updateDto);
-      expect(result).toEqual(new EventEditionResponseDto(updatedEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({ ...updatedEvent, roomName: [] }),
+      );
     });
 
     it('should throw an error if event not found', async () => {
@@ -534,9 +596,9 @@ describe('EventEditionService', () => {
       const eventId = '1';
       const event = { id: eventId, name: 'Event 1' };
 
-      const updateDto = new UpdateEventEditionDto();
+      const updateDto = new UpdateFromEventEditionFormDto();
       Object.assign(updateDto, {
-        rooms: [{ id: '1', name: 'Sala A' }],
+        roomName: ['Sala A'],
       });
 
       mockPrismaService.eventEdition.findUnique.mockResolvedValue(event);
@@ -555,17 +617,19 @@ describe('EventEditionService', () => {
         },
       );
 
-      await expect(service.update(eventId, updateDto)).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.updateFromEventEditionForm(eventId, updateDto),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
   describe('setActive', () => {
     it('should set the event as active and deactivate others', async () => {
       const event = { id: '1', name: 'Event 1', isActive: false };
-      const updatedEvent = { ...event, isActive: true };
-      mockPrismaService.eventEdition.findUnique.mockResolvedValue(event);
+      const updatedEvent = { ...event, isActive: true, rooms: [] };
+      mockPrismaService.eventEdition.findUnique
+        .mockResolvedValueOnce(event)
+        .mockResolvedValueOnce(updatedEvent);
       mockPrismaService.$transaction.mockImplementation(async (cb) =>
         cb(prismaService),
       );
@@ -574,7 +638,9 @@ describe('EventEditionService', () => {
       mockPrismaService.eventEdition.update.mockResolvedValue(updatedEvent);
 
       const result = await service.setActive('1');
-      expect(result).toEqual(new EventEditionResponseDto(updatedEvent));
+      expect(result).toEqual(
+        new EventEditionResponseDto({ ...updatedEvent, roomName: [] }),
+      );
     });
 
     it('should throw an error if event not found', async () => {
@@ -591,7 +657,9 @@ describe('EventEditionService', () => {
       mockPrismaService.eventEdition.delete.mockResolvedValue(event);
 
       const result = await service.delete('1');
-      expect(result).toEqual(new EventEditionResponseDto(event));
+      expect(result).toEqual(
+        new EventEditionResponseDto({ ...event, roomName: [] }),
+      );
     });
 
     it('should throw an error if event not found', async () => {

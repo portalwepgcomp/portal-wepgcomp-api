@@ -9,7 +9,7 @@ export class EvaluationService {
 
   // Create or update evaluation
   async create(evaluations: CreateEvaluationDto[]) {
-    const results = [];
+    const results: any[] = [];
 
     for (const evaluation of evaluations) {
       // Verify if presentation exists

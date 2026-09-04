@@ -7,7 +7,7 @@ import {
   Res,
   UploadedFile,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -34,15 +34,17 @@ export class UploadsController {
 
   @Post()
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: join(process.cwd(), 'storage'),
-      filename: (req, file, cb) => {
-        const safe = formatArchiveName(file.originalname);
-        cb(null, safe);
-      },
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'storage'),
+        filename: (req, file, cb) => {
+          const safe = formatArchiveName(file.originalname);
+          cb(null, safe);
+        },
+      }),
     }),
-  }))
+  )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Faz upload de um arquivo PDF' })
   @ApiBody({

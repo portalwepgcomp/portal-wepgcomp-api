@@ -5,7 +5,7 @@ export class UserFieldCalculator {
   static calculateDerivedFields(
     profile: Profile,
     level: UserLevel,
-    updateData: any
+    updateData: any,
   ): Partial<UserAccount> {
     const derived: any = {};
 
@@ -20,12 +20,13 @@ export class UserFieldCalculator {
   private static setRegistrationNumberType(
     derived: any,
     profile: Profile,
-    updateData: any
+    updateData: any,
   ): void {
     if (updateData.registrationNumber && !updateData.registrationNumberType) {
-      derived.registrationNumberType = profile === Profile.Listener
-        ? RegistrationNumberType.CPF
-        : RegistrationNumberType.MATRICULA;
+      derived.registrationNumberType =
+        profile === Profile.Listener
+          ? RegistrationNumberType.CPF
+          : RegistrationNumberType.MATRICULA;
     }
   }
 
@@ -82,7 +83,7 @@ export class UserFieldCalculator {
   private static applyConsistencyRules(
     derived: any,
     profile: Profile,
-    level: UserLevel
+    level: UserLevel,
   ): void {
     if (level === UserLevel.Superadmin) {
       derived.isSuperadmin = true;

@@ -60,8 +60,8 @@ describe('PresentationController', () => {
           status: 'ToPresent',
           createdAt: new Date('2024-12-27T15:50:13.125Z'),
           updatedAt: new Date('2024-12-27T15:50:13.125Z'),
-          publicAverageScore: null,
-          evaluatorsAverageScore: null,
+          publicAverageScore: undefined,
+          evaluatorsAverageScore: undefined,
         },
         {
           id: 'c4074556-f78b-4f34-baa3-cabebcdd9d01',
@@ -71,8 +71,8 @@ describe('PresentationController', () => {
           status: 'ToPresent',
           createdAt: new Date('2024-12-27T15:50:13.129Z'),
           updatedAt: new Date('2024-12-27T15:50:13.129Z'),
-          publicAverageScore: null,
-          evaluatorsAverageScore: null,
+          publicAverageScore: undefined,
+          evaluatorsAverageScore: undefined,
         },
       ];
 

@@ -75,7 +75,7 @@ describe('EvaluationCriteriaController', () => {
     });
 
     it('should handle empty array of criteria', async () => {
-      const emptyPayload = [];
+      const emptyPayload: any[] = [];
       const mockResponse = { count: 0 };
 
       mockEvaluationCriteriaService.createFromList.mockResolvedValue(
@@ -127,7 +127,7 @@ describe('EvaluationCriteriaController', () => {
     });
 
     it('should handle empty array of criteria for update', async () => {
-      const emptyPayload = [];
+      const emptyPayload: any[] = [];
       const mockResponse = { count: 0 };
 
       mockEvaluationCriteriaService.editFromList.mockResolvedValue(

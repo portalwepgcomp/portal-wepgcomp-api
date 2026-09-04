@@ -92,7 +92,7 @@ describe('PresentationBlockController', () => {
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toBe(2);
       expect(result[0]).toBeInstanceOf(ResponsePresentationBlockDto);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, eventEditionId);
+      expect(service.findAll).toHaveBeenCalledWith('', eventEditionId);
     });
   });
 

@@ -41,7 +41,7 @@ export class PresentationBlockController {
     @Param('eventEditionId') eventEditionId: string,
   ): Promise<ResponsePresentationBlockDto[]> {
     const presentationBlocks = await this.presentationBlockService.findAll(
-      undefined,
+      '',
       eventEditionId,
     );
 
@@ -80,7 +80,7 @@ export class PresentationBlockController {
   @Get(':id')
   async findOne(
     @Param('id') id: string,
-  ): Promise<ResponsePresentationBlockDto> {
+  ): Promise<ResponsePresentationBlockDto | null> {
     // try exception
     let presentationBlock = null;
     try {
@@ -128,7 +128,7 @@ export class PresentationBlockController {
 
   async userLoader(
     userId: string,
-  ): Promise<{ id: string; name: string; email: string }> {
+  ): Promise<{ id: string; name: string; email: string } | null> {
     const user = await this.presentationBlockService.findUserById(userId);
     return user ? { id: user.id, name: user.name, email: user.email } : null;
   }

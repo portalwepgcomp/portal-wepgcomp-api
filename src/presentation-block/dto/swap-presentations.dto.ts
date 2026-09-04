@@ -1,4 +1,5 @@
-import { IsUUID } from 'class-validator';
+import { IsArray, ValidateNested, IsUUID } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class SwapPresentationsDto {
   @IsUUID()
@@ -8,5 +9,8 @@ export class SwapPresentationsDto {
 }
 
 export class SwapMultiplePresentationsDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SwapPresentationsDto)
   presentations: SwapPresentationsDto[];
 }

@@ -55,17 +55,21 @@ export class UploadsService {
     try {
       const stats = statSync(filePath);
       if (!stats.isFile()) {
-        throw new BadRequestException('O caminho especificado não é um arquivo.');
+        throw new BadRequestException(
+          'O caminho especificado não é um arquivo.',
+        );
       }
 
       unlinkSync(filePath);
       this.logger.log(`Arquivo deletado: ${filename}`);
-      return { 
+      return {
         success: true,
-        message: 'Arquivo deletado com sucesso!'
-       };
+        message: 'Arquivo deletado com sucesso!',
+      };
     } catch (error) {
-      throw new InternalServerErrorException('Erro interno ao tentar deletar o arquivo.');
+      throw new InternalServerErrorException(
+        'Erro interno ao tentar deletar o arquivo.',
+      );
     }
   }
 
@@ -76,7 +80,7 @@ export class UploadsService {
 
     try {
       const filenames = readdirSync(this.storagePath);
-      return filenames.map(filename => {
+      return filenames.map((filename) => {
         let sizeMB = 'N/A';
         try {
           const stats = statSync(join(this.storagePath, filename));
@@ -93,7 +97,9 @@ export class UploadsService {
         };
       });
     } catch {
-      throw new InternalServerErrorException('Não foi possível listar os arquivos.');
+      throw new InternalServerErrorException(
+        'Não foi possível listar os arquivos.',
+      );
     }
   }
 
