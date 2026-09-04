@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+
+jobs:
+  build:
+    name: Lint + Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      # Auditoria de segurança (não bloqueia: ver ROADMAP P4.1)
+      - name: Audit (report-only)
+        run: npm audit --audit-level=high || true
+
+      # Testes ainda NÃO são gate: base pré-existente com falhas conhecidas
+      # (ver ROADMAP-EVOLUCAO.md P1.1). Rodados em modo report-only.
+      - name: Unit tests (report-only)
+        run: npm test || true
