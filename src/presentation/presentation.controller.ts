@@ -39,7 +39,7 @@ export class PresentationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   bookmarkedPresentations(
-    @Request() req,
+    @Request() req: any,
   ): Promise<BookmarkedPresentationsResponseDto> {
     const userId = req.user.userId;
 
@@ -50,7 +50,7 @@ export class PresentationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   bookmarkedPresentation(
-    @Request() req,
+    @Request() req: any,
     @Query('presentationId') presentationId: string,
   ): Promise<BookmarkedPresentationResponseDto> {
     const userId = req.user.userId;
@@ -65,7 +65,7 @@ export class PresentationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   bookmarkPresentation(
-    @Request() req,
+    @Request() req: any,
     @Body() bookmarkPresentationRequestDto: BookmarkPresentationRequestDto,
   ): Promise<BookmarkPresentationResponseDto> {
     const userId = req.user.userId;
@@ -80,7 +80,7 @@ export class PresentationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   removePresentationBookmark(
-    @Request() req,
+    @Request() req: any,
     @Query('presentationId') presentationId: string,
   ): Promise<BookmarkedPresentationsResponseDto> {
     const userId = req.user.userId;
@@ -132,7 +132,7 @@ export class PresentationController {
   @Get('my')
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
-  listPresentations(@Request() req) {
+  listPresentations(@Request() req: any) {
     const userId = req.user.userId; // User ID extracted from the JWT
     return this.presentationService.listUserPresentations(userId);
   }
@@ -141,7 +141,7 @@ export class PresentationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   listAdvisedPresentations(
-    @Request() req,
+    @Request() req: any,
   ): Promise<Array<ListAdvisedPresentationsResponse>> {
     const userId = req.user.userId;
     return this.presentationService.listAdvisedPresentations(userId);
@@ -164,7 +164,7 @@ export class PresentationController {
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   updatePresentationForUser(
-    @Request() req,
+    @Request() req: any,
     @Param('id') id: string,
     @Body() updatePresentationDto: UpdatePresentationDto,
   ) {

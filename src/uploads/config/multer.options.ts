@@ -16,7 +16,6 @@ export const multerOptions = {
   }),
 };
 
-
 export const fileValidationPipe = new ParseFilePipe({
   validators: [
     new MaxFileSizeValidator({ maxSize: MAX_FILE_SIZE_BYTES }),

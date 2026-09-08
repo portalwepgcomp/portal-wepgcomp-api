@@ -25,11 +25,11 @@ export class ResponseUserDto {
     this.id = user.id;
     this.name = user.name;
     this.email = user.email;
-    this.registrationNumber = user.registrationNumber;
+    this.registrationNumber = user.registrationNumber ?? undefined;
     this.registrationNumberType =
-      user.registrationNumberType as RegistrationNumberType;
-    this.linkLattes = user.linkLattes;
-    this.photoFilePath = user.photoFilePath;
+      (user.registrationNumberType as RegistrationNumberType) ?? undefined;
+    this.linkLattes = user.linkLattes ?? undefined;
+    this.photoFilePath = user.photoFilePath ?? undefined;
     this.profile = user.profile;
     this.level = user.level;
     this.isActive = user.isActive;

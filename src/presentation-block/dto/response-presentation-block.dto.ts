@@ -49,7 +49,7 @@ export class ResponseSubmissionDto {
   advisor: ResponseUserDto | null;
 
   constructor(
-    submission: any, 
+    submission: any,
     mainAuthor: { id: string; name: string; email: string },
     advisor: { id: string; name: string; email: string } | null,
   ) {
@@ -72,10 +72,19 @@ export class ResponseSubmissionDto {
   }
 }
 
-async function createResponsePresentationDto(presentation: any, userLoader: (id: string) => Promise<any>) {
+async function createResponsePresentationDto(
+  presentation: any,
+  userLoader: (id: string) => Promise<any>,
+) {
   const mainAuthor = await userLoader(presentation.submission.mainAuthorId);
-  const advisor = presentation.submission.advisorId ? await userLoader(presentation.submission.advisorId) : null;
-  const submissionDto = new ResponseSubmissionDto(presentation.submission, mainAuthor, advisor);
+  const advisor = presentation.submission.advisorId
+    ? await userLoader(presentation.submission.advisorId)
+    : null;
+  const submissionDto = new ResponseSubmissionDto(
+    presentation.submission,
+    mainAuthor,
+    advisor,
+  );
   return new ResponsePresentationDto(presentation, submissionDto);
 }
 
@@ -146,7 +155,11 @@ export class ResponsePresentationBlockDto {
   panelists: ResponsePanelistDto[];
   availablePositionsWithInBlock: availablePositionsWithInBlockDto[];
 
-  constructor(block: any, presentations: ResponsePresentationDto[], panelists: ResponsePanelistDto[]) {
+  constructor(
+    block: any,
+    presentations: ResponsePresentationDto[],
+    panelists: ResponsePanelistDto[],
+  ) {
     this.id = block.id;
     this.eventEditionId = block.eventEditionId;
     this.roomId = block.roomId;
@@ -162,7 +175,7 @@ export class ResponsePresentationBlockDto {
 
     this.availablePositionsWithInBlock = block.availablePositionsWithinBlock
       ? block.availablePositionsWithinBlock.map(
-          (pos) =>
+          (pos: any) =>
             new availablePositionsWithInBlockDto(
               pos.positionWithinBlock,
               pos.startTime,
@@ -171,15 +184,20 @@ export class ResponsePresentationBlockDto {
       : [];
   }
 
-  static async create(block: any, userLoader: (id: string) => Promise<any>): Promise<ResponsePresentationBlockDto> {
+  static async create(
+    block: any,
+    userLoader: (id: string) => Promise<any>,
+  ): Promise<ResponsePresentationBlockDto> {
     const presentations = await Promise.all(
-      (block.presentations || []).map(async (presentation: any) => 
-        createResponsePresentationDto(presentation, userLoader)
-    )
+      (block.presentations || []).map(async (presentation: any) =>
+        createResponsePresentationDto(presentation, userLoader),
+      ),
     );
 
-    const panelists = (block.panelists || []).map((panelist: any) => new ResponsePanelistDto(panelist));
-    
+    const panelists = (block.panelists || []).map(
+      (panelist: any) => new ResponsePanelistDto(panelist),
+    );
+
     return new ResponsePresentationBlockDto(block, presentations, panelists);
   }
 }

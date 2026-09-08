@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserService } from './user.service';
+import { UserVerificationService } from './user-verification.service';
+import { UserAdminService } from './user-admin.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AppException } from '../exceptions/app.exception';
 import * as bcrypt from 'bcrypt';
@@ -8,6 +10,7 @@ import { ResponseUserDto } from './dto/response-user.dto';
 import { Prisma, PrismaClient, UserLevel } from '@prisma/client';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { MailingService } from '../mailing/mailing.service';
+import { HttpService } from '@nestjs/axios';
 
 jest.mock('bcrypt');
 
@@ -19,9 +22,12 @@ describe('UserService', () => {
   let mailingService: MailingService;
 
   beforeEach(async () => {
+    process.env.REGISTRATION_OPEN = 'true';
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
+        UserVerificationService,
+        UserAdminService,
         {
           provide: PrismaService,
           useValue: {
@@ -30,10 +36,6 @@ describe('UserService', () => {
               create: jest.fn(),
               update: jest.fn(),
               databaseHasProfessors: jest.fn(),
-              setDefault: jest.fn(),
-              setAdmin: jest.fn(),
-              isAdmin: jest.fn(),
-              setSuperAdmin: jest.fn(),
               delete: jest.fn(),
               findFirst: jest.fn(),
               findMany: jest.fn(),
@@ -43,6 +45,9 @@ describe('UserService', () => {
               findFirst: jest.fn(),
               update: jest.fn(),
               create: jest.fn(),
+            },
+            submission: {
+              findMany: jest.fn().mockResolvedValue([]),
             },
             $transaction: jest.fn(async (callback) => {
               const prismaMock = {
@@ -69,6 +74,12 @@ describe('UserService', () => {
           useValue: {
             sendEmailConfirmation: jest.fn(),
             sendEmail: jest.fn(),
+          },
+        },
+        {
+          provide: HttpService,
+          useValue: {
+            get: jest.fn(),
           },
         },
       ],
@@ -185,7 +196,11 @@ describe('UserService', () => {
           registrationNumber: createUserDto.registrationNumber,
           registrationNumberType: 'MATRICULA',
           isActive: true,
+          isPresenterActive: true,
           isTeacherActive: true,
+          linkLattes: undefined,
+          photoFilePath: undefined,
+          subprofile: null,
         },
       });
       expect(result).toBeInstanceOf(ResponseUserDto);
@@ -209,6 +224,10 @@ describe('UserService', () => {
         isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        linkLattes: null,
+        subprofile: null,
+        updatedBy: null,
+        isPresenterActive: false,
       });
 
       service.checkProfessorShouldBeSuperAdmin = jest
@@ -243,7 +262,11 @@ describe('UserService', () => {
           registrationNumber: createUserDto.registrationNumber,
           registrationNumberType: 'MATRICULA',
           isActive: createUserDto.isActive,
+          isPresenterActive: true,
           isTeacherActive: true,
+          linkLattes: undefined,
+          photoFilePath: undefined,
+          subprofile: null,
         },
       });
 
@@ -269,6 +292,10 @@ describe('UserService', () => {
         isVerified: false,
         createdAt: new Date(),
         updatedAt: new Date(),
+        linkLattes: null,
+        subprofile: null,
+        updatedBy: null,
+        isPresenterActive: false,
       });
 
       service.checkProfessorShouldBeSuperAdmin = jest
@@ -301,8 +328,12 @@ describe('UserService', () => {
           level: UserLevel.Default,
           registrationNumber: createUserDto.registrationNumber,
           registrationNumberType: 'MATRICULA',
-          isActive: false,
+          isActive: true,
+          isPresenterActive: true,
           isTeacherActive: false,
+          linkLattes: undefined,
+          photoFilePath: undefined,
+          subprofile: null,
         },
       });
 
@@ -376,506 +407,6 @@ describe('UserService', () => {
         },
       });
       expect(result).toEqual(false);
-    });
-  });
-
-  describe('setDefault', () => {
-    it('should throw AppException if request user is not found', async () => {
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(undefined);
-
-      const setDefaultDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setDefault(setDefaultDto)).rejects.toThrow(
-        new AppException('Usuário solicitante não encontrado.', 404),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if request user is not admin', async () => {
-      const requestUser = {
-        level: UserLevel.Default,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-
-      const setDefaultDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setDefault(setDefaultDto)).rejects.toThrow(
-        new AppException(
-          'O usuário não possui privilégios de administrador ou super administrador.',
-          403,
-        ),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if target user is not found', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValueOnce(requestUser)
-        .mockResolvedValueOnce(undefined);
-
-      const setDefaultDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setDefault(setDefaultDto)).rejects.toThrow(
-        new AppException('Usuário-alvo não encontrado.', 404),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.requestUserId,
-        },
-      });
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.targetUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if request user has lower access level than target user', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-
-      const targetUser = {
-        level: UserLevel.Superadmin,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValueOnce(requestUser)
-        .mockResolvedValueOnce(targetUser);
-
-      const setDefaultDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setDefault(setDefaultDto)).rejects.toThrow(
-        new AppException(
-          'Um usuário administrador não tem permissão para rebaixar um super administrador.',
-          403,
-        ),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.requestUserId,
-        },
-      });
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.targetUserId,
-        },
-      });
-    });
-
-    it('should return target user as default', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-
-      const targetUser = {
-        id: '1',
-        name: 'John',
-        email: 'user@example.com',
-        registrationNumber: '2021001',
-        registrationNumberType: 'MATRICULA' as any,
-        photoFilePath: null,
-        profile: 'Presenter',
-        level: 'Admin',
-        isActive: true,
-        isSuperadmin: false,
-        isTeacherActive: false,
-        isAdmin: false,
-        isVerified: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest
-        .fn()
-        .mockResolvedValue(targetUser);
-
-      const setDefaultDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      const result = await service.setDefault(setDefaultDto);
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.requestUserId,
-        },
-      });
-      expect(prismaService.userAccount.update).toHaveBeenCalledWith({
-        where: {
-          id: setDefaultDto.targetUserId,
-        },
-        data: {
-          level: UserLevel.Default,
-        },
-      });
-
-      expect(result).toEqual(targetUser as ResponseUserDto);
-    });
-  });
-
-  describe('setAdmin', () => {
-    it('should throw AppException if request user is not found', async () => {
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(undefined);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setAdmin(setAdminDto)).rejects.toThrow(
-        new AppException('Usuário não encontrado.', 404),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if request user is not admin', async () => {
-      const requestUser = {
-        level: UserLevel.Default,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setAdmin(setAdminDto)).rejects.toThrow(
-        new AppException(
-          'O usuário não possui privilégios de administrador ou super administrador.',
-          403,
-        ),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if target user is not found', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest.fn().mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Error message', {
-          code: 'P2025',
-          clientVersion: 'test',
-        }),
-      );
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setAdmin(setAdminDto)).rejects.toThrow(
-        new AppException('Usuário-alvo não encontrado', 404),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw Error if unmapped error is thrown on update', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-      const errorMock = new Error('Error message');
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest.fn().mockRejectedValue(errorMock);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setAdmin(setAdminDto)).rejects.toThrow(
-        new Error(`Error: ${errorMock.message}`),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should return target user as admin', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-
-      const targetUser = {
-        id: '1',
-        name: 'John',
-        email: 'user@example.com',
-        registrationNumber: '2021001',
-        registrationNumberType: 'MATRICULA' as any,
-        photoFilePath: null,
-        profile: 'Presenter',
-        level: 'Admin',
-        isActive: true,
-        isSuperadmin: false,
-        isTeacherActive: false,
-        isAdmin: true,
-        isVerified: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest
-        .fn()
-        .mockResolvedValue(targetUser);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      const result = await service.setAdmin(setAdminDto);
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-      expect(prismaService.userAccount.update).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.targetUserId,
-        },
-        data: {
-          level: UserLevel.Admin,
-        },
-      });
-
-      expect(result).toEqual(targetUser as ResponseUserDto);
-    });
-  });
-
-  describe('setSuperAdmin', () => {
-    it('should throw AppException if request user is not found', async () => {
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(undefined);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setSuperAdmin(setAdminDto)).rejects.toThrow(
-        new AppException('Usuário não encontrado.', 404),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if request user is not super admin', async () => {
-      const requestUser = {
-        level: UserLevel.Admin,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setSuperAdmin(setAdminDto)).rejects.toThrow(
-        new AppException(
-          'O usuário não possui privilégios de super administrador.',
-          403,
-        ),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw AppException if target user is not found', async () => {
-      const requestUser = {
-        level: UserLevel.Superadmin,
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest.fn().mockRejectedValue(
-        new Prisma.PrismaClientKnownRequestError('Error message', {
-          code: 'P2025',
-          clientVersion: 'test',
-        }),
-      );
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setSuperAdmin(setAdminDto)).rejects.toThrow(
-        new AppException('Usuário-alvo não encontrado', 404),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should throw Error if unmapped error is thrown on update', async () => {
-      const requestUser = {
-        level: UserLevel.Superadmin,
-      };
-      const errorMock = new Error('Error message');
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest.fn().mockRejectedValue(errorMock);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      await expect(service.setSuperAdmin(setAdminDto)).rejects.toThrow(
-        new Error(`Error: ${errorMock.message}`),
-      );
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-    });
-
-    it('should return target user as super admin', async () => {
-      const requestUser = {
-        level: UserLevel.Superadmin,
-      };
-
-      const targetUser = {
-        id: '1',
-        name: 'John',
-        email: 'user@example.com',
-        registrationNumber: '2021001',
-        registrationNumberType: 'MATRICULA' as any,
-        photoFilePath: null,
-        profile: 'Presenter',
-        level: 'Superadmin',
-        isActive: true,
-        isSuperadmin: true,
-        isTeacherActive: false,
-        isAdmin: false,
-        isVerified: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      prismaService.userAccount.findFirst = jest
-        .fn()
-        .mockResolvedValue(requestUser);
-      prismaService.userAccount.update = jest
-        .fn()
-        .mockResolvedValue(targetUser);
-
-      const setAdminDto = {
-        requestUserId: 'abc',
-        targetUserId: 'def',
-      };
-
-      const result = await service.setSuperAdmin(setAdminDto);
-
-      expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.requestUserId,
-        },
-      });
-      expect(prismaService.userAccount.update).toHaveBeenCalledWith({
-        where: {
-          id: setAdminDto.targetUserId,
-        },
-        data: {
-          level: UserLevel.Superadmin,
-        },
-      });
-
-      expect(result).toEqual(targetUser as ResponseUserDto);
     });
   });
 
@@ -972,7 +503,6 @@ describe('UserService', () => {
           id: true,
           name: true,
           email: true,
-          password: true,
           registrationNumber: true,
           registrationNumberType: true,
           photoFilePath: true,
@@ -986,11 +516,12 @@ describe('UserService', () => {
           isSuperadmin: true,
           isTeacherActive: true,
           isPresenterActive: true,
+          linkLattes: true,
         },
       });
 
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
 
@@ -1029,7 +560,6 @@ describe('UserService', () => {
           id: true,
           name: true,
           email: true,
-          password: true,
           registrationNumber: true,
           registrationNumberType: true,
           photoFilePath: true,
@@ -1042,11 +572,13 @@ describe('UserService', () => {
           isAdmin: true,
           isSuperadmin: true,
           isTeacherActive: true,
+          linkLattes: true,
+          isPresenterActive: true,
         },
       });
 
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
 
@@ -1085,7 +617,6 @@ describe('UserService', () => {
           id: true,
           name: true,
           email: true,
-          password: true,
           registrationNumber: true,
           registrationNumberType: true,
           photoFilePath: true,
@@ -1098,11 +629,13 @@ describe('UserService', () => {
           isAdmin: true,
           isSuperadmin: true,
           isTeacherActive: true,
+          linkLattes: true,
+          isPresenterActive: true,
         },
       });
 
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
 
@@ -1141,7 +674,6 @@ describe('UserService', () => {
           id: true,
           name: true,
           email: true,
-          password: true,
           registrationNumber: true,
           registrationNumberType: true,
           photoFilePath: true,
@@ -1154,11 +686,13 @@ describe('UserService', () => {
           isAdmin: true,
           isSuperadmin: true,
           isTeacherActive: true,
+          linkLattes: true,
+          isPresenterActive: true,
         },
       });
 
       expect(result).toEqual(
-        usersMock.map((user) => new ResponseUserDto(user)),
+        usersMock.map((user) => new ResponseUserDto(user as any)),
       );
     });
   });
@@ -1180,6 +714,10 @@ describe('UserService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: true,
+        linkLattes: null,
+        subprofile: null,
+        updatedBy: null,
+        isPresenterActive: false,
       };
 
       jest.spyOn(jwtService, 'verify').mockReturnValue({ id: mockId });

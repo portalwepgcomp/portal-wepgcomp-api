@@ -134,7 +134,11 @@ export class AwardedPanelistsService {
     });
 
     return panelists.map(
-      (panelist) => new ResponsePanelistUserDto(panelist.user),
+      (panelist) =>
+        new ResponsePanelistUserDto({
+          ...panelist.user,
+          registrationNumber: panelist.user.registrationNumber ?? undefined,
+        }),
     );
   }
 
@@ -152,6 +156,7 @@ export class AwardedPanelistsService {
         new ResponsePanelistUserDto({
           ...panelist.user,
           votes: panelist.votes,
+          registrationNumber: panelist.user.registrationNumber ?? undefined,
         }),
     );
   }

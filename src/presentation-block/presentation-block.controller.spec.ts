@@ -7,6 +7,8 @@ import { ResponsePresentationBlockDto } from './dto/response-presentation-block.
 import { PresentationBlockType } from '@prisma/client';
 import { SwapMultiplePresentationsDto } from './dto/swap-presentations.dto';
 import { AppException } from '../exceptions/app.exception';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 describe('PresentationBlockController', () => {
   let controller: PresentationBlockController;
@@ -30,7 +32,12 @@ describe('PresentationBlockController', () => {
           useValue: mockPresentationBlockService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<PresentationBlockController>(
       PresentationBlockController,
@@ -85,7 +92,7 @@ describe('PresentationBlockController', () => {
       expect(result).toBeInstanceOf(Array);
       expect(result.length).toBe(2);
       expect(result[0]).toBeInstanceOf(ResponsePresentationBlockDto);
-      expect(service.findAll).toHaveBeenCalledWith(undefined, eventEditionId);
+      expect(service.findAll).toHaveBeenCalledWith('', eventEditionId);
     });
   });
 

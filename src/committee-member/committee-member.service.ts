@@ -34,7 +34,7 @@ export class CommitteeMemberService {
           });
         }
       }
-      let created = null;
+      let created: any = null;
       try {
         created = await prisma.committeeMember.create({
           data: createCommitteeMemberDto,
@@ -190,7 +190,7 @@ export class CommitteeMemberService {
     });
   }
 
-  async remove(id: string, userId?: string, eventEditionId?: string) {
+  async remove(id: string | null, userId?: string, eventEditionId?: string) {
     let committeeMember;
     if (id) {
       committeeMember = await this.prismaClient.committeeMember.findFirst({
@@ -206,13 +206,15 @@ export class CommitteeMemberService {
       // we're already querying for it anyway
       committeeMember = await this.getCommitteeMember(userId, eventEditionId);
       id = committeeMember.id;
+    } else {
+      throw new BadRequestException(
+        'ID ou userId e eventEditionId são necessários',
+      );
     }
-    await this.demoteUser(
-      committeeMember.userId,
-      committeeMember.committeeLevel,
-    );
+
+    await this.demoteUser(committeeMember.userId, committeeMember.level);
     const result = await this.prismaClient.committeeMember.delete({
-      where: { id },
+      where: { id: id as string },
     });
     return new ResponseCommitteeMemberDto(result);
   }

@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  Request,
   UseGuards,
 } from '@nestjs/common';
 import { ApiQuery } from '@nestjs/swagger';
@@ -15,9 +16,7 @@ import { UserLevels } from '../auth/decorators/user-level.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
-import {
-  CreateSubmissionDto
-} from './dto/create-submission.dto';
+import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { SubmissionService } from './submission.service';
@@ -25,7 +24,7 @@ import { SubmissionService } from './submission.service';
 @Controller('submission')
 @UseGuards(JwtAuthGuard, UserLevelGuard, ProfileAccessGuard)
 export class SubmissionController {
-  constructor(private readonly submissionService: SubmissionService) { }
+  constructor(private readonly submissionService: SubmissionService) {}
 
   @Post()
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
@@ -42,20 +41,35 @@ export class SubmissionController {
     type: Boolean,
   })
   @ApiQuery({ name: 'showConfirmedOnly', required: false, type: Boolean })
+  @ApiQuery({ name: 'mainAuthorId', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'paginated', required: false, type: Boolean })
   findAll(
+    @Request() req: any,
     @Query('eventEditionId') eventEditionId: string,
     @Query('withoutPresentation') withoutPresentation: boolean = false,
     @Query('orderByProposedPresentation')
     orderByProposedPresentation: boolean = false,
     @Query('showConfirmedOnly') showConfirmedOnly: boolean = false,
     @Query('mainAuthorId') mainAuthorId?: string,
-  ): Promise<ResponseSubmissionDto[]> {
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('paginated') paginated?: boolean,
+  ) {
     return this.submissionService.findAll(
       eventEditionId,
       withoutPresentation,
       orderByProposedPresentation,
       showConfirmedOnly,
       mainAuthorId,
+      search,
+      req.user,
+      page ? Number(page) : undefined,
+      pageSize ? Number(pageSize) : undefined,
+      paginated !== undefined ? String(paginated) === 'true' : undefined,
     );
   }
 

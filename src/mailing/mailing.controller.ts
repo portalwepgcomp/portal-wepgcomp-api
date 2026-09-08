@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { UserLevel } from '@prisma/client';
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
@@ -16,7 +23,7 @@ import { MailingService } from './mailing.service';
 @Controller('mailing')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
 export class MailingController {
-  constructor(private readonly mailingService: MailingService) { }
+  constructor(private readonly mailingService: MailingService) {}
 
   @Post('/contact')
   @Public()

@@ -8,6 +8,8 @@ import {
 import { UpdateEventEditionDto } from './dto/update-event-edition.dto';
 import { EventEditionResponseDto } from './dto/event-edition-response';
 import { NotFoundException } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 describe('EventEditionController', () => {
   let controller: EventEditionController;
@@ -33,7 +35,12 @@ describe('EventEditionController', () => {
           useValue: mockEventEditionService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<EventEditionController>(EventEditionController);
     service = module.get<EventEditionService>(EventEditionService);

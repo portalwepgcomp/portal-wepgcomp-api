@@ -121,8 +121,12 @@ describe('AuthService', () => {
         isActive: true,
         isVerified: true,
         isTeacherActive: false,
+        isPresenterActive: false,
         isSuperadmin: false,
         isAdmin: false,
+        linkLattes: null,
+        subprofile: null,
+        updatedBy: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -141,7 +145,7 @@ describe('AuthService', () => {
     });
 
     it('should throw an exception if user is not found', async () => {
-      jest.spyOn(userService, 'findByEmail').mockResolvedValue(undefined);
+      jest.spyOn(userService, 'findByEmail').mockResolvedValue(null);
 
       await expect(
         authService.signIn({ email: 'test@example.com', password: 'password' }),
@@ -164,8 +168,12 @@ describe('AuthService', () => {
         isActive: true,
         isVerified: true,
         isTeacherActive: false,
+        isPresenterActive: false,
         isSuperadmin: false,
         isAdmin: false,
+        linkLattes: null,
+        subprofile: null,
+        updatedBy: null,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -184,15 +192,17 @@ describe('AuthService', () => {
         { userId: mockUser.id },
         { expiresIn: '1h' },
       );
-      expect(mailingService.sendEmail).toHaveBeenCalledWith({
-        from: 'wepgcomp@gmail.com',
-        to: mockUser.email,
-        subject: 'Redefinição de senha: WEPGCOMP',
-        text: `Link para redefinição de senha: ${process.env.FRONTEND_URL}/alterar-senha/${mockToken}`,
-        html: expect.stringContaining(
-          'Clique no botão abaixo para redefinir sua senha',
-        ),
-      });
+      const resetUrl = `${process.env.FRONTEND_URL}/alterar-senha/${mockToken}`;
+      expect(mailingService.sendEmail).toHaveBeenCalledWith(
+        {
+          from: process.env.SMTP_FROM_EMAIL || '',
+          to: mockUser.email,
+          subject: 'Redefinição de senha: WEPGCOMP',
+          text: resetUrl,
+          html: resetUrl,
+        },
+        true,
+      );
     });
 
     it('should throw NotFoundException if user does not exist', async () => {
@@ -215,7 +225,9 @@ describe('AuthService', () => {
 
       jest.spyOn(jwtService, 'verify').mockReturnValue(mockPayload);
       (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
-      jest.spyOn(prismaService.userAccount, 'update').mockResolvedValue(null);
+      jest
+        .spyOn(prismaService.userAccount, 'update')
+        .mockResolvedValue(null as any);
 
       const result = await authService.resetPassword(
         'validToken',

@@ -62,3 +62,10 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Auto-generated files
 src/metadata.ts
+
+# LLM/agent docs (não versionar)
+AGENTS.md
+
+# Artefatos gerados / scripts ad-hoc locais
+openapi.json
+find-missing.ts

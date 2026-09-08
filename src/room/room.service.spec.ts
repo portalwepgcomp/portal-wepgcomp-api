@@ -19,6 +19,7 @@ describe('RoomService', () => {
         findMany: jest.fn(),
         findUnique: jest.fn(),
         update: jest.fn(),
+        delete: jest.fn(),
       },
       presentation: {
         delete: jest.fn(),
@@ -196,7 +197,7 @@ describe('RoomService', () => {
       (prismaService.presentation.delete as jest.Mock).mockResolvedValue({});
 
       const result = await service.remove('room123');
-      expect(result).toEqual({ message: 'Apresentação removida com sucesso.' });
+      expect(result).toEqual({ message: 'Sala removida com sucesso.' });
     });
 
     it('should throw error if room not found for removal', async () => {

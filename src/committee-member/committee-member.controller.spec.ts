@@ -4,6 +4,8 @@ import { CommitteeMemberService } from './committee-member.service';
 import { CreateCommitteeMemberDto } from './dto/create-committee-member.dto';
 import { UpdateCommitteeMemberDto } from './dto/update-committee-member.dto';
 import { CommitteeLevel, CommitteeRole } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 describe('CommitteeMemberController', () => {
   let controller: CommitteeMemberController;
@@ -26,7 +28,12 @@ describe('CommitteeMemberController', () => {
           useValue: mockCommitteeMemberService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<CommitteeMemberController>(
       CommitteeMemberController,

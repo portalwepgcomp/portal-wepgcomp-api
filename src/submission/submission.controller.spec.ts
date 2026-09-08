@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SubmissionController } from './submission.controller';
 import { SubmissionService } from './submission.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
+import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
 
 describe('SubmissionController', () => {
   let controller: SubmissionController;
@@ -23,7 +26,14 @@ describe('SubmissionController', () => {
           useValue: mockSubmissionService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(ProfileAccessGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SubmissionController>(SubmissionController);
     service = module.get<SubmissionService>(SubmissionService);

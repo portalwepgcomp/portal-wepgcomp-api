@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { EvaluationCriteriaController } from './evaluation-criteria.controller';
 import { EvaluationCriteriaService } from './evaluation-criteria.service';
 
@@ -21,7 +23,12 @@ describe('EvaluationCriteriaController', () => {
           useValue: mockEvaluationCriteriaService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<EvaluationCriteriaController>(
       EvaluationCriteriaController,
@@ -68,7 +75,7 @@ describe('EvaluationCriteriaController', () => {
     });
 
     it('should handle empty array of criteria', async () => {
-      const emptyPayload = [];
+      const emptyPayload: any[] = [];
       const mockResponse = { count: 0 };
 
       mockEvaluationCriteriaService.createFromList.mockResolvedValue(
@@ -120,7 +127,7 @@ describe('EvaluationCriteriaController', () => {
     });
 
     it('should handle empty array of criteria for update', async () => {
-      const emptyPayload = [];
+      const emptyPayload: any[] = [];
       const mockResponse = { count: 0 };
 
       mockEvaluationCriteriaService.editFromList.mockResolvedValue(

@@ -1,14 +1,14 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { MailingService } from './mailing.service';
 import { MailingController } from './mailing.controller';
-import { EventEditionModule } from 'src/event-edition/event-edition.module';
-import { CommitteeMemberModule } from 'src/committee-member/committee-member.module';
-import { UserModule } from 'src/user/user.module';
+import { MailingTemplateService } from './mailing-template.service';
+import { EventEditionModule } from '../event-edition/event-edition.module';
+import { CommitteeMemberModule } from '../committee-member/committee-member.module';
 
 @Module({
   imports: [EventEditionModule, CommitteeMemberModule],
   controllers: [MailingController],
-  providers: [MailingService],
-  exports: [MailingService],
+  providers: [MailingService, MailingTemplateService],
+  exports: [MailingService, MailingTemplateService],
 })
 export class MailingModule {}

@@ -8,6 +8,7 @@ import {
   UserLevel,
 } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -18,12 +19,13 @@ describe('UserController', () => {
       controllers: [UserController],
       providers: [
         {
+          provide: PrismaService,
+          useValue: {},
+        },
+        {
           provide: UserService,
           useValue: {
             create: jest.fn(),
-            setDefault: jest.fn(),
-            setAdmin: jest.fn(),
-            setSuperAdmin: jest.fn(),
             remove: jest.fn(),
             toggleUserActivation: jest.fn(),
             approveTeacher: jest.fn(),
@@ -66,6 +68,8 @@ describe('UserController', () => {
         level: UserLevel.Default,
         isActive: true,
         isTeacherActive: false,
+        isPresenterActive: false,
+        hasSubmission: false,
         isSuperadmin: false,
         isAdmin: false,
         createdAt: new Date(),
@@ -79,112 +83,6 @@ describe('UserController', () => {
 
       expect(userService.create).toHaveBeenCalledWith(createUserDto);
       expect(result).toEqual(userResponse);
-    });
-  });
-
-  describe('set-default', () => {
-    it('should set an user as default and return the result', async () => {
-      const setDefaultDto: SetAdminDto = {
-        requestUserId: 'c73c2c5a-b6ee-4d8e-a47a-5c159728f2ea',
-        targetUserId: '6047cb57-db11-4dc4-a305-33b86723dd09',
-      };
-
-      const setDefaultResponse = {
-        id: '1',
-        name: 'John Doe',
-        email: 'johndoe@example.com',
-        registrationNumber: '2021001',
-        registrationNumberType: 'MATRICULA' as any,
-        photoFilePath: 'user-photo-url',
-        profile: Profile.Professor,
-        level: UserLevel.Default,
-        isActive: true,
-        isTeacherActive: false,
-        isSuperadmin: false,
-        isAdmin: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isVerified: false,
-      };
-
-      jest
-        .spyOn(userService, 'setDefault')
-        .mockResolvedValue(setDefaultResponse);
-
-      const result = await controller.setDefault(setDefaultDto);
-
-      expect(userService.setDefault).toHaveBeenCalledWith(setDefaultDto);
-      expect(result).toEqual(setDefaultResponse);
-    });
-  });
-
-  describe('set-admin', () => {
-    it('should set an user as admin and return the result', async () => {
-      const setAdminDto: SetAdminDto = {
-        requestUserId: 'c73c2c5a-b6ee-4d8e-a47a-5c159728f2ea',
-        targetUserId: '6047cb57-db11-4dc4-a305-33b86723dd09',
-      };
-
-      const setAdminResponse = {
-        id: '1',
-        name: 'John Doe',
-        email: 'johndoe@example.com',
-        registrationNumber: '2021001',
-        registrationNumberType: 'MATRICULA' as any,
-        photoFilePath: 'user-photo-url',
-        profile: Profile.Professor,
-        level: UserLevel.Admin,
-        isActive: true,
-        isTeacherActive: false,
-        isSuperadmin: false,
-        isAdmin: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isVerified: false,
-      };
-
-      jest.spyOn(userService, 'setAdmin').mockResolvedValue(setAdminResponse);
-
-      const result = await controller.setAdmin(setAdminDto);
-
-      expect(userService.setAdmin).toHaveBeenCalledWith(setAdminDto);
-      expect(result).toEqual(setAdminResponse);
-    });
-  });
-
-  describe('set-super-admin', () => {
-    it('should set an user as super admin and return the result', async () => {
-      const setAdminDto: SetAdminDto = {
-        requestUserId: 'c73c2c5a-b6ee-4d8e-a47a-5c159728f2ea',
-        targetUserId: '6047cb57-db11-4dc4-a305-33b86723dd09',
-      };
-
-      const setSuperAdminResponse = {
-        id: '1',
-        name: 'John Doe',
-        email: 'johndoe@example.com',
-        registrationNumber: '2021001',
-        registrationNumberType: 'MATRICULA' as any,
-        photoFilePath: 'user-photo-url',
-        profile: Profile.Professor,
-        level: UserLevel.Admin,
-        isActive: true,
-        isTeacherActive: false,
-        isSuperadmin: false,
-        isAdmin: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isVerified: false,
-      };
-
-      jest
-        .spyOn(userService, 'setSuperAdmin')
-        .mockResolvedValue(setSuperAdminResponse);
-
-      const result = await controller.setSuperAdmin(setAdminDto);
-
-      expect(userService.setSuperAdmin).toHaveBeenCalledWith(setAdminDto);
-      expect(result).toEqual(setSuperAdminResponse);
     });
   });
 
@@ -256,6 +154,7 @@ describe('UserController', () => {
         undefined,
         undefined,
         undefined,
+        undefined,
       );
       expect(result).toEqual(
         usersMock.map((user) => new ResponseUserDto(user as any)),
@@ -290,6 +189,7 @@ describe('UserController', () => {
 
       expect(userService.findAll).toHaveBeenCalledWith(
         ['Admin'],
+        undefined,
         undefined,
         undefined,
       );
@@ -328,6 +228,7 @@ describe('UserController', () => {
         undefined,
         ['Listener'],
         undefined,
+        undefined,
       );
       expect(result).toEqual(
         usersMock.map((user) => new ResponseUserDto(user as any)),
@@ -363,6 +264,7 @@ describe('UserController', () => {
       expect(userService.findAll).toHaveBeenCalledWith(
         ['Admin'],
         ['Professor'],
+        undefined,
         undefined,
       );
       expect(result).toEqual(
