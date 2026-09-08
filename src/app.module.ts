@@ -24,10 +24,10 @@ import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
     UserModule,
     PrismaModule,
-    ConfigModule.forRoot(),
     EventEditionModule,
     MailingModule,
     ScheduleModule.forRoot(),
