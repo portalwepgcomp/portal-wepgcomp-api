@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { EventEditionService } from './event-edition.service';
@@ -22,7 +23,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { UserLevel } from '@prisma/client';
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { EventEditionResponseDto } from './dto/event-edition-response';
 
 @Controller('event')
@@ -64,8 +65,22 @@ export class EventEditionController {
 
   @Public()
   @Get()
-  async getAll() {
-    return await this.eventEditionService.getAll();
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'paginated', required: false, type: Boolean })
+  async getAll(
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('paginated') paginated?: boolean,
+  ) {
+    return await this.eventEditionService.getAll(
+      search,
+      page ? Number(page) : undefined,
+      pageSize ? Number(pageSize) : undefined,
+      paginated !== undefined ? String(paginated) === 'true' : undefined,
+    );
   }
 
   @Public()

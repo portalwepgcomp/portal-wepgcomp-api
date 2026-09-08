@@ -1,4 +1,5 @@
 import { ScoringService } from './scoring.service';
+import { ScoringCalculatorService } from './scoring-calculator.service';
 import { SchedulerRegistry } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { PresentationBlockType } from '@prisma/client';
@@ -94,7 +95,12 @@ describe('ScoringService', () => {
     jest.spyOn(Logger.prototype, 'debug').mockImplementation();
     jest.clearAllMocks();
 
-    service = new ScoringService(prismaService, schedulerRegistry);
+    const calculatorService = new ScoringCalculatorService(prismaService);
+    service = new ScoringService(
+      prismaService,
+      schedulerRegistry,
+      calculatorService,
+    );
     jest.clearAllMocks();
   });
 

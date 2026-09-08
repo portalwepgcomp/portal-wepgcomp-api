@@ -7,7 +7,7 @@ import {
   Res,
   UploadedFile,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -20,12 +20,12 @@ import { UserLevel } from '@prisma/client';
 import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
-import { UserLevels } from 'src/auth/decorators/user-level.decorator';
+import { UserLevels } from '../auth/decorators/user-level.decorator';
 import { fileValidationPipe } from './config/multer.options';
 import { UploadsService } from './uploads.service';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ProfileAccessGuard } from 'src/auth/guards/profile-access.guard';
-import { UserLevelGuard } from 'src/auth/guards/user-level.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 @Controller('uploads')
 @UseGuards(JwtAuthGuard, UserLevelGuard, ProfileAccessGuard)
@@ -34,15 +34,17 @@ export class UploadsController {
 
   @Post()
   @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
-  @UseInterceptors(FileInterceptor('file', {
-    storage: diskStorage({
-      destination: join(process.cwd(), 'storage'),
-      filename: (req, file, cb) => {
-        const safe = formatArchiveName(file.originalname);
-        cb(null, safe);
-      },
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: join(process.cwd(), 'storage'),
+        filename: (req, file, cb) => {
+          const safe = formatArchiveName(file.originalname);
+          cb(null, safe);
+        },
+      }),
     }),
-  }))
+  )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({ summary: 'Faz upload de um arquivo PDF' })
   @ApiBody({

@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
@@ -16,10 +17,23 @@ import { join } from 'path';
 
 @Injectable()
 export class UploadsService {
+  private readonly logger = new Logger(UploadsService.name);
   private readonly storagePath = join(process.cwd(), 'storage');
 
+  private assertSafeFilename(filename: string) {
+    if (
+      !filename ||
+      filename.trim() === '' ||
+      filename.includes('/') ||
+      filename.includes('\\') ||
+      filename.includes('..')
+    ) {
+      throw new BadRequestException('Nome de arquivo inválido.');
+    }
+  }
+
   uploadFile(file: Express.Multer.File) {
-    console.log('Arquivo recebido:', file.filename);
+    this.logger.log(`Arquivo recebido: ${file.filename}`);
     return {
       message: 'Arquivo enviado com sucesso!',
       key: file.filename,
@@ -31,9 +45,7 @@ export class UploadsService {
   }
 
   deleteFile(filename: string) {
-    if (!filename || filename.trim() === '' || filename.includes('/') || filename.includes('..')) {
-      throw new BadRequestException('Nome de arquivo inválido.');
-    }
+    this.assertSafeFilename(filename);
 
     const filePath = join(this.storagePath, filename);
     if (!existsSync(filePath)) {
@@ -43,17 +55,21 @@ export class UploadsService {
     try {
       const stats = statSync(filePath);
       if (!stats.isFile()) {
-        throw new BadRequestException('O caminho especificado não é um arquivo.');
+        throw new BadRequestException(
+          'O caminho especificado não é um arquivo.',
+        );
       }
 
       unlinkSync(filePath);
-      console.log('Arquivo deletado:', filename);
-      return { 
+      this.logger.log(`Arquivo deletado: ${filename}`);
+      return {
         success: true,
-        message: 'Arquivo deletado com sucesso!'
-       };
+        message: 'Arquivo deletado com sucesso!',
+      };
     } catch (error) {
-      throw new InternalServerErrorException('Erro interno ao tentar deletar o arquivo.');
+      throw new InternalServerErrorException(
+        'Erro interno ao tentar deletar o arquivo.',
+      );
     }
   }
 
@@ -64,7 +80,7 @@ export class UploadsService {
 
     try {
       const filenames = readdirSync(this.storagePath);
-      return filenames.map(filename => {
+      return filenames.map((filename) => {
         let sizeMB = 'N/A';
         try {
           const stats = statSync(join(this.storagePath, filename));
@@ -81,11 +97,15 @@ export class UploadsService {
         };
       });
     } catch {
-      throw new InternalServerErrorException('Não foi possível listar os arquivos.');
+      throw new InternalServerErrorException(
+        'Não foi possível listar os arquivos.',
+      );
     }
   }
 
   getFile(filename: string, res: Response) {
+    this.assertSafeFilename(filename);
+
     const filePath = join(this.storagePath, filename);
     if (!existsSync(filePath)) {
       throw new NotFoundException('Arquivo não encontrado.');

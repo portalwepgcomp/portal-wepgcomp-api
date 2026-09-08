@@ -34,14 +34,13 @@ export class PresentationBlockController {
     return this.presentationBlockService.create(createPresentationBlockDto);
   }
 
-  // FindAll but for only a given eventEditionId
   @Public()
   @Get('event-edition/:eventEditionId')
   async findAllByEventEditionId(
     @Param('eventEditionId') eventEditionId: string,
   ): Promise<ResponsePresentationBlockDto[]> {
     const presentationBlocks = await this.presentationBlockService.findAll(
-      undefined,
+      '',
       eventEditionId,
     );
 
@@ -80,13 +79,11 @@ export class PresentationBlockController {
   @Get(':id')
   async findOne(
     @Param('id') id: string,
-  ): Promise<ResponsePresentationBlockDto> {
-    // try exception
+  ): Promise<ResponsePresentationBlockDto | null> {
     let presentationBlock = null;
     try {
       presentationBlock = await this.presentationBlockService.findOne(id);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       return null;
     }
 
@@ -128,7 +125,7 @@ export class PresentationBlockController {
 
   async userLoader(
     userId: string,
-  ): Promise<{ id: string; name: string; email: string }> {
+  ): Promise<{ id: string; name: string; email: string } | null> {
     const user = await this.presentationBlockService.findUserById(userId);
     return user ? { id: user.id, name: user.name, email: user.email } : null;
   }

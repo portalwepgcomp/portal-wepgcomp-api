@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GuidanceController } from './guidance.controller';
 import { GuidanceService } from './guidance.service';
 import { UpdateGuidanceDto } from './dto/update-guidance.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 describe('GuidanceController', () => {
   let controller: GuidanceController;
@@ -22,7 +24,12 @@ describe('GuidanceController', () => {
           useValue: guidanceServiceMock,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<GuidanceController>(GuidanceController);
   });

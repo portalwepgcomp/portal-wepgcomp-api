@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PresentationController } from './presentation.controller';
 import { PresentationService } from './presentation.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { ListAdvisedPresentationsResponse } from './dto/list-advised-presentations.dto';
 import { AppException } from '../exceptions/app.exception';
 
@@ -26,7 +28,12 @@ describe('PresentationController', () => {
           useValue: mockPresentationService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<PresentationController>(PresentationController);
     service = module.get<PresentationService>(PresentationService);
@@ -53,8 +60,8 @@ describe('PresentationController', () => {
           status: 'ToPresent',
           createdAt: new Date('2024-12-27T15:50:13.125Z'),
           updatedAt: new Date('2024-12-27T15:50:13.125Z'),
-          publicAverageScore: null,
-          evaluatorsAverageScore: null,
+          publicAverageScore: undefined,
+          evaluatorsAverageScore: undefined,
         },
         {
           id: 'c4074556-f78b-4f34-baa3-cabebcdd9d01',
@@ -64,8 +71,8 @@ describe('PresentationController', () => {
           status: 'ToPresent',
           createdAt: new Date('2024-12-27T15:50:13.129Z'),
           updatedAt: new Date('2024-12-27T15:50:13.129Z'),
-          publicAverageScore: null,
-          evaluatorsAverageScore: null,
+          publicAverageScore: undefined,
+          evaluatorsAverageScore: undefined,
         },
       ];
 

@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '../prisma/prisma.service';
-import { PresentationBlockService } from './presentation-block.service';
 import { PresentationBlockType } from '@prisma/client';
 import { AppException } from '../exceptions/app.exception';
+import { PrismaService } from '../prisma/prisma.service';
 import { ScoringService } from '../scoring/scoring.service';
+import { PresentationBlockAllocationService } from './presentation-block-allocation.service';
+import { PresentationBlockTimeService } from './presentation-block-time.service';
+import { PresentationBlockService } from './presentation-block.service';
 
 describe('PresentationBlockService', () => {
   let service: PresentationBlockService;
@@ -13,10 +15,16 @@ describe('PresentationBlockService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PresentationBlockService,
+        PresentationBlockTimeService,
+        PresentationBlockAllocationService,
         {
           provide: PrismaService,
           useValue: {
-            $transaction: jest.fn(),
+            $transaction: jest
+              .fn()
+              .mockImplementation((cb) =>
+                typeof cb === 'function' ? cb(prismaService) : Promise.all(cb),
+              ),
             presentationBlock: {
               findMany: jest.fn(),
               findUnique: jest.fn(),
@@ -432,7 +440,7 @@ describe('PresentationBlockService', () => {
         presentationDuration: 10,
       });
 
-      const result = await service.findAll(undefined, undefined, panelistId);
+      const result = await service.findAll('', undefined, panelistId);
 
       expect(result.length).toBe(1);
       expect(result[0].id).toBe('1');
@@ -489,7 +497,7 @@ describe('PresentationBlockService', () => {
         presentationDuration: 10,
       });
 
-      const result = await service.findAll(undefined, undefined, panelistId);
+      const result = await service.findAll('', undefined, panelistId);
 
       expect(result).toEqual([]);
     });

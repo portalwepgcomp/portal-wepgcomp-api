@@ -34,13 +34,7 @@ function createEmailByName(name: string) {
 // Helper function to safely hash passwords with fallback
 function safeHashPassword(password?: string): string {
   const passwordToHash =
-    password || process.env.SEED_PASSWORD || 'defaultPassword123!';
-
-  if (!passwordToHash) {
-    throw new Error(
-      'Password is required for hashing. Please set SEED_PASSWORD environment variable or provide a password.',
-    );
-  }
+    password || process.env.SEED_PASSWORD || 'admin123';
 
   return bcrypt.hashSync(passwordToHash, 10);
 }
@@ -48,54 +42,36 @@ function safeHashPassword(password?: string): string {
 async function main() {
   console.log('Seeding 2024 Edition...');
 
-  // Check if this edition already exists
-  const existingEdition = await prisma.eventEdition.findFirst({
-    where: { name: 'WEPGCOMP 2024' },
-  });
+  // Always clean existing data on seed to guarantee full consistent dataset
+  console.log('Cleaning existing data before seeding...');
+  await prisma.evaluation.deleteMany();
+  await prisma.guidance.deleteMany();
+  await prisma.awardedPanelist.deleteMany();
+  await prisma.panelist.deleteMany();
+  await prisma.certificate.deleteMany();
+  await prisma.committeeMember.deleteMany();
+  await prisma.submission.deleteMany();
+  await prisma.presentation.deleteMany();
+  await prisma.presentationBlock.deleteMany();
+  await prisma.evaluationCriteria.deleteMany();
+  await prisma.room.deleteMany();
+  await prisma.emailVerification.deleteMany();
+  await prisma.userAccount.deleteMany();
+  await prisma.eventEdition.deleteMany();
 
-  if (existingEdition) {
-    console.log('WEPGCOMP 2024 edition already exists.');
-
-    // Check if FORCE_RESEED environment variable is set
-    if (process.env.FORCE_RESEED === 'true') {
-      console.log('FORCE_RESEED=true detected. Cleaning existing data...');
-
-      // Delete in reverse order of dependencies
-      await prisma.evaluation.deleteMany();
-      await prisma.guidance.deleteMany();
-      await prisma.awardedPanelist.deleteMany();
-      await prisma.panelist.deleteMany();
-      await prisma.certificate.deleteMany();
-      await prisma.committeeMember.deleteMany();
-      await prisma.submission.deleteMany();
-      await prisma.presentation.deleteMany();
-      await prisma.presentationBlock.deleteMany();
-      await prisma.evaluationCriteria.deleteMany();
-      await prisma.room.deleteMany();
-      await prisma.emailVerification.deleteMany();
-      await prisma.userAccount.deleteMany();
-      await prisma.eventEdition.deleteMany();
-
-      console.log('Existing data cleaned. Proceeding with fresh seed...');
-    } else {
-      console.log(
-        'Skipping seed. To force re-seed, run: FORCE_RESEED=true npm run seed.',
-      );
-      return;
-    }
-  }
+  console.log('Data cleaned. Creating fresh edition and users...');
 
   const edition2024 = await prisma.eventEdition.create({
     data: {
       name: 'WEPGCOMP 2024',
       description:
-        'Um evento para estudantes de doutorado apresentarem suas pesquisas.',
+        'Um evento para estudantes de pós-graduação apresentarem suas pesquisas e trabalhos acadêmicos.',
       callForPapersText: 'Envie seus artigos para avaliação e apresentação.',
       partnersText:
-        '<b>Apoiado por:</b><br>Instituto qualquercoisa<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><rect width="24" height="24" fill="black"/><rect x="6" y="6" width="12" height="12" fill="white"/></svg>',
+        '<b>Apoiado por:</b><br>PGCOMP - Programa de Pós-Graduação em Ciência da Computação da UFBA',
       location: 'UFBA, Salvador, Bahia, Brasil',
       startDate: new Date('2024-11-12'),
-      endDate: new Date('2024-11-15'), //
+      endDate: new Date('2024-11-15'),
       submissionStartDate: new Date('2024-01-01'),
       submissionDeadline: new Date('2024-11-08'),
       isActive: true,
@@ -105,97 +81,121 @@ async function main() {
     },
   });
 
+  // Seed default Guidance for the active edition
+  await prisma.guidance.create({
+    data: {
+      eventEditionId: edition2024.id,
+      summary: 'Orientações gerais para autores, avaliadores e ouvintes do WEPGCOMP 2024.',
+      authorGuidance:
+        '<h3>Orientações para Autores</h3><p>Os autores devem preparar uma apresentação de no máximo 20 minutos com seus principais resultados de pesquisa e desafios futuros. Recomendamos o uso de slides claros e objetivos.</p><ul><li>Tempo de apresentação: 15 minutos</li><li>Tempo de perguntas: 5 minutos</li><li>Formato dos slides: 16:9 PDF ou PPTX</li></ul>',
+      reviewerGuidance:
+        '<h3>Orientações para Avaliadores</h3><p>Avaliadores devem preencher os critérios de avaliação no portal durante ou logo após a apresentação de cada discente.</p>',
+      audienceGuidance:
+        '<h3>Orientações para Ouvintes</h3><p>Ouvintes e participantes podem interagir na sessão de perguntas após cada bloco de apresentações.</p>',
+    },
+  });
+
   const rooms = await prisma.room.createManyAndReturn({
     data: [
       {
         eventEditionId: edition2024.id,
         name: 'Sala A',
-        description: 'Sala A',
+        description: 'Auditório Principal - Sala A',
       },
       {
         eventEditionId: edition2024.id,
         name: 'Sala B',
-        description: 'Sala B',
+        description: 'Sala de Seminários - Sala B',
       },
     ],
   });
 
   const comiteeMembers = [
     {
-      name: 'Bruno Pereira dos Santos',
-      email: 'bruno.pereira@ufba.br',
-      password: process.env.SEED_PASSWORD,
+      name: 'Administrador WEPGCOMP',
+      email: 'admin@ufba.br',
+      password: process.env.SEED_PASSWORD || 'admin123',
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
+      isAdmin: true,
+      isSuperadmin: true,
+      isVerified: true,
+    },
+    {
+      name: 'Bruno Pereira dos Santos',
+      email: 'bruno.pereira@ufba.br',
+      password: process.env.SEED_PASSWORD || 'admin123',
+      profile: Profile.Professor,
+      level: UserLevel.Superadmin,
+      isAdmin: true,
+      isSuperadmin: true,
       isVerified: true,
     },
     {
       name: 'Rafael Augusto de Melo',
       email: 'rafael.melo@ufba.br',
-      password: process.env.SEED_PASSWORD,
+      password: process.env.SEED_PASSWORD || 'admin123',
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
+      isAdmin: true,
+      isSuperadmin: true,
       isVerified: true,
     },
     {
       name: 'Robespierre Dantas da Rocha Pita',
       email: 'robespierre.dantas@ufba.br',
-      password: process.env.SEED_PASSWORD,
+      password: process.env.SEED_PASSWORD || 'admin123',
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
+      isAdmin: true,
+      isSuperadmin: true,
       isVerified: true,
     },
     {
       name: 'Rodrigo Rocha Gomes e Souza',
       email: 'rodrigo.rocha@ufba.br',
-      password: process.env.SEED_PASSWORD,
+      password: process.env.SEED_PASSWORD || 'admin123',
       profile: Profile.Professor,
       level: UserLevel.Superadmin,
+      isAdmin: true,
+      isSuperadmin: true,
       isVerified: true,
     },
     {
       name: 'Bianco Oliveira',
       email: 'bianco.oliveira@ufba.br',
-      password: process.env.SEED_PASSWORD,
+      password: process.env.SEED_PASSWORD || 'admin123',
       profile: Profile.Presenter,
       level: UserLevel.Admin,
+      isAdmin: true,
+      isSuperadmin: false,
       isVerified: true,
     },
     {
       name: 'Bruno Morais',
       email: 'bruno.morais@ufba.br',
-      password: process.env.SEED_PASSWORD,
+      password: process.env.SEED_PASSWORD || 'admin123',
       profile: Profile.Presenter,
       level: UserLevel.Admin,
+      isAdmin: true,
+      isSuperadmin: false,
       isVerified: true,
     },
   ];
 
   const comiteeUsers = await prisma.userAccount.createManyAndReturn({
-    data: comiteeMembers.map((user) => {
-      // Ensure password is never undefined or empty
-      const password =
-        user.password || process.env.SEED_PASSWORD || 'defaultPassword123!';
-
-      if (!password || password.trim() === '') {
-        throw new Error(
-          `Password is required for user: ${user.email}. Please set SEED_PASSWORD environment variable.`,
-        );
-      }
-
-      return {
-        ...user,
-        password: safeHashPassword(password),
-      };
-    }),
+    data: comiteeMembers.map((user) => ({
+      ...user,
+      password: safeHashPassword(user.password),
+    })),
   });
 
   const committeeMembersData = comiteeUsers.map((user, index) => ({
     eventEditionId: edition2024.id,
     userId: user.id,
-    level: index < 4 ? CommitteeLevel.Coordinator : CommitteeLevel.Committee,
+    level: index < 5 ? CommitteeLevel.Coordinator : CommitteeLevel.Committee,
     role:
-      index < 4 ? CommitteeRole.OrganizingCommittee : CommitteeRole.ITSupport,
+      index < 5 ? CommitteeRole.OrganizingCommittee : CommitteeRole.ITSupport,
   }));
 
   await prisma.committeeMember.createMany({
@@ -674,7 +674,7 @@ async function main() {
     },
   ];
 
-  const panelists = [];
+  const panelists: any[] = [];
   for (const item of panelistsAndPresentations) {
     const emailName = createEmailByName(item.name);
     panelists.push({
@@ -704,17 +704,23 @@ async function main() {
     data: panelists,
   });
 
-  const submissionsData = panelistsAndPresentations.map((panelist, index) => ({
-    title: panelist.presentation || 'Nome da apresentação não informado.',
-    // topic: panelist.topic || 'Unspecified Topic',
-    advisorId: panelist.advisorId,
-    eventEditionId: edition2024.id,
-    mainAuthorId: panelist_users[index].id,
-    abstract: 'Resumo não informado.',
-    pdfFile: 'path/to/default.pdf',
-    phoneNumber: '(71) 99999-9999',
-    status: SubmissionStatus.Confirmed,
-  }));
+  const submissionsData = panelistsAndPresentations.map((panelist, index) => {
+    const advisor =
+      professorUsers.find((p) => p.name.toLowerCase().includes(panelist.professor.toLowerCase())) ||
+      professorUsers[0];
+
+    return {
+      title: panelist.presentation || 'Nome da apresentação não informado.',
+      // topic: panelist.topic || 'Unspecified Topic',
+      advisorId: advisor.id,
+      eventEditionId: edition2024.id,
+      mainAuthorId: panelist_users[index].id,
+      abstract: 'Resumo não informado.',
+      pdfFile: 'path/to/default.pdf',
+      phoneNumber: '(71) 99999-9999',
+      status: SubmissionStatus.Confirmed,
+    };
+  });
 
   const submission = await prisma.submission.createManyAndReturn({
     data: submissionsData,

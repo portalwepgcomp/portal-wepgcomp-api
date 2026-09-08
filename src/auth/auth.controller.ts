@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Headers,
+  NotFoundException,
   Param,
   Post,
   Query,
@@ -33,8 +34,13 @@ export class AuthController {
     return this.authService.resetPassword(token, resetPasswordDto.newPassword);
   }
 
+  // Endpoint auxiliar usado apenas por testes E2E (Cypress). Fica desabilitado
+  // em produção para não permitir geração arbitrária de tokens.
   @Get('generate-token/:userId')
   generateToken(@Param('userId') userId: string) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new NotFoundException();
+    }
     return this.authService.generateToken(userId);
   }
 

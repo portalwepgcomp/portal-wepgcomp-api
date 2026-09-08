@@ -8,12 +8,12 @@ export class PdfFileValidator extends FileValidator {
 
   isValid(file?: Express.Multer.File): boolean {
     if (!file) return false;
-    
+
     const isValidMimeType = file.mimetype === 'application/pdf';
-    
+
     const fileExtension = extname(file.originalname).toLowerCase();
     const isValidExtension = fileExtension === '.pdf';
-    
+
     return isValidMimeType && isValidExtension;
   }
 
@@ -21,4 +21,3 @@ export class PdfFileValidator extends FileValidator {
     return 'Apenas arquivos PDF são permitidos';
   }
 }
-

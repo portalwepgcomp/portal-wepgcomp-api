@@ -52,8 +52,9 @@ export class PresentationResponseDto {
     this.presentationBlockId = presentation.presentationBlockId;
     this.positionWithinBlock = presentation.positionWithinBlock;
     this.presentationTime = presentationTime;
-    this.publicAverageScore = presentation.publicAverageScore;
-    this.evaluatorsAverageScore = presentation.evaluatorsAverageScore;
+    this.publicAverageScore = presentation.publicAverageScore ?? undefined;
+    this.evaluatorsAverageScore =
+      presentation.evaluatorsAverageScore ?? undefined;
 
     this.submission = {
       id: presentation.submission.id,
@@ -63,26 +64,28 @@ export class PresentationResponseDto {
             name: presentation.submission.advisor.name,
             email: presentation.submission.advisor.email,
           }
-        : null,
+        : undefined,
       mainAuthorId: presentation.submission.mainAuthorId,
       mainAuthor: presentation.submission.mainAuthor
         ? {
             name: presentation.submission.mainAuthor.name,
             email: presentation.submission.mainAuthor.email,
-            photoFilePath: presentation.submission.mainAuthor.photoFilePath,
-            linkLattes: presentation.submission.mainAuthor.linkLattes,
+            photoFilePath:
+              presentation.submission.mainAuthor.photoFilePath ?? undefined,
+            linkLattes:
+              presentation.submission.mainAuthor.linkLattes ?? undefined,
           }
-        : null,
+        : undefined,
       eventEditionId: presentation.submission.eventEditionId,
       title: presentation.submission.title,
       abstract: presentation.submission.abstract,
       pdfFile: presentation.submission.pdfFile,
       phoneNumber: presentation.submission.phoneNumber,
       proposedPresentationBlockId:
-        presentation.submission.proposedPresentationBlockId,
+        presentation.submission.proposedPresentationBlockId ?? undefined,
       proposedPositionWithinBlock:
-        presentation.submission.proposedPositionWithinBlock,
-      coAdvisor: presentation.submission.coAdvisor,
+        presentation.submission.proposedPositionWithinBlock ?? undefined,
+      coAdvisor: presentation.submission.coAdvisor ?? undefined,
       status: presentation.submission.status,
       createdAt: presentation.submission.createdAt,
       updatedAt: presentation.submission.updatedAt,

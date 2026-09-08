@@ -71,7 +71,7 @@ export class AuthService {
     const html = resetUrl;
     const text = html;
     const forgotPasswordEmail = {
-      from: process.env.SMTP_FROM_EMAIL,
+      from: process.env.SMTP_FROM_EMAIL || '',
       to: user.email,
       subject: 'Redefinição de senha: WEPGCOMP',
       text,

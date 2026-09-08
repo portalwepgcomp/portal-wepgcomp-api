@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EvaluationController } from './evaluation.controller';
 import { EvaluationService } from './evaluation.service';
 import { CreateEvaluationDto } from './dto/create-evaluation.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 describe('EvaluationController', () => {
   let evaluationController: EvaluationController;
@@ -42,7 +44,12 @@ describe('EvaluationController', () => {
           useValue: mockEvaluationService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(UserLevelGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     evaluationController =
       module.get<EvaluationController>(EvaluationController);

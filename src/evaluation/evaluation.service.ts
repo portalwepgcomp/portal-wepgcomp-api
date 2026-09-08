@@ -7,12 +7,10 @@ import { AppException } from '../exceptions/app.exception';
 export class EvaluationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // Create or update evaluation
   async create(evaluations: CreateEvaluationDto[]) {
-    const results = [];
+    const results: any[] = [];
 
     for (const evaluation of evaluations) {
-      // Verify if presentation exists
       const presentation = await this.prisma.submission.findUnique({
         where: { id: evaluation.submissionId },
       });
@@ -20,7 +18,6 @@ export class EvaluationService {
         throw new AppException('Apresentação não encontrada.', 404);
       }
 
-      // Verify if user exists
       const user = await this.prisma.userAccount.findUnique({
         where: { id: evaluation.userId },
       });
@@ -37,7 +34,6 @@ export class EvaluationService {
       });
 
       if (existingEvaluation) {
-        // Update existing evaluations
         const updatedEvaluation = await this.prisma.evaluation.update({
           where: { id: existingEvaluation.id },
           data: { score: evaluation.score, comments: evaluation.comments },
@@ -45,7 +41,7 @@ export class EvaluationService {
         results.push(updatedEvaluation);
       }
     }
-    // Filter only evaluations that doesn't exists, for a bulk creation
+
     const newEvaluations = evaluations.filter(
       (evaluation) =>
         !results.some(
@@ -57,7 +53,6 @@ export class EvaluationService {
     );
 
     if (newEvaluations.length > 0) {
-      // Creating new evaluations in simple batch
       await this.prisma.evaluation.createMany({
         data: newEvaluations,
       });
@@ -66,7 +61,7 @@ export class EvaluationService {
 
     return results;
   }
-  // List all evaluations
+
   async findAll() {
     return this.prisma.evaluation.findMany({
       include: {
@@ -77,7 +72,6 @@ export class EvaluationService {
     });
   }
 
-  // List all evaluations for a specific user
   async findOne(userId: string) {
     const evaluations = await this.prisma.evaluation.findMany({
       where: { userId },
@@ -95,7 +89,7 @@ export class EvaluationService {
     return evaluations;
   }
 
-  // Calculation of the final grade for a specific submission (5 evaluations for 1 submission made by 1 user)
+  /** Média simples das notas de uma submissão (critérios × avaliadores). */
   async calculateFinalGrade(submissionId: string) {
     const evaluations = await this.prisma.evaluation.findMany({
       where: { submissionId },

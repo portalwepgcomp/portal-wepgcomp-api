@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CertificateService } from './certificate.service';
+import { CertificateAssetsService } from './certificate-assets.service';
+import { CertificateEligibilityService } from './certificate-eligibility.service';
+import { CertificateGeneratorService } from './certificate-generator.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   Profile,
@@ -72,6 +75,9 @@ describe('CertificateService', () => {
     presentation: {
       findMany: jest.fn(),
     },
+    evaluation: {
+      count: jest.fn(),
+    },
   };
 
   const mockMailingService = {
@@ -82,6 +88,9 @@ describe('CertificateService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CertificateService,
+        CertificateAssetsService,
+        CertificateEligibilityService,
+        CertificateGeneratorService,
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -182,7 +191,7 @@ describe('CertificateService', () => {
 
       jest
         .mocked(prismaService.userAccount.findUnique)
-        .mockResolvedValue(userMock);
+        .mockResolvedValue(userMock as any);
       jest
         .mocked(prismaService.eventEdition.findUnique)
         .mockResolvedValue(eventEditionMock);
@@ -212,7 +221,7 @@ describe('CertificateService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: true,
-      });
+      } as any);
 
       const result = await service.generateCertificateForUser(
         userMock.id,
@@ -349,7 +358,7 @@ describe('CertificateService', () => {
       // Set up the same mocks as the first test
       jest
         .mocked(prismaService.userAccount.findUnique)
-        .mockResolvedValue(userMock);
+        .mockResolvedValue(userMock as any);
       jest
         .mocked(prismaService.eventEdition.findUnique)
         .mockResolvedValue(eventEditionMock);
@@ -377,7 +386,7 @@ describe('CertificateService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: true,
-      });
+      } as any);
 
       // Call the service method
       await service.generateCertificateForUser(
@@ -445,7 +454,7 @@ describe('CertificateService', () => {
         mockEvents[0],
       );
       expect(mailingService.sendEmail).toHaveBeenCalledWith({
-        from: 'wepgcomp@gmail.com',
+        from: process.env.SMTP_FROM_EMAIL || '',
         to: mockUsers[0].email,
         subject: 'Certificado',
         text: 'Seu certificado já está pronto para ser baixado na página do WEPGCOMP!',

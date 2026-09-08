@@ -116,8 +116,6 @@ export class UserController {
     return this.userService.toggleUserActivation(id, activate);
   }
 
-  // --- ENHANCED ROLE MANAGEMENT ENDPOINTS ---
-
   /**
    * Approves a user with the PROFESSOR role.
    * Only accessible by users with ADMIN or SUPERADMIN roles.
@@ -164,12 +162,24 @@ export class UserController {
     required: false,
     description: 'Filter by user status (e.g., Active, Inactive).',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Case-insensitive search on name/email (server-side).',
+  })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  @ApiQuery({ name: 'paginated', required: false, type: Boolean })
   @UserLevels(UserLevel.Default, UserLevel.Admin, UserLevel.Superadmin)
   @ApiBearerAuth()
   async getUsers(
     @Query('roles') roles?: string | string[],
     @Query('profiles') profiles?: string | string[],
     @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+    @Query('paginated') paginated?: boolean,
   ) {
     const toArray = (input?: string | string[]): string[] => {
       if (!input) return [];
@@ -180,7 +190,28 @@ export class UserController {
     const rolesArray = roles ? toArray(roles) : undefined;
     const profilesArray = profiles ? toArray(profiles) : undefined;
 
-    return await this.userService.findAll(rolesArray, profilesArray, status);
+    if (
+      page !== undefined ||
+      pageSize !== undefined ||
+      paginated !== undefined
+    ) {
+      return await this.userService.findAll(
+        rolesArray,
+        profilesArray,
+        status,
+        search,
+        page ? Number(page) : undefined,
+        pageSize ? Number(pageSize) : undefined,
+        paginated !== undefined ? String(paginated) === 'true' : undefined,
+      );
+    }
+
+    return await this.userService.findAll(
+      rolesArray,
+      profilesArray,
+      status,
+      search,
+    );
   }
 
   @Get('advisors')
@@ -200,6 +231,7 @@ export class UserController {
     );
   }
 
+  @Public()
   @Post('confirm-email')
   async confirmEmail(
     @Query('token') token: string,

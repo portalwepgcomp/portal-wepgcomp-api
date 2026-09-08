@@ -1,6 +1,8 @@
 import { Profile } from '@prisma/client';
 import { SubmissionService } from './submission.service';
+import { SubmissionValidatorService } from './submission-validator.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { AppException } from '../exceptions/app.exception';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
@@ -30,6 +32,7 @@ describe('SubmissionService', () => {
       },
       presentationBlock: {
         findUnique: jest.fn(),
+        findMany: jest.fn().mockResolvedValue([]),
       },
       presentation: {
         findFirst: jest.fn(),
@@ -40,7 +43,17 @@ describe('SubmissionService', () => {
       },
     } as unknown as PrismaService;
 
-    service = new SubmissionService(prismaService);
+    const uploadsService = {
+      deleteFile: jest.fn().mockResolvedValue({ success: true }),
+    } as unknown as UploadsService;
+
+    const validatorService = new SubmissionValidatorService(prismaService);
+
+    service = new SubmissionService(
+      prismaService,
+      uploadsService,
+      validatorService,
+    );
   });
 
   describe('create', () => {
@@ -208,11 +221,9 @@ describe('SubmissionService', () => {
       (prismaService.eventEdition.findUnique as jest.Mock).mockResolvedValue({
         presentationDuration: 30,
       });
-      (
-        prismaService.presentationBlock.findUnique as jest.Mock
-      ).mockResolvedValue({
-        startTime: new Date('2023-01-01T09:00:00Z'),
-      });
+      (prismaService.presentationBlock.findMany as jest.Mock).mockResolvedValue(
+        [{ id: 'block1', startTime: new Date('2023-01-01T09:00:00Z') }],
+      );
 
       const result = await service.findAll(eventEditionId, false, false, false);
 
