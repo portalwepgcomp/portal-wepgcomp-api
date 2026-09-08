@@ -1,0 +1,44 @@
+name: Melhoria / Tarefa
+description: Nova funcionalidade, ajuste ou tarefa técnica
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: mini
+    attributes:
+      label: Mini descrição (obrigatório)
+      description: 1–3 frases do que deve ser feito e por quê.
+    validations:
+      required: true
+  - type: dropdown
+    id: escopo
+    attributes:
+      label: Escopo deste repositório
+      options:
+        - Backend (API / Nest)
+        - Ambos (vincular issue no outro repo)
+    validations:
+      required: true
+  - type: textarea
+    id: contexto
+    attributes:
+      label: Contexto / motivação
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta / abordagem
+    validations:
+      required: true
+  - type: textarea
+    id: relacionados
+    attributes:
+      label: Issues / PRs relacionados
+      placeholder: "Ex.: portal-wepgcomp-frontend#12"
+  - type: textarea
+    id: aceite
+    attributes:
+      label: Critérios de aceite
+      placeholder: |
+        - [ ] …
+    validations:
+      required: true
