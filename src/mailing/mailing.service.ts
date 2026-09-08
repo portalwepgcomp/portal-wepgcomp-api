@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import nodemailer from 'nodemailer';
+import nodemailer, { type Transporter } from 'nodemailer';
 import { CommitteeMemberService } from '../committee-member/committee-member.service';
 import { EventEditionService } from '../event-edition/event-edition.service';
 import { AppException } from '../exceptions/app.exception';
@@ -16,7 +16,7 @@ import { MailingTemplateService } from './mailing-template.service';
 @Injectable()
 export class MailingService {
   private readonly logger = new Logger(MailingService.name);
-  private readonly transporter: nodemailer.Transporter;
+  private readonly transporter: Transporter;
 
   constructor(
     private readonly eventEditionService: EventEditionService,
