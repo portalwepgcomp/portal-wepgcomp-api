@@ -116,8 +116,6 @@ export class UserController {
     return this.userService.toggleUserActivation(id, activate);
   }
 
-  // --- ENHANCED ROLE MANAGEMENT ENDPOINTS ---
-
   /**
    * Approves a user with the PROFESSOR role.
    * Only accessible by users with ADMIN or SUPERADMIN roles.
@@ -192,7 +190,11 @@ export class UserController {
     const rolesArray = roles ? toArray(roles) : undefined;
     const profilesArray = profiles ? toArray(profiles) : undefined;
 
-    if (page !== undefined || pageSize !== undefined || paginated !== undefined) {
+    if (
+      page !== undefined ||
+      pageSize !== undefined ||
+      paginated !== undefined
+    ) {
       return await this.userService.findAll(
         rolesArray,
         profilesArray,

@@ -65,3 +65,7 @@ src/metadata.ts
 
 # LLM/agent docs (não versionar)
 AGENTS.md
+
+# Artefatos gerados / scripts ad-hoc locais
+openapi.json
+find-missing.ts

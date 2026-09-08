@@ -24,7 +24,6 @@ export class MailingService {
     private readonly prismaClient: PrismaService,
     private readonly templateService: MailingTemplateService,
   ) {
-    // Nodemailer transporter setup
     this.transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT) || 587,

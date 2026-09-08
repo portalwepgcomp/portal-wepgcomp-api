@@ -26,7 +26,6 @@ export class ContactResponseDto {
   message: string;
 }
 
-// src/emails/dto/send-group-email.dto.ts
 import { Type } from 'class-transformer';
 import {
   IsArray,

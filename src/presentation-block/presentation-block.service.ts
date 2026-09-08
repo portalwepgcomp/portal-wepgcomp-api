@@ -179,12 +179,12 @@ export class PresentationBlockService {
     }
 
     const {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      numPresentations,
+      numPresentations: _numPresentations,
       submissions,
       panelists,
       ...without_num_presentations
     } = updatePresentationBlockDto;
+    void _numPresentations;
 
     const result = await this.prismaClient.$transaction(async (tx) => {
       await this.allocationService.allocateSubmissionsAndPanelistsOnUpdate(

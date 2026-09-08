@@ -13,7 +13,10 @@ import { ApiProperty } from '@nestjs/swagger';
  * Facilita a navegação paginada no frontend mantendo total compatibilidade.
  */
 export class PaginatedResponseDto<T> {
-  @ApiProperty({ isArray: true, description: 'Lista de registros da página atual' })
+  @ApiProperty({
+    isArray: true,
+    description: 'Lista de registros da página atual',
+  })
   items: T[];
 
   @ApiProperty({ description: 'Total geral de registros disponíveis' })

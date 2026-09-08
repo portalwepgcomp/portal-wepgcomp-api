@@ -29,11 +29,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      # Auditoria de segurança (não bloqueia: ver ROADMAP P4.1)
-      - name: Audit (report-only)
-        run: npm audit --audit-level=high || true
-
-      # Testes ainda NÃO são gate: base pré-existente com falhas conhecidas
-      # (ver ROADMAP-EVOLUCAO.md P1.1). Rodados em modo report-only.
-      - name: Unit tests (report-only)
-        run: npm test || true
+      - name: Unit tests
+        run: npm test

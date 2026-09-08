@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   Prisma,
   Submission,
@@ -20,6 +20,8 @@ import * as path from 'path';
 
 @Injectable()
 export class SubmissionService {
+  private readonly logger = new Logger(SubmissionService.name);
+
   constructor(
     private readonly prismaClient: PrismaService,
     private readonly uploadService: UploadsService,
@@ -105,7 +107,9 @@ export class SubmissionService {
     page?: number,
     pageSize?: number,
     paginated?: boolean,
-  ): Promise<ResponseSubmissionDto[] | PaginatedResponseDto<ResponseSubmissionDto>>;
+  ): Promise<
+    ResponseSubmissionDto[] | PaginatedResponseDto<ResponseSubmissionDto>
+  >;
   async findAll(
     eventEditionId: string,
     withoutPresentation: boolean,
@@ -117,7 +121,9 @@ export class SubmissionService {
     page?: number,
     pageSize?: number,
     paginated?: boolean,
-  ): Promise<ResponseSubmissionDto[] | PaginatedResponseDto<ResponseSubmissionDto>> {
+  ): Promise<
+    ResponseSubmissionDto[] | PaginatedResponseDto<ResponseSubmissionDto>
+  > {
     // Anti-spoofing: usuário Default só enxerga as próprias submissões,
     // ignorando qualquer mainAuthorId enviado na query. Regra que antes vivia
     // no front (apresentacoes/page.tsx) agora é imposta no servidor.
@@ -153,7 +159,8 @@ export class SubmissionService {
         ? await this.prismaClient.submission.count({ where })
         : 0;
 
-    const isPaginatedRequested = paginated === true || (page !== undefined && pageSize !== undefined);
+    const isPaginatedRequested =
+      paginated === true || (page !== undefined && pageSize !== undefined);
     const currentPage = page && page > 0 ? page : 1;
     const limit = pageSize && pageSize > 0 ? pageSize : 20;
     const skip = isPaginatedRequested ? (currentPage - 1) * limit : undefined;
@@ -289,9 +296,7 @@ export class SubmissionService {
       if (fs.existsSync(oldPdfPath)) {
         try {
           fs.unlinkSync(oldPdfPath);
-          console.log('Arquivo antigo deletado:', oldPdfPath);
-        } catch (error) {
-          console.error('Erro ao deletar arquivo antigo:', error);
+        } catch {
           throw new AppException(
             'Não foi possível substituir o arquivo PDF antigo.',
             500,
@@ -330,7 +335,7 @@ export class SubmissionService {
 
     const { success } = await this.uploadService.deleteFile(submission.pdfFile);
     if (!success) {
-      console.error(
+      this.logger.error(
         `Falha ao deletar o arquivo PDF associado à submissão ${id} | caminho do arquivo: ${submission.pdfFile}`,
       );
     }

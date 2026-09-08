@@ -59,7 +59,6 @@ export class PresentationService {
       throw new AppException('Submissão não encontrada.', 404);
     }
 
-    // turn submission status to confirmed
     if (submissionExists.status !== SubmissionStatus.Confirmed) {
       await this.submissionService.update(submissionId, {
         status: SubmissionStatus.Confirmed,
@@ -78,7 +77,6 @@ export class PresentationService {
       throw new AppException('Bloco de apresentação não encontrado.', 404);
     }
 
-    // Fetch the presentation block duration and event edition's presentation duration
     const eventEdition = await this.prismaClient.eventEdition.findUnique({
       where: { id: presentationBlockExists.eventEditionId },
     });
@@ -138,7 +136,6 @@ export class PresentationService {
       status,
     } = createPresentationWithSubmissionDto;
 
-    // Attempt to create the submission
     let createdSubmission;
     try {
       createdSubmission = await this.submissionService.create({
@@ -161,17 +158,14 @@ export class PresentationService {
       throw new AppException('Erro ao criar a submissão.', 500);
     }
 
-    // Check if presentationBlockId and positionWithinBlock are provided
     if (!presentationBlockId || positionWithinBlock === undefined) {
       return {
         submission: createdSubmission,
       };
     }
 
-    // Determine presentation status
     const presentationStatus = status || PresentationStatus.ToPresent;
 
-    // Attempt to create the presentation
     let createdPresentation;
     try {
       createdPresentation = await this.create({
@@ -181,7 +175,6 @@ export class PresentationService {
         status: presentationStatus,
       });
     } catch (error) {
-      // Rool back the submission creation
       await this.submissionService.remove(createdSubmission.id);
 
       if (error instanceof AppException) {
@@ -277,7 +270,6 @@ export class PresentationService {
     if (!existingPresentation)
       throw new AppException('Apresentação não encontrada.', 404);
 
-    // Validate submission if it is being updated
     if (submissionId) {
       const submissionExists = await this.prismaClient.submission.findUnique({
         where: {
@@ -297,7 +289,6 @@ export class PresentationService {
       }
     }
 
-    // Validate presentation block if it is being updated
     if (presentationBlockId) {
       const presentationBlockExists =
         await this.prismaClient.presentationBlock.findUnique({
@@ -310,7 +301,6 @@ export class PresentationService {
         throw new AppException('Bloco de apresentação não encontrado.', 404);
       }
 
-      // Fetch the event edition for the block to check the presentation duration
       const eventEdition = await this.prismaClient.eventEdition.findUnique({
         where: { id: presentationBlockExists.eventEditionId },
       });
@@ -322,7 +312,6 @@ export class PresentationService {
       const blockDuration = presentationBlockExists.duration;
       const presentationDuration = eventEdition.presentationDuration;
 
-      // Calculate the max position within the block
       const maxPositionWithinBlock =
         Math.floor(blockDuration / presentationDuration) - 1;
       if (
@@ -382,7 +371,6 @@ export class PresentationService {
     if (!existingPresentation)
       throw new AppException('Apresentação não encontrada.', 404);
 
-    // Attempt to update the submission
     let updatedSubmission;
     try {
       updatedSubmission = await this.submissionService.update(
@@ -405,7 +393,6 @@ export class PresentationService {
       throw new AppException('Erro ao atualizar a submissão.', 500);
     }
 
-    // Attempt to update the presentation
     let updatedPresentation;
     try {
       updatedPresentation = await this.update(id, {
@@ -442,13 +429,11 @@ export class PresentationService {
   }
 
   async listUserPresentations(userId: string) {
-    // Fetch submissions created by the logged-in user and include related presentations
     const submissions = await this.prismaClient.submission.findMany({
       where: { mainAuthorId: userId },
       include: { Presentation: true },
     });
 
-    // Extract presentations directly from the submissions
     const presentations = submissions.flatMap(
       (submission) => submission.Presentation,
     );
@@ -492,7 +477,6 @@ export class PresentationService {
     presentationId: string,
     dto: UpdatePresentationDto,
   ) {
-    // Check if the presentation belongs to a submission authored by the user
     const presentation = await this.prismaClient.presentation.findFirst({
       where: {
         id: presentationId,
@@ -507,7 +491,6 @@ export class PresentationService {
       );
     }
 
-    // Update the presentation
     return this.prismaClient.presentation.update({
       where: { id: presentationId },
       data: dto,
@@ -544,7 +527,6 @@ export class PresentationService {
     return presentationTime;
   }
 
-  // Delegation to specialized sub-services
   bookmarkPresentation(
     bookmarkPresentationRequestDto: BookmarkPresentationRequestDto,
     userId: string,

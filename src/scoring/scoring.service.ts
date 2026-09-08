@@ -134,7 +134,6 @@ export class ScoringService {
     const now = new Date();
     const endDate = event.endDate;
 
-    // Find the last presentation block
     const lastBlock = await this.prismaClient.presentationBlock.findFirst({
       where: {
         eventEditionId: event.id,
@@ -146,7 +145,7 @@ export class ScoringService {
 
     let scheduleTime: Date;
     let decision: string;
-    // If the last block is General type, use its start time
+    // Bloco General futuro = cerimônia/encerramento; senão usa endDate do evento.
     if (
       lastBlock &&
       lastBlock.type === PresentationBlockType.General &&
@@ -155,14 +154,12 @@ export class ScoringService {
       scheduleTime = lastBlock.startTime;
       decision = 'Last block start time';
     } else {
-      // Otherwise, use the original event end date
       scheduleTime = endDate;
       decision = 'Event end date';
     }
 
     const delay = scheduleTime.getTime() - now.getTime();
 
-    // Only schedule if the calculated time hasn't passed yet
     if (delay > 0) {
       if (delay > this.MAX_TIMEOUT) {
         const timeout = setTimeout(() => {

@@ -454,7 +454,7 @@ describe('CertificateService', () => {
         mockEvents[0],
       );
       expect(mailingService.sendEmail).toHaveBeenCalledWith({
-        from: 'wepgcomp@gmail.com',
+        from: process.env.SMTP_FROM_EMAIL || '',
         to: mockUsers[0].email,
         subject: 'Certificado',
         text: 'Seu certificado já está pronto para ser baixado na página do WEPGCOMP!',

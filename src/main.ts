@@ -6,20 +6,24 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './exceptions/filter';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
 
-function resolveCorsOrigins(): (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => void {
+function resolveCorsOrigins(): (
+  origin: string | undefined,
+  callback: (err: Error | null, allow?: boolean) => void,
+) => void {
   return (origin, callback) => {
-    // Permite chamadas locais, server-to-server ou ferramentas como Postman/Curl sem header Origin
     if (!origin) {
       return callback(null, true);
     }
 
-    const raw = process.env.CORS_ORIGINS ?? process.env.FRONTEND_URL ?? 'http://localhost:3000,http://127.0.0.1:3000';
+    const raw =
+      process.env.CORS_ORIGINS ??
+      process.env.FRONTEND_URL ??
+      'http://localhost:3000,http://127.0.0.1:3000';
     const allowed = raw
       .split(',')
       .map((o) => o.trim())
       .filter(Boolean);
 
-    // Permite qualquer localhost/127.0.0.1 em desenvolvimento ou origens explicitamente configuradas
     if (
       allowed.includes(origin) ||
       origin.startsWith('http://localhost:') ||
@@ -43,7 +47,13 @@ async function bootstrap() {
   app.enableCors({
     origin: resolveCorsOrigins(),
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
     credentials: true,
   });
 

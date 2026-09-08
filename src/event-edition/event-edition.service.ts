@@ -254,7 +254,9 @@ export class EventEditionService {
     page?: number,
     pageSize?: number,
     paginated?: boolean,
-  ): Promise<EventEditionResponseDto[] | PaginatedResponseDto<EventEditionResponseDto>> {
+  ): Promise<
+    EventEditionResponseDto[] | PaginatedResponseDto<EventEditionResponseDto>
+  > {
     const searchTerm = typeof search === 'string' ? search.trim() : '';
     const where: Prisma.EventEditionWhereInput = searchTerm
       ? {
@@ -270,7 +272,8 @@ export class EventEditionService {
         ? await this.prismaClient.eventEdition.count({ where })
         : 0;
 
-    const isPaginatedRequested = paginated === true || (page !== undefined && pageSize !== undefined);
+    const isPaginatedRequested =
+      paginated === true || (page !== undefined && pageSize !== undefined);
     const currentPage = page && page > 0 ? page : 1;
     const limit = pageSize && pageSize > 0 ? pageSize : 20;
     const skip = isPaginatedRequested ? (currentPage - 1) * limit : undefined;

@@ -34,7 +34,6 @@ export class PresentationBlockController {
     return this.presentationBlockService.create(createPresentationBlockDto);
   }
 
-  // FindAll but for only a given eventEditionId
   @Public()
   @Get('event-edition/:eventEditionId')
   async findAllByEventEditionId(
@@ -81,12 +80,10 @@ export class PresentationBlockController {
   async findOne(
     @Param('id') id: string,
   ): Promise<ResponsePresentationBlockDto | null> {
-    // try exception
     let presentationBlock = null;
     try {
       presentationBlock = await this.presentationBlockService.findOne(id);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
+    } catch {
       return null;
     }
 
