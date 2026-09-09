@@ -94,7 +94,7 @@ describe('MailingService', () => {
 
     it('should build email template with header and footer', () => {
       const html = templateService.buildEmailTemplate('Teste de mensagem');
-      expect(html).toContain('Portal WePGCOMP');
+      expect(html).toContain('Portal WEPGCOMP');
       expect(html).toContain('Teste de mensagem');
     });
 

@@ -79,7 +79,7 @@ export class MailingTemplateService {
       <body>
         <div class="email-container">
           <div class="header">
-            <h1>Portal WePGCOMP</h1>
+            <h1>Portal WEPGCOMP</h1>
           </div>
           <div class="content">
             <div class="message">
@@ -87,7 +87,7 @@ export class MailingTemplateService {
             </div>
           </div>
           <div class="footer">
-            <p>Esta é uma mensagem automática do Portal WePGCOMP</p>
+            <p>Esta é uma mensagem automática do Portal WEPGCOMP</p>
             <p>Por favor, não responda a este e-mail</p>
           </div>
         </div>
@@ -158,7 +158,7 @@ export class MailingTemplateService {
       <body>
         <div class="email-container">
           <div class="header">
-            <h1>Portal WePGCOMP</h1>
+            <h1>Portal WEPGCOMP</h1>
           </div>
           <div class="content">
             <div class="message">
@@ -167,7 +167,7 @@ export class MailingTemplateService {
             </div>
           </div>
           <div class="footer">
-            <p>Esta é uma mensagem automática do Portal WePGCOMP</p>
+            <p>Esta é uma mensagem automática do Portal WEPGCOMP</p>
             <p>Por favor, não responda a este e-mail</p>
           </div>
         </div>
