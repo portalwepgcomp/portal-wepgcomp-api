@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: pt-BR
+early_access: false
+enable_free_tier: true
+tone_instructions: >
+  Seja profissional e objetivo. Priorize bugs, regressões, riscos de segurança,
+  autorização/autenticação e qualidade do código. Evite nits cosméticos e
+  sugestões especulativas sem evidência no diff.
+
+reviews:
+  profile: chill
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+    ignore_title_keywords:
+      - WIP
+      - "DO NOT MERGE"
+  path_filters:
+    - "!**/node_modules/**"
+    - "!**/package-lock.json"
+    - "!**/pnpm-lock.yaml"
+    - "!**/yarn.lock"
+    - "!**/dist/**"
+    - "!**/coverage/**"
+    - "!**/prisma/migrations/**"
+    - "!**/*.min.js"
+    - "!**/*.map"
+    - "!**/*.png"
+    - "!**/*.jpg"
+    - "!**/*.jpeg"
+    - "!**/*.webp"
+    - "!**/*.ico"
+  path_instructions:
+    - path: "src/**/*.{ts,js}"
+      instructions: |
+        Foque em bugs, regressões e segurança na API NestJS.
+        Verifique validação de entrada, autorização, vazamento de dados
+        sensíveis, tratamento de erros e contratos de DTO/endpoints.
+        Prefira apontar problemas concretos no diff a refatorações amplas.
+    - path: "prisma/**/*"
+      instructions: |
+        Revise impacto em dados, migrações e índices. Alerte para quebras
+        de compatibilidade e risco de perda de dados.
+
+chat:
+  auto_reply: true
