@@ -119,7 +119,7 @@ export class MailingService {
   }
 
   async sendEmailConfirmation(email: string, token: string): Promise<void> {
-    const confirmationUrl = `${process.env.FRONTEND_URL}/users/confirm-email?token=${token}`;
+    const confirmationUrl = `${process.env.FRONTEND_URL}/confirmar-email?token=${token}`;
 
     const mailOptions = {
       to: email,

@@ -85,6 +85,31 @@ describe('MailingService', () => {
     });
   });
 
+  describe('sendEmailConfirmation', () => {
+    const originalFrontendUrl = process.env.FRONTEND_URL;
+
+    afterEach(() => {
+      if (originalFrontendUrl === undefined) {
+        delete process.env.FRONTEND_URL;
+      } else {
+        process.env.FRONTEND_URL = originalFrontendUrl;
+      }
+    });
+
+    it('should link to the front-end route, not to the API endpoint', async () => {
+      process.env.FRONTEND_URL = 'https://portal.example.com';
+
+      await service.sendEmailConfirmation('user@example.com', 'jwt-token');
+
+      expect(mockSendMailFn).toHaveBeenCalledTimes(1);
+      const mailOptions = mockSendMailFn.mock.calls[0][0];
+      expect(mailOptions.html).toContain(
+        'https://portal.example.com/confirmar-email?token=jwt-token',
+      );
+      expect(mailOptions.html).not.toContain('/users/confirm-email');
+    });
+  });
+
   describe('templateService', () => {
     it('should sanitize HTML characters in template', () => {
       const sanitized = templateService.sanitize('<script>alert("x")</script>');
