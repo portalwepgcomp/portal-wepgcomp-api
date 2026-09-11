@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -65,6 +65,20 @@ async function bootstrap() {
       // rejeita com 400 se o front enviar campos extras.
       whitelist: true,
       forbidNonWhitelisted: true,
+      exceptionFactory: (errors) => {
+        const details = errors.flatMap((error) =>
+          Object.values(error.constraints ?? {}).map((message) => ({
+            field: error.property,
+            messages: [message],
+          })),
+        );
+
+        return new BadRequestException({
+          error: 'VALIDATION_ERROR',
+          message: 'Dados inválidos.',
+          details,
+        });
+      },
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());

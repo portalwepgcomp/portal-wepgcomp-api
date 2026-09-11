@@ -22,10 +22,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : 'Erro interno no servidor';
+    const exceptionResponse =
+      exception instanceof HttpException ? exception.getResponse() : undefined;
 
     // Log no servidor sem expor o objeto inteiro (que poderia conter payloads
     // sensíveis). Erros 5xx registram a stack para diagnóstico.
@@ -41,9 +39,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
       this.logger.warn(`${logContext} -> ${status}: ${description}`);
     }
 
+    const body =
+      typeof exceptionResponse === 'object' && exceptionResponse !== null
+        ? exceptionResponse
+        : { message: exceptionResponse ?? 'Erro interno no servidor' };
+
     response.status(status).json({
       statusCode: status,
-      message,
+      ...body,
     });
   }
 }
