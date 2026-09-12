@@ -21,6 +21,7 @@ import {
   BookmarkedPresentationsResponseDto,
   BookmarkPresentationRequestDto,
   BookmarkPresentationResponseDto,
+  ListPresentationBookmarksQueryDto,
 } from './dto/bookmark-presentation.dto';
 import { CreatePresentationWithSubmissionDto } from './dto/create-presentation-with-submission.dto';
 import { CreatePresentationDto } from './dto/create-presentation.dto';
@@ -40,10 +41,14 @@ export class PresentationController {
   @ApiBearerAuth()
   bookmarkedPresentations(
     @Request() req: any,
+    @Query() query: ListPresentationBookmarksQueryDto,
   ): Promise<BookmarkedPresentationsResponseDto> {
     const userId = req.user.userId;
 
-    return this.presentationService.bookmarkedPresentations(userId);
+    return this.presentationService.bookmarkedPresentations(
+      userId,
+      query.eventEditionId,
+    );
   }
 
   @Get('bookmark')

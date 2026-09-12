@@ -101,6 +101,7 @@ export class PresentationBookmarkService {
 
   async bookmarkedPresentations(
     userId: string,
+    eventEditionId: string,
   ): Promise<BookmarkedPresentationsResponseDto> {
     const user = await this.prismaClient.userAccount.findUnique({
       where: {
@@ -108,6 +109,9 @@ export class PresentationBookmarkService {
       },
       include: {
         bookmarkedPresentations: {
+          where: {
+            submission: { eventEditionId },
+          },
           include: {
             submission: {
               include: {

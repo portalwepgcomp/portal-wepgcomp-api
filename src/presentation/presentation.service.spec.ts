@@ -1382,32 +1382,55 @@ describe('PresentationService', () => {
     });
 
     describe('bookmarkedPresentations', () => {
-      it('should return all bookmarked presentations for user', async () => {
+      const eventEditionId = '00000005-0000-4000-8000-020000002025';
+
+      it('should query only bookmarks in the requested edition for the user', async () => {
         const userId = 'user1';
         const mockBookmarks = [
-          { id: 'presentation1' },
-          { id: 'presentation2' },
+          { id: 'presentation1', submission: { eventEditionId } },
         ];
-
         (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue({
           id: userId,
           bookmarkedPresentations: mockBookmarks,
         });
 
-        const result = await service.bookmarkedPresentations(userId);
+        const result = await service.bookmarkedPresentations(
+          userId,
+          eventEditionId,
+        );
+        expect(prismaService.userAccount.findUnique).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { id: userId },
+            include: {
+              bookmarkedPresentations: expect.objectContaining({
+                where: { submission: { eventEditionId } },
+                include: expect.objectContaining({
+                  submission: expect.any(Object),
+                }),
+              }),
+            },
+          }),
+        );
         expect(result.bookmarkedPresentations).toEqual(mockBookmarks);
       });
 
-      it('should throw error if user not found', async () => {
-        const userId = 'nonexistent';
+      it('should return an empty list when the edition has no bookmarks', async () => {
+        (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue({
+          id: 'user1',
+          bookmarkedPresentations: [],
+        });
+        await expect(
+          service.bookmarkedPresentations('user1', eventEditionId),
+        ).resolves.toEqual({ bookmarkedPresentations: [] });
+      });
 
+      it('should throw error if user not found', async () => {
         (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue(
           null,
         );
-
-        await expect(service.bookmarkedPresentations(userId)).rejects.toThrow(
-          new AppException('Usuário não encontrado.', 404),
-        );
+        await expect(
+          service.bookmarkedPresentations('nonexistent', eventEditionId),
+        ).rejects.toThrow(new AppException('Usuário não encontrado.', 404));
       });
     });
 
