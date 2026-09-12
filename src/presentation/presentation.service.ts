@@ -546,8 +546,9 @@ export class PresentationService {
 
   bookmarkedPresentations(
     userId: string,
+    eventEditionId: string,
   ): Promise<BookmarkedPresentationsResponseDto> {
-    return this.bookmarkService.bookmarkedPresentations(userId);
+    return this.bookmarkService.bookmarkedPresentations(userId, eventEditionId);
   }
 
   removePresentationBookmark(
