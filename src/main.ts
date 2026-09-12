@@ -1,11 +1,35 @@
 import 'dotenv/config';
-import { ValidationPipe } from '@nestjs/common';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './exceptions/filter';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
+
+type ValidationDetail = {
+  field: string;
+  messages: string[];
+};
+
+function collectValidationDetails(
+  errors: ValidationError[],
+  parentField = '',
+): ValidationDetail[] {
+  return errors.flatMap((error) => {
+    const field = parentField
+      ? `${parentField}.${error.property}`
+      : error.property;
+    const ownDetails = Object.values(error.constraints ?? {}).map((message) => ({
+      field,
+      messages: [message],
+    }));
+    const childDetails = collectValidationDetails(error.children ?? [], field);
+
+    return [...ownDetails, ...childDetails];
+  });
+}
 
 function resolveCorsOrigins(): (
   origin: string | undefined,
@@ -61,10 +85,18 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
-      // Remove campos não declarados nos DTOs. forbidNonWhitelisted
-      // rejeita com 400 se o front enviar campos extras.
+      // Rejeita com 400 campos não declarados nos DTOs.
       whitelist: true,
       forbidNonWhitelisted: true,
+      exceptionFactory: (errors) => {
+        const details = collectValidationDetails(errors);
+
+        return new BadRequestException({
+          error: 'VALIDATION_ERROR',
+          message: 'Dados inválidos.',
+          details,
+        });
+      },
     }),
   );
   app.useGlobalFilters(new HttpExceptionFilter());
