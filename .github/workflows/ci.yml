@@ -34,3 +34,9 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Validate production Docker build (Alpine)
+        # Builda a imagem real de produção (node:22-alpine/musl) para pegar problemas
+        # que só aparecem nesse ambiente (ex.: package-lock.json desincronizado que passa
+        # no npm ci do runner glibc do CI, mas falha no build do Dokku em Alpine/musl).
+        run: docker build -t ci-image-check:${{ github.sha }} .
