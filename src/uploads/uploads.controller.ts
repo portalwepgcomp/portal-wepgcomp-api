@@ -33,7 +33,7 @@ export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
@@ -63,7 +63,7 @@ export class UploadsController {
   }
 
   @Delete(':filename')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiOperation({ summary: 'Deleta um arquivo pelo nome do arquivo' })
   @ApiResponse({ status: 200, description: 'Arquivo deletado com sucesso!' })
   @ApiResponse({ status: 404, description: 'Arquivo não encontrado.' })
@@ -72,7 +72,7 @@ export class UploadsController {
   }
 
   @Get('list')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiOperation({ summary: 'Lista os nomes dos arquivos armazenados' })
   @ApiResponse({ status: 200, description: 'Lista de arquivos retornada.' })
   listFiles() {

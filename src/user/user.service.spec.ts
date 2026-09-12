@@ -166,7 +166,6 @@ describe('UserService', () => {
         profile: 'Presenter',
         level: 'Default',
         isActive: true,
-        isSuperadmin: false,
         isTeacherActive: false,
         isVerified: false,
         createdAt: new Date(),
@@ -207,7 +206,7 @@ describe('UserService', () => {
       expect(result.email).toEqual(createUserDto.email);
     });
 
-    it('should create first professor as super admin', async () => {
+    it('should create first professor as admin', async () => {
       prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(null); // Ensure user does not exist
       prismaService.userAccount.create = jest.fn().mockResolvedValue({
         id: '1',
@@ -217,9 +216,8 @@ describe('UserService', () => {
         email: 'newuser@ufba.br',
         photoFilePath: null,
         profile: 'Professor',
-        level: 'Superadmin', // Ensure level is Superadmin
+        level: 'Admin', // Ensure level is Admin
         isActive: true,
-        isSuperadmin: true,
         isTeacherActive: true,
         isVerified: false,
         createdAt: new Date(),
@@ -230,7 +228,7 @@ describe('UserService', () => {
         isPresenterActive: false,
       });
 
-      service.checkProfessorShouldBeSuperAdmin = jest
+      service.checkFirstProfessorShouldBeAdmin = jest
         .fn()
         .mockResolvedValue(true); // Ensure this is set to true
 
@@ -258,7 +256,7 @@ describe('UserService', () => {
           email: createUserDto.email,
           password: hashedPassword,
           profile: createUserDto.profile,
-          level: UserLevel.Superadmin,
+          level: UserLevel.Admin,
           registrationNumber: createUserDto.registrationNumber,
           registrationNumberType: 'MATRICULA',
           isActive: createUserDto.isActive,
@@ -287,7 +285,6 @@ describe('UserService', () => {
         profile: 'Professor',
         level: 'Default', // Ensure level is Default
         isActive: false,
-        isSuperadmin: false,
         isTeacherActive: false,
         isVerified: false,
         createdAt: new Date(),
@@ -298,7 +295,7 @@ describe('UserService', () => {
         isPresenterActive: false,
       });
 
-      service.checkProfessorShouldBeSuperAdmin = jest
+      service.checkFirstProfessorShouldBeAdmin = jest
         .fn()
         .mockResolvedValue(false); // Ensure this is set to false
 
@@ -382,11 +379,11 @@ describe('UserService', () => {
     });
   });
 
-  describe('checkProfessorShouldBeSuperAdmin', () => {
+  describe('checkFirstProfessorShouldBeAdmin', () => {
     it('should return true if database has no professors', async () => {
       prismaService.userAccount.count = jest.fn().mockResolvedValue(0);
 
-      const result = await service.checkProfessorShouldBeSuperAdmin();
+      const result = await service.checkFirstProfessorShouldBeAdmin();
 
       expect(prismaService.userAccount.count).toHaveBeenCalledWith({
         where: {
@@ -399,7 +396,7 @@ describe('UserService', () => {
     it('should return false if database has professors', async () => {
       prismaService.userAccount.count = jest.fn().mockResolvedValue(1);
 
-      const result = await service.checkProfessorShouldBeSuperAdmin();
+      const result = await service.checkFirstProfessorShouldBeAdmin();
 
       expect(prismaService.userAccount.count).toHaveBeenCalledWith({
         where: {
@@ -465,9 +462,7 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
-          isSuperadmin: false,
           isTeacherActive: true,
-          isAdmin: true,
           isPresenterActive: true,
         },
         {
@@ -484,9 +479,7 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
-          isSuperadmin: false,
           isTeacherActive: false,
-          isAdmin: false,
           isPresenterActive: false,
         },
       ];
@@ -512,8 +505,6 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
-          isAdmin: true,
-          isSuperadmin: true,
           isTeacherActive: true,
           isPresenterActive: true,
           linkLattes: true,
@@ -541,9 +532,7 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
-          isSuperadmin: false,
           isTeacherActive: true,
-          isAdmin: true,
           isPresenterActive: true,
         },
       ];
@@ -569,8 +558,6 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
-          isAdmin: true,
-          isSuperadmin: true,
           isTeacherActive: true,
           linkLattes: true,
           isPresenterActive: true,
@@ -598,9 +585,7 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
-          isSuperadmin: false,
           isTeacherActive: false,
-          isAdmin: false,
           isPresenterActive: false,
         },
       ];
@@ -626,8 +611,6 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
-          isAdmin: true,
-          isSuperadmin: true,
           isTeacherActive: true,
           linkLattes: true,
           isPresenterActive: true,
@@ -655,9 +638,7 @@ describe('UserService', () => {
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
-          isSuperadmin: false,
           isTeacherActive: true,
-          isAdmin: true,
           isPresenterActive: true,
         },
       ];
@@ -683,8 +664,6 @@ describe('UserService', () => {
           createdAt: true,
           updatedAt: true,
           isVerified: true,
-          isAdmin: true,
-          isSuperadmin: true,
           isTeacherActive: true,
           linkLattes: true,
           isPresenterActive: true,

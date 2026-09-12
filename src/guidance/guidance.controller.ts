@@ -35,28 +35,28 @@ export class GuidanceController {
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async deleteGuidance(@Param('id') id: string) {
     return this.guidanceService.remove(id);
   }
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async createGuidance(@Body() createGuidanceDto: CreateGuidanceDto) {
     return this.guidanceService.create(createGuidanceDto);
   }
 
   @Put('/active')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async updateActiveGuidance(@Body() updateGuidanceDto: UpdateGuidanceDto) {
     return this.guidanceService.updateActive(updateGuidanceDto);
   }
 
   @Put(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async updateGuidance(
     @Param('id') id: string,

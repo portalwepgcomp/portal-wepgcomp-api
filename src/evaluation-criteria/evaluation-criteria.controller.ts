@@ -23,13 +23,13 @@ export class EvaluationCriteriaController {
   ) {}
 
   @Get(':eventEditionId')
-  @UserLevels(UserLevel.Default, UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
   async findAll(@Param('eventEditionId') eventEditionId: string) {
     return await this.evaluationCriteriaService.findAll(eventEditionId);
   }
 
   @Post('batch')
-  @UserLevels(UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   async createFromList(
     @Body() evaluationCriteria: CreateEvaluationCriteriaDto[],
   ) {
@@ -39,7 +39,7 @@ export class EvaluationCriteriaController {
   }
 
   @Put('batch')
-  @UserLevels(UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   async editFromList(
     @Body() evaluationCriteria: UpdateEvaluationCriteriaDto[],
   ) {

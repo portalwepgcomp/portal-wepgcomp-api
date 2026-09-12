@@ -27,7 +27,7 @@ export class SubmissionController {
   constructor(private readonly submissionService: SubmissionService) {}
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   create(@Body() createSubmissionDto: CreateSubmissionDto) {
     return this.submissionService.create(createSubmissionDto);
   }
@@ -79,7 +79,7 @@ export class SubmissionController {
   }
 
   @Patch(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   update(
     @Param('id') id: string,
     @Body() updateSubmissionDto: UpdateSubmissionDto,
@@ -88,7 +88,7 @@ export class SubmissionController {
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   remove(@Param('id') id: string) {
     return this.submissionService.remove(id);
   }

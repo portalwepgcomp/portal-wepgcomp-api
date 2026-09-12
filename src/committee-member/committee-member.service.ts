@@ -61,26 +61,22 @@ export class CommitteeMemberService {
     });
   }
 
-  private async promoteUser(userId: string, committeeLevel: CommitteeLevel) {
+  private async promoteUser(userId: string, _committeeLevel: CommitteeLevel) {
+    // Coordinator e Committee promovem igualmente para Admin — não há mais
+    // diferenciação de nível (Superadmin foi eliminado).
     await this.prismaClient.userAccount.update({
       where: { id: userId },
       data: {
-        level:
-          committeeLevel === CommitteeLevel.Coordinator
-            ? UserLevel.Superadmin
-            : UserLevel.Admin,
+        level: UserLevel.Admin,
       },
     });
   }
 
-  private async demoteUser(userId: string, committeeLevel: CommitteeLevel) {
+  private async demoteUser(userId: string, _committeeLevel: CommitteeLevel) {
     await this.prismaClient.userAccount.update({
       where: { id: userId },
       data: {
-        level:
-          committeeLevel === CommitteeLevel.Coordinator
-            ? UserLevel.Superadmin
-            : UserLevel.Default,
+        level: UserLevel.Default,
       },
     });
   }

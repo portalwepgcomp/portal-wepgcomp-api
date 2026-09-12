@@ -17,7 +17,6 @@ export enum Profile {
 }
 
 export enum UserLevel {
-  Superadmin = 'Superadmin',
   Admin = 'Admin',
   Default = 'Default',
 }

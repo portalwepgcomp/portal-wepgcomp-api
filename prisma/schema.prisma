@@ -24,8 +24,6 @@ model UserAccount {
   updatedBy               String?                 @map("updated_by") @db.VarChar(50)
   isVerified              Boolean                 @default(false) @map("is_verified")
   registrationNumberType  RegistrationNumberType? @map("registration_number_type")
-  isAdmin                 Boolean                 @default(false) @map("is_admin")
-  isSuperadmin            Boolean                 @default(false) @map("is_superadmin")
   isTeacherActive         Boolean                 @default(false) @map("is_teacher_active")
   isPresenterActive       Boolean                 @default(false) @map("is_presenter_active")
 
@@ -266,7 +264,6 @@ enum Profile {
 }
 
 enum UserLevel {
-  Superadmin
   Admin
   Default
 

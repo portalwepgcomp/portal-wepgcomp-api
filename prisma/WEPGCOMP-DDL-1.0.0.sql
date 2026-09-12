@@ -18,7 +18,7 @@ CREATE TABLE Event_Edition (
 );
 
 CREATE TYPE user_account_profile AS ENUM ('Presenter', 'Professor', 'Listener');
-CREATE TYPE user_account_level AS ENUM ('Superadmin', 'Admin', 'Default');
+CREATE TYPE user_account_level AS ENUM ('Admin', 'Default');
 
 CREATE TABLE User_Account (
     id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),

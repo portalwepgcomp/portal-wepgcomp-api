@@ -18,7 +18,7 @@ export class CertificateController {
   constructor(private readonly certificateService: CertificateService) {}
 
   @Get('event-edition/:eventEditionId')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   async downloadCertificate(
     @Request() req: any,
     @Res() res: Response,

@@ -29,7 +29,7 @@ export class PresentationBlockController {
   ) {}
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   async create(@Body() createPresentationBlockDto: CreatePresentationBlockDto) {
     return this.presentationBlockService.create(createPresentationBlockDto);
   }
@@ -55,7 +55,7 @@ export class PresentationBlockController {
     );
   }
 
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @Get()
   async findAll(
     @Request() req: any,
@@ -97,7 +97,7 @@ export class PresentationBlockController {
   }
 
   @Patch(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   async update(
     @Param('id') id: string,
     @Body() updatePresentationBlockDto: UpdatePresentationBlockDto,
@@ -106,13 +106,13 @@ export class PresentationBlockController {
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   async remove(@Param('id') id: string) {
     return this.presentationBlockService.remove(id);
   }
 
   @Patch(':id/presentations/swap')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   async swapPresentations(
     @Param('id') id: string,
     @Body() SwapMultiplePresentationsDto: SwapMultiplePresentationsDto,

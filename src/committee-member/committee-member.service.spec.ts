@@ -149,7 +149,7 @@ describe('CommitteeMemberService', () => {
 
       expect(prismaService.userAccount.update).toHaveBeenCalledWith({
         where: { id: 'user-123' },
-        data: { level: UserLevel.Superadmin },
+        data: { level: UserLevel.Admin },
       });
     });
 

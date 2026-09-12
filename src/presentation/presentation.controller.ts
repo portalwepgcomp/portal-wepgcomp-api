@@ -36,7 +36,7 @@ export class PresentationController {
   constructor(private readonly presentationService: PresentationService) {}
 
   @Get('bookmarks')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   bookmarkedPresentations(
     @Request() req: any,
@@ -47,7 +47,7 @@ export class PresentationController {
   }
 
   @Get('bookmark')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   bookmarkedPresentation(
     @Request() req: any,
@@ -62,7 +62,7 @@ export class PresentationController {
   }
 
   @Post('bookmark')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   bookmarkPresentation(
     @Request() req: any,
@@ -77,7 +77,7 @@ export class PresentationController {
   }
 
   @Delete('bookmark')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   removePresentationBookmark(
     @Request() req: any,
@@ -92,14 +92,14 @@ export class PresentationController {
   }
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   create(@Body() createPresentationDto: CreatePresentationDto) {
     return this.presentationService.create(createPresentationDto);
   }
 
   @Post('with-submission')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   createWithSubmission(
     @Body()
@@ -130,7 +130,7 @@ export class PresentationController {
    * @returns List of presentations for the logged-in user.
    */
   @Get('my')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   listPresentations(@Request() req: any) {
     const userId = req.user.userId; // User ID extracted from the JWT
@@ -138,7 +138,7 @@ export class PresentationController {
   }
 
   @Get('advised')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   listAdvisedPresentations(
     @Request() req: any,
@@ -161,7 +161,7 @@ export class PresentationController {
    * @returns Updated presentation.
    */
   @Put(':id/my')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   updatePresentationForUser(
     @Request() req: any,
@@ -177,7 +177,7 @@ export class PresentationController {
   }
 
   @Patch(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   update(
     @Param('id') id: string,
@@ -187,7 +187,7 @@ export class PresentationController {
   }
 
   @Patch('with-submission/:id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   updateWithSubmission(
     @Param('id') id: string,
@@ -201,14 +201,14 @@ export class PresentationController {
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   remove(@Param('id') id: string) {
     return this.presentationService.remove(id);
   }
 
   @Post('calculate-all-scores/:eventEditionId')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiParam({
     name: 'eventEditionId',
@@ -221,7 +221,7 @@ export class PresentationController {
   }
 
   @Post('reset-evaluators-scores/:eventEditionId')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiParam({
     name: 'eventEditionId',
@@ -234,7 +234,7 @@ export class PresentationController {
   }
 
   @Post('reset-public-scores/:eventEditionId')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiParam({
     name: 'eventEditionId',
@@ -247,7 +247,7 @@ export class PresentationController {
   }
 
   @Post('reset-committee-scores/:eventEditionId')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiParam({
     name: 'eventEditionId',

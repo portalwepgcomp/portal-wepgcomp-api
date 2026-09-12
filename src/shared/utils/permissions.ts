@@ -6,9 +6,9 @@ export interface RequestingUser {
   level: UserLevel;
 }
 
-/** Admin ou Superadmin têm acesso privilegiado (não restrito a ownership). */
+/** Admin tem acesso privilegiado (não restrito a ownership). */
 export function isPrivileged(level?: UserLevel): boolean {
-  return level === UserLevel.Admin || level === UserLevel.Superadmin;
+  return level === UserLevel.Admin;
 }
 
 /**

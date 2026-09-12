@@ -1,12 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UserController } from './user.controller';
 import { UserService } from './user.service';
-import {
-  CreateUserDto,
-  Profile,
-  SetAdminDto,
-  UserLevel,
-} from './dto/create-user.dto';
+import { CreateUserDto, Profile, UserLevel } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -29,7 +24,6 @@ describe('UserController', () => {
             remove: jest.fn(),
             toggleUserActivation: jest.fn(),
             approveTeacher: jest.fn(),
-            promoteToSuperadmin: jest.fn(),
             findAll: jest.fn(),
           },
         },
@@ -70,8 +64,6 @@ describe('UserController', () => {
         isTeacherActive: false,
         isPresenterActive: false,
         hasSubmission: false,
-        isSuperadmin: false,
-        isAdmin: false,
         createdAt: new Date(),
         updatedAt: new Date(),
         isVerified: false,
@@ -118,7 +110,6 @@ describe('UserController', () => {
           profile: Profile.Professor,
           isActive: true,
           isTeacherActive: false,
-          isSuperadmin: false,
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,
@@ -135,7 +126,6 @@ describe('UserController', () => {
           profile: Profile.Listener,
           isActive: false,
           isTeacherActive: false,
-          isSuperadmin: false,
           createdAt: new Date(),
           updatedAt: new Date(),
           isVerified: false,

@@ -10,9 +10,8 @@ export class UserFieldCalculator {
     const derived: any = {};
 
     this.setRegistrationNumberType(derived, profile, updateData);
-    this.setLevelFlags(derived, level);
     this.setProfileFlags(derived, profile, updateData);
-    this.applyConsistencyRules(derived, profile, level);
+    this.applyConsistencyRules(derived, profile);
 
     return derived;
   }
@@ -27,23 +26,6 @@ export class UserFieldCalculator {
         profile === Profile.Listener
           ? RegistrationNumberType.CPF
           : RegistrationNumberType.MATRICULA;
-    }
-  }
-
-  private static setLevelFlags(derived: any, level: UserLevel): void {
-    switch (level) {
-      case UserLevel.Superadmin:
-        derived.isSuperadmin = true;
-        derived.isAdmin = true;
-        break;
-      case UserLevel.Admin:
-        derived.isSuperadmin = false;
-        derived.isAdmin = true;
-        break;
-      case UserLevel.Default:
-        derived.isSuperadmin = false;
-        derived.isAdmin = false;
-        break;
     }
   }
 
@@ -80,29 +62,7 @@ export class UserFieldCalculator {
     }
   }
 
-  private static applyConsistencyRules(
-    derived: any,
-    profile: Profile,
-    level: UserLevel,
-  ): void {
-    if (level === UserLevel.Superadmin) {
-      derived.isSuperadmin = true;
-      derived.isAdmin = true;
-      if (profile === Profile.Professor) {
-        derived.isTeacherActive = true;
-      }
-    }
-
-    if (level === UserLevel.Admin) {
-      derived.isAdmin = true;
-      derived.isSuperadmin = false;
-    }
-
-    if (level === UserLevel.Default) {
-      derived.isAdmin = false;
-      derived.isSuperadmin = false;
-    }
-
+  private static applyConsistencyRules(derived: any, profile: Profile): void {
     if (profile === Profile.Professor) {
       derived.isTeacherActive = true;
       derived.isPresenterActive = false;
@@ -114,12 +74,6 @@ export class UserFieldCalculator {
     }
 
     if (profile === Profile.Listener) {
-      if (!derived.hasOwnProperty('isAdmin')) {
-        derived.isAdmin = false;
-      }
-      if (!derived.hasOwnProperty('isSuperadmin')) {
-        derived.isSuperadmin = false;
-      }
       derived.isTeacherActive = false;
       derived.isPresenterActive = false;
     }

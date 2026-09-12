@@ -1,5 +1,4 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { CommitteeLevel, CommitteeRole, UserLevel } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFromEventEditionFormDto } from './dto/create-event-edition.dto';
@@ -118,72 +117,31 @@ export class EventEditionCommitteeService {
 
   async updateUserLevel(
     userId: string,
-    committeeLevel: CommitteeLevel,
+    _committeeLevel: CommitteeLevel,
   ): Promise<void> {
-    const userLevel =
-      committeeLevel === CommitteeLevel.Coordinator
-        ? UserLevel.Superadmin
-        : UserLevel.Admin;
-
+    // Coordinator e Committee promovem o usuário para Admin igualmente —
+    // não há mais diferenciação de nível (Superadmin foi eliminado).
     await this.prismaClient.userAccount.update({
       where: { id: userId },
       data: {
-        level: userLevel,
+        level: UserLevel.Admin,
       },
     });
   }
 
-  @Cron('0 0 * * *')
+  /**
+   * TODO(unify-superadmin-into-admin): reintroduzir de forma segura após a
+   * unificação de permissões. Antes, este cron preservava usuários
+   * `Superadmin` ao rebaixar administradores de comitês de eventos
+   * encerrados. Sem essa distinção, rebaixar automaticamente poderia afetar
+   * Admins que não pertencem ao comitê do evento encerrado (ou que ainda
+   * são Coordinator/Committee em outro evento ativo). Desativado por ora —
+   * ver issue de unificação Superadmin -> Admin.
+   */
+  // @Cron('0 0 * * *')
   async removeAdminsFromEndedEvents(): Promise<void> {
-    const now = new Date();
-
-    const endedEvents = await this.prismaClient.eventEdition.findMany({
-      where: {
-        endDate: {
-          lte: now,
-        },
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    if (endedEvents.length === 0) {
-      this.logger.log('Nenhum evento finalizado encontrado.');
-      return;
-    }
-
-    const eventIds = endedEvents.map((event) => event.id);
-
-    const adminsToRemove = await this.prismaClient.committeeMember.findMany({
-      where: {
-        eventEditionId: { in: eventIds },
-        level: CommitteeLevel.Committee,
-      },
-      select: {
-        userId: true,
-      },
-    });
-
-    if (adminsToRemove.length === 0) {
-      this.logger.log('Nenhum administrador encontrado.');
-      return;
-    }
-
-    const adminIds = adminsToRemove.map((admin) => admin.userId);
-
-    await this.prismaClient.userAccount.updateMany({
-      where: {
-        id: { in: adminIds },
-        level: { not: UserLevel.Superadmin },
-      },
-      data: {
-        level: UserLevel.Default,
-      },
-    });
-
     this.logger.log(
-      `${adminIds.length} usuários atualizados para nível Default.`,
+      'removeAdminsFromEndedEvents está desativado (ver TODO de unificação Superadmin -> Admin).',
     );
   }
 }

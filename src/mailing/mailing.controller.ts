@@ -34,7 +34,7 @@ export class MailingController {
   }
 
   @Post('/send')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async send(
     @Body() sendDto: DefaultEmailDto,
@@ -43,7 +43,7 @@ export class MailingController {
   }
 
   @Post('send-group')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @HttpCode(HttpStatus.OK)
   async sendGroupEmail(@Body() sendGroupEmailDto: SendGroupEmailDto) {
     return this.mailingService.sendGroupEmail(sendGroupEmailDto);

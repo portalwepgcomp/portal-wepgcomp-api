@@ -25,7 +25,7 @@ export class AwardedPanelistsController {
   ) {}
 
   @Post('bulk')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Register awarded panelists in bulk',
@@ -69,7 +69,7 @@ export class AwardedPanelistsController {
   }
 
   @Delete(':eventEditionId/:userId')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async remove(
     @Param('eventEditionId') eventEditionId: string,

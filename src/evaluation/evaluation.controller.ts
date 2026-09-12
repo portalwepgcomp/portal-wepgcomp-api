@@ -25,7 +25,7 @@ export class EvaluationController {
   constructor(private readonly evaluationService: EvaluationService) {}
 
   @Put()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Create new evaluations.',
@@ -52,7 +52,7 @@ export class EvaluationController {
     description: 'Filter evaluations by user ID',
   })
   @ApiResponse({ status: 200, description: 'Return evaluations.' })
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   async find(@Req() request: any, @Query('userId') userId?: string) {
     if (
       userId &&
@@ -77,7 +77,7 @@ export class EvaluationController {
   }
 
   @Get('/user')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin, UserLevel.Default)
+  @UserLevels(UserLevel.Admin, UserLevel.Default)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Find evaluations by user' })
   async findByUser(@Request() req: any) {
@@ -87,7 +87,7 @@ export class EvaluationController {
   }
 
   @Get('submission/:submissionId/final-grade')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async calculateFinalGrade(@Param('submissionId') submissionId: string) {
     return await this.evaluationService.calculateFinalGrade(submissionId);

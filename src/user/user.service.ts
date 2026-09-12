@@ -101,9 +101,9 @@ export class UserService {
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    const shouldBeSuperAdmin =
+    const shouldBeAdmin =
       createUserDto.profile === Profile.Professor
-        ? await this.checkProfessorShouldBeSuperAdmin()
+        ? await this.checkFirstProfessorShouldBeAdmin()
         : false;
 
     let lattesPhotoPath: string | undefined = undefined;
@@ -126,12 +126,12 @@ export class UserService {
         email: createUserDto.email,
         password: hashedPassword,
         subprofile: createUserDto.subprofile ?? null,
-        level: shouldBeSuperAdmin ? UserLevel.Superadmin : UserLevel.Default,
+        level: shouldBeAdmin ? UserLevel.Admin : UserLevel.Default,
         registrationNumber,
         registrationNumberType,
         isActive: true,
         isTeacherActive:
-          createUserDto.profile === Profile.Professor && !shouldBeSuperAdmin
+          createUserDto.profile === Profile.Professor && !shouldBeAdmin
             ? false
             : true,
         isPresenterActive:
@@ -167,7 +167,7 @@ export class UserService {
     });
   }
 
-  async checkProfessorShouldBeSuperAdmin(): Promise<boolean> {
+  async checkFirstProfessorShouldBeAdmin(): Promise<boolean> {
     const professorsCount = await this.prismaClient.userAccount.count({
       where: {
         profile: Profile.Professor,
@@ -202,7 +202,7 @@ export class UserService {
   }
 
   isAdmin(user: UserAccount): boolean {
-    return ['Admin', 'Superadmin'].includes(user.level);
+    return user.level === UserLevel.Admin;
   }
 
   /**
@@ -299,8 +299,6 @@ export class UserService {
         isActive: true,
         isTeacherActive: true,
         isPresenterActive: true,
-        isAdmin: true,
-        isSuperadmin: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -349,16 +347,12 @@ export class UserService {
     return this.adminService.approvePresenter(id);
   }
 
-  async editUserBySuperAdmin(
+  async editUserByAdmin(
     email: string,
     updateUserDto: UpdateUserDto,
-    superadminEmail: string,
+    adminEmail: string,
   ): Promise<ResponseUpdatedUserDto> {
-    return this.adminService.editUserBySuperAdmin(
-      email,
-      updateUserDto,
-      superadminEmail,
-    );
+    return this.adminService.editUserByAdmin(email, updateUserDto, adminEmail);
   }
 
   public async findById(userId: string) {

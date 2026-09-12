@@ -32,14 +32,14 @@ export class EventEditionController {
   constructor(private readonly eventEditionService: EventEditionService) {}
 
   @Post()
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async create(@Body() createEventDto: CreateEventEditionDto) {
     return await this.eventEditionService.create(createEventDto);
   }
 
   @Post('/create-from-event-edition-form')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async createFromEventEditionForm(
     @Body()
@@ -51,7 +51,7 @@ export class EventEditionController {
   }
 
   @Put('/update-from-event-edition-form/:id')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   async updateFromEventEditionForm(
     @Param('id') id: string,
     @Body()
@@ -96,7 +96,7 @@ export class EventEditionController {
   }
 
   @Put(':id')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async update(
     @Param('id') id: string,
@@ -106,14 +106,14 @@ export class EventEditionController {
   }
 
   @Patch('active/:id')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async setActive(@Param('id') id: string) {
     return await this.eventEditionService.setActive(id);
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async delete(@Param('id') id: string) {
     return await this.eventEditionService.delete(id);

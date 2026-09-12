@@ -4,68 +4,32 @@ title: "[bug] "
 labels: ["bug"]
 body:
   - type: textarea
-    id: mini
+    id: descricao
     attributes:
-      label: Mini descrição (obrigatório)
-      description: 1–3 frases do problema e impacto.
+      label: Descrição
+      description: O que está errado e o impacto.
       placeholder: Ex.: GET /presentation/bookmarks retorna favoritos de todas as edições.
-    validations:
-      required: true
-  - type: dropdown
-    id: escopo
-    attributes:
-      label: Escopo deste repositório
-      options:
-        - Backend (API / Nest)
-        - Frontend (UI) — use só se este for o repo do front
-        - Ambos (vincular issue no outro repo)
-    validations:
-      required: true
-  - type: input
-    id: ambiente
-    attributes:
-      label: Ambiente
-      placeholder: local / staging / produção
     validations:
       required: true
   - type: textarea
     id: passos
     attributes:
-      label: Passos para reproduzir
+      label: Como reproduzir
+      description: Opcional, mas ajuda.
       placeholder: |
         1.
         2.
         3.
-    validations:
-      required: true
   - type: textarea
-    id: esperado
+    id: esperado_atual
     attributes:
-      label: Comportamento esperado
-    validations:
-      required: true
-  - type: textarea
-    id: atual
-    attributes:
-      label: Comportamento atual
-    validations:
-      required: true
-  - type: textarea
-    id: evidencias
-    attributes:
-      label: Evidências
-      description: Logs, endpoint, status HTTP, payload (sem senhas/tokens/JWT).
-  - type: textarea
-    id: relacionados
-    attributes:
-      label: Issues / PRs relacionados
-      description: Links do outro repo (api↔front) quando o bug for cross-cutting.
-      placeholder: "Ex.: portal-wepgcomp-frontend#12"
-  - type: textarea
-    id: aceite
-    attributes:
-      label: Critérios de aceite
+      label: Esperado vs atual
+      description: Opcional.
       placeholder: |
-        - [ ] …
-    validations:
-      required: true
+        Esperado: ...
+        Atual: ...
+  - type: textarea
+    id: notas
+    attributes:
+      label: Notas
+      description: Hipótese técnica, arquivos, link do outro repo, etc. (opcional)

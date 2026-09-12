@@ -26,7 +26,7 @@ export class CommitteeMemberController {
   ) {}
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async create(@Body() createCommitteeMemberDto: CreateCommitteeMemberDto) {
     return await this.committeeMemberService.create(createCommitteeMemberDto);
@@ -45,7 +45,7 @@ export class CommitteeMemberController {
   }
 
   @Patch(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async update(
     @Param('id') id: string,
@@ -58,7 +58,7 @@ export class CommitteeMemberController {
   }
 
   @Patch()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async updateByUserAndEvent(
     @Query('userId') userId: string,
@@ -74,14 +74,14 @@ export class CommitteeMemberController {
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async remove(@Param('id') id: string) {
     return await this.committeeMemberService.remove(id);
   }
 
   @Delete()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async removeByUserAndEvent(
     @Query('userId') userId: string,

@@ -22,7 +22,7 @@ export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
   @Post()
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   create(@Body() createRoomDto: CreateRoomDto) {
     return this.roomService.create(createRoomDto);
   }
@@ -40,13 +40,13 @@ export class RoomController {
   }
 
   @Patch(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   update(@Param('id') id: string, @Body() updateRoomDto: UpdateRoomDto) {
     return this.roomService.update(id, updateRoomDto);
   }
 
   @Delete(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   remove(@Param('id') id: string) {
     return this.roomService.remove(id);
   }

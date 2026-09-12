@@ -46,12 +46,12 @@ export class UserController {
   }
 
   @Post('create-professor')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Criar professor por super administrador',
+    summary: 'Criar professor por administrador',
     description:
-      'Permite que um super administrador crie um novo professor sem senha. Um email será enviado com credenciais temporárias.',
+      'Permite que um administrador crie um novo professor sem senha. Um email será enviado com credenciais temporárias.',
   })
   @ApiResponse({
     status: 201,
@@ -77,7 +77,7 @@ export class UserController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Usuário não tem permissões de super administrador',
+    description: 'Usuário não tem permissões de administrador',
   })
   async createProfessor(
     @Body() createProfessorDto: CreateProfessorByAdminDto,
@@ -90,14 +90,14 @@ export class UserController {
   }
 
   @Delete('delete/:id')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async remove(@Param('id') id: string) {
     return await this.userService.remove(id);
   }
 
   @Patch('toggle-activation/:id')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   @ApiQuery({
     name: 'activate',
@@ -118,12 +118,12 @@ export class UserController {
 
   /**
    * Approves a user with the PROFESSOR role.
-   * Only accessible by users with ADMIN or SUPERADMIN roles.
+   * Only accessible by users with ADMIN role.
    * @param id - The ID of the user to be approved.
    */
   @Patch(':id/approve')
   @UseGuards(JwtAuthGuard, UserLevelGuard)
-  @UserLevels(UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async approveTeacher(@Param('id') id: string) {
     const result = await this.userService.approveTeacher(id);
@@ -132,12 +132,12 @@ export class UserController {
 
   /**
    * Approves a user with the PRESENTER role.
-   * Only accessible by users with ADMIN or SUPERADMIN roles.
+   * Only accessible by users with ADMIN role.
    * @param id - The ID of the user to be approved.
    */
   @Patch(':id/approve-presenter')
   @UseGuards(JwtAuthGuard, UserLevelGuard)
-  @UserLevels(UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async approvePresenter(@Param('id') id: string) {
     const result = await this.userService.approvePresenter(id);
@@ -170,7 +170,7 @@ export class UserController {
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
   @ApiQuery({ name: 'paginated', required: false, type: Boolean })
-  @UserLevels(UserLevel.Default, UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
   @ApiBearerAuth()
   async getUsers(
     @Query('roles') roles?: string | string[],
@@ -215,20 +215,17 @@ export class UserController {
   }
 
   @Get('advisors')
-  @UserLevels(UserLevel.Default, UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
   @ApiBearerAuth()
   async getAdvisors() {
     return await this.userService.findAll(undefined, Profile.Professor);
   }
 
   @Get('admins')
-  @UserLevels(UserLevel.Default, UserLevel.Admin, UserLevel.Superadmin)
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
   @ApiBearerAuth()
   async getAdmins() {
-    return await this.userService.findAll(
-      [UserLevel.Superadmin, UserLevel.Admin],
-      undefined,
-    );
+    return await this.userService.findAll([UserLevel.Admin], undefined);
   }
 
   @Public()
@@ -248,9 +245,9 @@ export class UserController {
   }
 
   @Patch('edit/:email')
-  @UserLevels(UserLevel.Superadmin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
-  async editUserBySuperAdmin(
+  async editUserByAdmin(
     @Param('email') rawEmail: string,
     @Body() updateUserDto: UpdateUserDto,
     @Req() req: Request & { user: any },
@@ -258,7 +255,7 @@ export class UserController {
     const email = this.parseEmailParam(rawEmail);
     this.validateUpdateData(updateUserDto);
 
-    return await this.userService.editUserBySuperAdmin(
+    return await this.userService.editUserByAdmin(
       email,
       updateUserDto,
       req.user.email,
@@ -282,7 +279,7 @@ export class UserController {
   }
 
   @Get(':id')
-  @UserLevels(UserLevel.Superadmin, UserLevel.Admin)
+  @UserLevels(UserLevel.Admin)
   @ApiBearerAuth()
   async getById(@Param('id') id: string) {
     const result = await this.userService.findById(id);

@@ -4,41 +4,20 @@ title: "[feat] "
 labels: ["enhancement"]
 body:
   - type: textarea
-    id: mini
+    id: descricao
     attributes:
-      label: Mini descrição (obrigatório)
-      description: 1–3 frases do que deve ser feito e por quê.
-    validations:
-      required: true
-  - type: dropdown
-    id: escopo
-    attributes:
-      label: Escopo deste repositório
-      options:
-        - Backend (API / Nest)
-        - Ambos (vincular issue no outro repo)
+      label: Descrição
+      description: O que deve ser feito e por quê.
+      placeholder: Ex.: Endpoint para o usuário autenticado atualizar os próprios dados.
     validations:
       required: true
   - type: textarea
-    id: contexto
+    id: detalhes
     attributes:
-      label: Contexto / motivação
+      label: Detalhes
+      description: Contrato, regras de negócio, campos permitidos (opcional).
   - type: textarea
-    id: proposta
+    id: notas
     attributes:
-      label: Proposta / abordagem
-    validations:
-      required: true
-  - type: textarea
-    id: relacionados
-    attributes:
-      label: Issues / PRs relacionados
-      placeholder: "Ex.: portal-wepgcomp-frontend#12"
-  - type: textarea
-    id: aceite
-    attributes:
-      label: Critérios de aceite
-      placeholder: |
-        - [ ] …
-    validations:
-      required: true
+      label: Notas
+      description: Hipótese técnica, arquivos, link do outro repo, etc. (opcional)

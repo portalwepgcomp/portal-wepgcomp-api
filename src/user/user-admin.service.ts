@@ -43,9 +43,9 @@ export class UserAdminService {
       select: { id: true, name: true, level: true },
     });
 
-    if (!adminUser || adminUser.level !== UserLevel.Superadmin) {
+    if (!adminUser || adminUser.level !== UserLevel.Admin) {
       throw new AppException(
-        'Apenas super administradores podem criar professores.',
+        'Apenas administradores podem criar professores.',
         403,
       );
     }
@@ -183,10 +183,10 @@ export class UserAdminService {
     });
   }
 
-  async editUserBySuperAdmin(
+  async editUserByAdmin(
     email: string,
     updateUserDto: UpdateUserDto,
-    superadminEmail: string,
+    adminEmail: string,
   ): Promise<ResponseUpdatedUserDto> {
     const decodedEmail = decodeURIComponent(email);
 
@@ -196,7 +196,7 @@ export class UserAdminService {
     await this.validateBusinessRules(decodedEmail, updateUserDto, existingUser);
 
     const processedData = this.processUpdateData(updateUserDto, existingUser);
-    processedData.updatedBy = superadminEmail;
+    processedData.updatedBy = adminEmail;
 
     let photoPathToUpdate: string | null | undefined = undefined;
 
@@ -281,20 +281,16 @@ export class UserAdminService {
       );
     }
 
-    if (updateData.level && updateData.level !== UserLevel.Superadmin) {
-      const isSuperadmin =
-        existingUser.isSuperadmin ||
-        existingUser.level === UserLevel.Superadmin;
-      if (isSuperadmin) {
-        const superadminCount = await this.prismaClient.userAccount.count({
-          where: {
-            OR: [{ isSuperadmin: true }, { level: UserLevel.Superadmin }],
-          },
+    if (updateData.level && updateData.level !== UserLevel.Admin) {
+      const isAdmin = existingUser.level === UserLevel.Admin;
+      if (isAdmin) {
+        const adminCount = await this.prismaClient.userAccount.count({
+          where: { level: UserLevel.Admin },
         });
 
-        if (superadminCount <= 1) {
+        if (adminCount <= 1) {
           throw new BadRequestException(
-            'Não é possível rebaixar o último superadministrador do sistema.',
+            'Não é possível rebaixar o último administrador do sistema.',
           );
         }
       }
