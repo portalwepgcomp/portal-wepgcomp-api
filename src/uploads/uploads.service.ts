@@ -103,7 +103,7 @@ export class UploadsService {
     }
   }
 
-  getFile(filename: string, res: Response) {
+  getFile(filename: string, res: Response, asAttachment = false) {
     this.assertSafeFilename(filename);
 
     const filePath = join(this.storagePath, filename);
@@ -113,6 +113,12 @@ export class UploadsService {
 
     const file = createReadStream(filePath);
     res.setHeader('Content-Type', 'application/pdf');
+    if (asAttachment) {
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+      );
+    }
     file.pipe(res);
   }
 }
