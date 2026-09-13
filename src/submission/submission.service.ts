@@ -17,6 +17,7 @@ import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { SubmissionValidatorService } from './submission-validator.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Response } from 'express';
 
 @Injectable()
 export class SubmissionService {
@@ -252,6 +253,19 @@ export class SubmissionService {
     );
 
     return new ResponseSubmissionDto(submission, proposedStartTime);
+  }
+
+  async downloadPdf(id: string, res: Response) {
+    const submission = await this.prismaClient.submission.findUnique({
+      where: { id },
+      select: { pdfFile: true },
+    });
+
+    if (!submission) {
+      throw new AppException('Submissão não encontrada.', 404);
+    }
+
+    return this.uploadService.getFile(submission.pdfFile, res, true);
   }
 
   async update(id: string, updateSubmissionDto: UpdateSubmissionDto) {

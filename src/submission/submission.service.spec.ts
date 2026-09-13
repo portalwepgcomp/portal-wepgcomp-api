@@ -8,10 +8,12 @@ import { CreateSubmissionDto } from './dto/create-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { SubmissionStatus } from '@prisma/client';
 import { ResponseSubmissionDto } from './dto/response-submission.dto';
+import { Response } from 'express';
 
 describe('SubmissionService', () => {
   let service: SubmissionService;
   let prismaService: PrismaService;
+  let uploadsService: UploadsService;
 
   beforeEach(() => {
     prismaService = {
@@ -43,8 +45,9 @@ describe('SubmissionService', () => {
       },
     } as unknown as PrismaService;
 
-    const uploadsService = {
+    uploadsService = {
       deleteFile: jest.fn().mockResolvedValue({ success: true }),
+      getFile: jest.fn(),
     } as unknown as UploadsService;
 
     const validatorService = new SubmissionValidatorService(prismaService);
@@ -264,6 +267,38 @@ describe('SubmissionService', () => {
       await expect(service.findOne('invalidId')).rejects.toThrow(
         new AppException('Submissão não encontrada.', 404),
       );
+    });
+  });
+
+  describe('downloadPdf', () => {
+    it('should resolve the PDF by submission id and delegate the download', async () => {
+      const response = {} as Response;
+      (prismaService.submission.findUnique as jest.Mock).mockResolvedValue({
+        pdfFile: 'presentation.pdf',
+      });
+
+      await service.downloadPdf('submission123', response);
+
+      expect(prismaService.submission.findUnique).toHaveBeenCalledWith({
+        where: { id: 'submission123' },
+        select: { pdfFile: true },
+      });
+      expect(uploadsService.getFile).toHaveBeenCalledWith(
+        'presentation.pdf',
+        response,
+        true,
+      );
+    });
+
+    it('should throw 404 when the submission does not exist', async () => {
+      (prismaService.submission.findUnique as jest.Mock).mockResolvedValue(
+        null,
+      );
+
+      await expect(
+        service.downloadPdf('invalidId', {} as Response),
+      ).rejects.toThrow(new AppException('Submissão não encontrada.', 404));
+      expect(uploadsService.getFile).not.toHaveBeenCalled();
     });
   });
 
