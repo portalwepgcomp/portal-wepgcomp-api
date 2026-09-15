@@ -265,7 +265,7 @@ export class SubmissionService {
       throw new AppException('Submissão não encontrada.', 404);
     }
 
-    return this.uploadService.getFile(submission.pdfFile, res, true);
+    return this.uploadService.downloadFile(submission.pdfFile, res);
   }
 
   async update(id: string, updateSubmissionDto: UpdateSubmissionDto) {

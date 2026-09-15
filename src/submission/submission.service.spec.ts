@@ -47,7 +47,7 @@ describe('SubmissionService', () => {
 
     uploadsService = {
       deleteFile: jest.fn().mockResolvedValue({ success: true }),
-      getFile: jest.fn(),
+      downloadFile: jest.fn(),
     } as unknown as UploadsService;
 
     const validatorService = new SubmissionValidatorService(prismaService);
@@ -283,10 +283,9 @@ describe('SubmissionService', () => {
         where: { id: 'submission123' },
         select: { pdfFile: true },
       });
-      expect(uploadsService.getFile).toHaveBeenCalledWith(
+      expect(uploadsService.downloadFile).toHaveBeenCalledWith(
         'presentation.pdf',
         response,
-        true,
       );
     });
 
@@ -298,7 +297,7 @@ describe('SubmissionService', () => {
       await expect(
         service.downloadPdf('invalidId', {} as Response),
       ).rejects.toThrow(new AppException('Submissão não encontrada.', 404));
-      expect(uploadsService.getFile).not.toHaveBeenCalled();
+      expect(uploadsService.downloadFile).not.toHaveBeenCalled();
     });
   });
 

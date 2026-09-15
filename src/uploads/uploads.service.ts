@@ -40,7 +40,6 @@ export class UploadsService {
       mimetype: file.mimetype,
       originalname: file.originalname,
       size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
-      url: `/uploads/${file.filename}`,
     };
   }
 
@@ -93,7 +92,6 @@ export class UploadsService {
         return {
           filename,
           sizeMB,
-          url: `/uploads/${filename}`,
         };
       });
     } catch {
@@ -103,7 +101,7 @@ export class UploadsService {
     }
   }
 
-  getFile(filename: string, res: Response, asAttachment = false) {
+  downloadFile(filename: string, res: Response) {
     this.assertSafeFilename(filename);
 
     const filePath = join(this.storagePath, filename);
@@ -113,12 +111,10 @@ export class UploadsService {
 
     const file = createReadStream(filePath);
     res.setHeader('Content-Type', 'application/pdf');
-    if (asAttachment) {
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
-      );
-    }
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
+    );
     file.pipe(res);
   }
 }

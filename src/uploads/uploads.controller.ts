@@ -4,7 +4,6 @@ import {
   Get,
   Param,
   Post,
-  Res,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -17,7 +16,6 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { UserLevel } from '@prisma/client';
-import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { UserLevels } from '../auth/decorators/user-level.decorator';
@@ -77,11 +75,6 @@ export class UploadsController {
   @ApiResponse({ status: 200, description: 'Lista de arquivos retornada.' })
   listFiles() {
     return this.uploadsService.listFiles();
-  }
-
-  @Get(':filename')
-  getFile(@Param('filename') filename: string, @Res() res: Response) {
-    return this.uploadsService.getFile(filename, res);
   }
 }
 
