@@ -199,7 +199,7 @@ export class MailingService {
           });
 
           sentCount += batch.length;
-        } catch (error) {
+        } catch {
           failedCount += batch.length;
         }
       }

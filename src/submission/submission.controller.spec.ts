@@ -8,7 +8,6 @@ import { Response } from 'express';
 
 describe('SubmissionController', () => {
   let controller: SubmissionController;
-  let service: SubmissionService;
 
   const mockSubmissionService = {
     create: jest.fn().mockResolvedValue({}),
@@ -38,7 +37,6 @@ describe('SubmissionController', () => {
       .compile();
 
     controller = module.get<SubmissionController>(SubmissionController);
-    service = module.get<SubmissionService>(SubmissionService);
   });
 
   afterEach(() => {

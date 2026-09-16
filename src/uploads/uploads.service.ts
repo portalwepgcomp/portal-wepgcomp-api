@@ -65,7 +65,7 @@ export class UploadsService {
         success: true,
         message: 'Arquivo deletado com sucesso!',
       };
-    } catch (error) {
+    } catch {
       throw new InternalServerErrorException(
         'Erro interno ao tentar deletar o arquivo.',
       );

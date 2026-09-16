@@ -7,7 +7,6 @@ import { UserLevelGuard } from '../auth/guards/user-level.guard';
 
 describe('EvaluationController', () => {
   let evaluationController: EvaluationController;
-  let evaluationService: EvaluationService;
 
   const mockEvaluations = [
     {
@@ -53,7 +52,6 @@ describe('EvaluationController', () => {
 
     evaluationController =
       module.get<EvaluationController>(EvaluationController);
-    evaluationService = module.get<EvaluationService>(EvaluationService);
   });
 
   it('should be defined', () => {

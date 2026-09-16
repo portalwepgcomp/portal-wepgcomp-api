@@ -7,7 +7,7 @@ import { AppException } from '../exceptions/app.exception';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto, Profile } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
-import { Prisma, PrismaClient, UserLevel } from '@prisma/client';
+import { PrismaClient, UserLevel } from '@prisma/client';
 import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { MailingService } from '../mailing/mailing.service';
 import { HttpService } from '@nestjs/axios';
