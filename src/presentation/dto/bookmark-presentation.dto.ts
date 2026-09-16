@@ -2,6 +2,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Presentation } from '@prisma/client';
 import { IsUUID } from 'class-validator';
 
+export class ListPresentationBookmarksQueryDto {
+  @ApiProperty({
+    description: 'ID da edição cujas apresentações favoritas serão listadas.',
+    format: 'uuid',
+  })
+  @IsUUID()
+  eventEditionId: string;
+}
+
 export class BookmarkPresentationRequestDto {
   @IsUUID()
   presentationId: string;
