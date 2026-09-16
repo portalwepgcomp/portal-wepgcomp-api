@@ -36,7 +36,14 @@
     "postinstall": "prisma generate",
     "clean": "rm -rf package-lock.json node_modules && npm cache clean --force",
     "seed": "ts-node prisma/seed.ts",
-    "swagger:export": "nest build && node dist/scripts/export-swagger.js"
+    "swagger:export": "nest build && node dist/scripts/export-swagger.js",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "prettier --write",
+      "eslint --fix --max-warnings=0"
+    ]
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -81,7 +88,9 @@
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.0",
+    "husky": "^9.1.7",
     "jest": "^29.5.0",
+    "lint-staged": "^17.5.1",
     "prettier": "^3.0.0",
     "prisma": "^5.20.0",
     "source-map-support": "^0.5.21",

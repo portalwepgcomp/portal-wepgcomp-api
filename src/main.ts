@@ -21,10 +21,12 @@ function collectValidationDetails(
     const field = parentField
       ? `${parentField}.${error.property}`
       : error.property;
-    const ownDetails = Object.values(error.constraints ?? {}).map((message) => ({
-      field,
-      messages: [message],
-    }));
+    const ownDetails = Object.values(error.constraints ?? {}).map(
+      (message) => ({
+        field,
+        messages: [message],
+      }),
+    );
     const childDetails = collectValidationDetails(error.children ?? [], field);
 
     return [...ownDetails, ...childDetails];
