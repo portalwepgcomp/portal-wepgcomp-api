@@ -9,15 +9,23 @@ import {
   Query,
   Request,
   UseGuards,
+  Res,
 } from '@nestjs/common';
-import { ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiProduces,
+  ApiQuery,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { UserLevel } from '@prisma/client';
+import { Response } from 'express';
 import { UserLevels } from '../auth/decorators/user-level.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProfileAccessGuard } from '../auth/guards/profile-access.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { CreateSubmissionDto } from './dto/create-submission.dto';
-import { ResponseSubmissionDto } from './dto/response-submission.dto';
 import { UpdateSubmissionDto } from './dto/update-submission.dto';
 import { SubmissionService } from './submission.service';
 
@@ -76,6 +84,26 @@ export class SubmissionController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.submissionService.findOne(id);
+  }
+
+  @Get(':id/pdf')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Baixa o PDF de uma submissão' })
+  @ApiParam({
+    name: 'id',
+    description: 'ID da submissão associada ao PDF',
+    format: 'uuid',
+  })
+  @ApiProduces('application/pdf')
+  @ApiResponse({
+    status: 200,
+    description: 'PDF retornado com sucesso.',
+    content: { 'application/pdf': {} },
+  })
+  @ApiResponse({ status: 401, description: 'Usuário não autenticado.' })
+  @ApiResponse({ status: 404, description: 'Submissão ou PDF não encontrado.' })
+  downloadPdf(@Param('id') id: string, @Res() res: Response) {
+    return this.submissionService.downloadPdf(id, res);
   }
 
   @Patch(':id')
