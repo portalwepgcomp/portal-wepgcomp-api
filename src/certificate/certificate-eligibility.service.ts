@@ -19,7 +19,12 @@ export class CertificateEligibilityService {
 
     if (user.profile === Profile.Listener) {
       const evaluationCount = await this.prismaClient.evaluation.count({
-        where: { userId: user.id },
+        where: {
+          userId: user.id,
+          submission: {
+            eventEditionId: eventEdition.id,
+          },
+        },
       });
       if (evaluationCount < 10) {
         throw new AppException(
