@@ -398,6 +398,40 @@ describe('CertificateService', () => {
     });
   });
 
+  describe('validateUserEligibility', () => {
+    it('should not count listener evaluations from another event edition', async () => {
+      const user = {
+        id: 'listener-id',
+        profile: Profile.Listener,
+      };
+      const eventEdition = {
+        id: 'current-event-edition-id',
+        endDate: new Date('2020-01-01T00:00:00Z'),
+      };
+
+      (prismaService.evaluation.count as jest.Mock).mockImplementation(
+        async ({ where }: any) => {
+          // The listener has 10 evaluations, but all of them are from another
+          // edition. Filtering by the current edition must therefore return 0.
+          return where.submission?.eventEditionId === eventEdition.id ? 0 : 10;
+        },
+      );
+
+      await expect(
+        service.validateUserEligibility(user, eventEdition),
+      ).rejects.toThrow(AppException);
+
+      expect(prismaService.evaluation.count).toHaveBeenCalledWith({
+        where: {
+          userId: user.id,
+          submission: {
+            eventEditionId: eventEdition.id,
+          },
+        },
+      });
+    });
+  });
+
   describe('handleCron', () => {
     afterEach(() => {
       jest.clearAllMocks();
