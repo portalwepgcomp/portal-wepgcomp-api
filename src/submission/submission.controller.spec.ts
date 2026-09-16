@@ -52,6 +52,9 @@ describe('SubmissionController', () => {
 
     controller.downloadPdf('submission123', response);
 
-    expect(service.downloadPdf).toHaveBeenCalledWith('submission123', response);
+    expect(mockSubmissionService.downloadPdf).toHaveBeenCalledWith(
+      'submission123',
+      response,
+    );
   });
 });
