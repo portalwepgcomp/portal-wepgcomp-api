@@ -25,6 +25,7 @@ import { UserLevel } from '@prisma/client';
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
 import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { EventEditionResponseDto } from './dto/event-edition-response';
+import { UpdateRegistrationOpenDto } from './dto/update-registration-open.dto';
 
 @Controller('event')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
@@ -84,6 +85,12 @@ export class EventEditionController {
   }
 
   @Public()
+  @Get('registration-status')
+  async getRegistrationStatus() {
+    return await this.eventEditionService.getRegistrationStatus();
+  }
+
+  @Public()
   @Get(':id')
   async getById(@Param('id') id: string) {
     return await this.eventEditionService.getById(id);
@@ -110,6 +117,19 @@ export class EventEditionController {
   @ApiBearerAuth()
   async setActive(@Param('id') id: string) {
     return await this.eventEditionService.setActive(id);
+  }
+
+  @Patch('registration-open/:id')
+  @UserLevels(UserLevel.Admin)
+  @ApiBearerAuth()
+  async setRegistrationOpen(
+    @Param('id') id: string,
+    @Body() updateRegistrationOpenDto: UpdateRegistrationOpenDto,
+  ) {
+    return await this.eventEditionService.setRegistrationOpen(
+      id,
+      updateRegistrationOpenDto.registrationOpen,
+    );
   }
 
   @Delete(':id')

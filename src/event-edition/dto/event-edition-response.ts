@@ -32,6 +32,9 @@ export class EventEditionResponseDto {
   isActive: boolean;
 
   @Expose()
+  registrationOpen: boolean;
+
+  @Expose()
   isEvaluationRestrictToLoggedUsers: boolean;
 
   @Expose()

@@ -648,8 +648,91 @@ describe('EventEditionService', () => {
 
       await expect(service.setActive('1')).rejects.toThrow(BadRequestException);
     });
+
+    it('não deve alterar registrationOpen de nenhuma edição ao trocar a ativa', async () => {
+      const event = { id: '1', name: 'Event 1', isActive: false };
+      const updatedEvent = { ...event, isActive: true, rooms: [] };
+      mockPrismaService.eventEdition.findUnique
+        .mockResolvedValueOnce(event)
+        .mockResolvedValueOnce(updatedEvent);
+      mockPrismaService.$transaction.mockImplementation(async (cb) =>
+        cb(prismaService),
+      );
+      mockPrismaService.eventEdition.updateMany.mockResolvedValue({});
+      mockPrismaService.eventEdition.update.mockResolvedValue(updatedEvent);
+
+      await service.setActive('1');
+
+      const escritas = [
+        ...mockPrismaService.eventEdition.update.mock.calls,
+        ...mockPrismaService.eventEdition.updateMany.mock.calls,
+      ];
+      for (const [args] of escritas) {
+        expect(args.data).not.toHaveProperty('registrationOpen');
+      }
+    });
   });
 
+  describe('getRegistrationStatus', () => {
+    it('deve refletir a flag da edição ativa', async () => {
+      mockPrismaService.eventEdition.findFirst.mockResolvedValue({
+        id: '1',
+        registrationOpen: true,
+      });
+
+      await expect(service.getRegistrationStatus()).resolves.toEqual({
+        registrationOpen: true,
+        eventEditionId: '1',
+      });
+    });
+
+    it('deve responder fechado quando não há edição ativa, sem lançar erro', async () => {
+      mockPrismaService.eventEdition.findFirst.mockResolvedValue(null);
+
+      await expect(service.getRegistrationStatus()).resolves.toEqual({
+        registrationOpen: false,
+        eventEditionId: null,
+      });
+    });
+  });
+
+  describe('setRegistrationOpen', () => {
+    it('deve atualizar a flag quando a edição está ativa', async () => {
+      mockPrismaService.eventEdition.findUnique.mockResolvedValue({
+        id: '1',
+        isActive: true,
+      });
+      mockPrismaService.eventEdition.update.mockResolvedValue({
+        id: '1',
+        registrationOpen: true,
+      });
+
+      await expect(service.setRegistrationOpen('1', true)).resolves.toEqual({
+        id: '1',
+        registrationOpen: true,
+      });
+    });
+
+    it('deve recusar alteração em edição inativa', async () => {
+      mockPrismaService.eventEdition.findUnique.mockResolvedValue({
+        id: '1',
+        isActive: false,
+      });
+
+      await expect(service.setRegistrationOpen('1', true)).rejects.toThrow(
+        'Só a edição ativa pode abrir ou fechar as inscrições.',
+      );
+      expect(mockPrismaService.eventEdition.update).not.toHaveBeenCalled();
+    });
+
+    it('deve recusar quando a edição não existe', async () => {
+      mockPrismaService.eventEdition.findUnique.mockResolvedValue(null);
+
+      await expect(service.setRegistrationOpen('1', true)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
   describe('delete', () => {
     it('should delete an event and return it', async () => {
       const event = { id: '1', name: 'Event 1' };

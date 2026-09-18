@@ -97,7 +97,6 @@ Consulte [`.env.example`](.env.example). Principais:
 | `JWT_SECRET` | Segredo JWT (forte e único; não commitar valor real) |
 | `SMTP_*` / `STMP_FROM_EMAIL` | Envio de e-mail |
 | `SEED_PASSWORD` | Senha dos usuários do seed |
-| `REGISTRATION_OPEN` | Libera `POST /users/register` (padrão: `false`) |
 
 Não commite o arquivo `.env`.
 

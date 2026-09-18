@@ -611,6 +611,44 @@ export class EventEditionService {
     return eventResponseDto;
   }
 
+  async getRegistrationStatus() {
+    const activeEdition = await this.prismaClient.eventEdition.findFirst({
+      where: { isActive: true },
+      select: { id: true, registrationOpen: true },
+    });
+
+    return {
+      registrationOpen: activeEdition?.registrationOpen ?? false,
+      eventEditionId: activeEdition?.id ?? null,
+    };
+  }
+
+  async setRegistrationOpen(id: string, registrationOpen: boolean) {
+    const event = await this.prismaClient.eventEdition.findUnique({
+      where: { id },
+      select: { id: true, isActive: true },
+    });
+
+    if (!event) {
+      throw new BadRequestException(
+        'Não existe nenhum evento com esse identificador',
+      );
+    }
+
+    if (!event.isActive) {
+      throw new BadRequestException(
+        'Só a edição ativa pode abrir ou fechar as inscrições.',
+      );
+    }
+
+    const updated = await this.prismaClient.eventEdition.update({
+      where: { id },
+      data: { registrationOpen },
+      select: { id: true, registrationOpen: true },
+    });
+
+    return updated;
+  }
   async setActive(id: string) {
     const event = await this.prismaClient.eventEdition.findUnique({
       where: {
