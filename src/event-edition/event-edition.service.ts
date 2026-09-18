@@ -611,6 +611,48 @@ export class EventEditionService {
     return eventResponseDto;
   }
 
+  async getRegistrationStatus() {
+    const activeEdition = await this.prismaClient.eventEdition.findFirst({
+      where: { isActive: true },
+      select: { id: true, registrationOpen: true },
+    });
+
+    return {
+      registrationOpen: activeEdition?.registrationOpen ?? false,
+      eventEditionId: activeEdition?.id ?? null,
+    };
+  }
+
+  async setRegistrationOpen(id: string, registrationOpen: boolean) {
+    // O isActive vai no where da escrita, e não numa checagem anterior: entre
+    // ler e gravar, um setActive concorrente poderia desativar a edição e a
+    // flag acabaria sendo gravada numa edição inativa.
+    try {
+      return await this.prismaClient.eventEdition.update({
+        where: { id, isActive: true },
+        data: { registrationOpen },
+        select: { id: true, registrationOpen: true },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        const event = await this.prismaClient.eventEdition.findUnique({
+          where: { id },
+          select: { id: true },
+        });
+
+        throw new BadRequestException(
+          event
+            ? 'Só a edição ativa pode abrir ou fechar as inscrições.'
+            : 'Não existe nenhum evento com esse identificador',
+        );
+      }
+
+      throw error;
+    }
+  }
   async setActive(id: string) {
     const event = await this.prismaClient.eventEdition.findUnique({
       where: {

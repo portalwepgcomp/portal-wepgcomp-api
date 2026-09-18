@@ -18,6 +18,7 @@ const createMockEventEdition = (partialEvent: Partial<any>) => {
     submissionStartDate: new Date(),
     submissionDeadline: new Date(),
     isActive: true,
+    registrationOpen: false,
     isEvaluationRestrictToLoggedUsers: true,
     presentationDuration: 20,
     presentationsPerPresentationBlock: 6,

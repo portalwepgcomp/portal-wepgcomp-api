@@ -35,8 +35,12 @@ export class UserService {
   ) {}
 
   async create(createUserDto: CreateUserDto) {
-    const registrationOpen = process.env.REGISTRATION_OPEN === 'true';
-    if (!registrationOpen) {
+    const activeEdition = await this.prismaClient.eventEdition.findFirst({
+      where: { isActive: true },
+      select: { registrationOpen: true },
+    });
+
+    if (!activeEdition?.registrationOpen) {
       throw new BadRequestException('Período de inscrições encerrado.');
     }
 

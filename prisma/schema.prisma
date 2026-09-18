@@ -65,6 +65,7 @@ model EventEdition {
   submissionStartDate               DateTime               @map("submission_start_date")
   submissionDeadline                DateTime               @map("submission_deadline")
   isActive                          Boolean                @default(false) @map("is_active")
+  registrationOpen                  Boolean                @default(false) @map("registration_open")
   isEvaluationRestrictToLoggedUsers Boolean                @default(true) @map("is_evaluation_restrict_to_logged_users")
   presentationDuration              Int                    @default(20) @map("presentation_duration")
   presentationsPerPresentationBlock Int                    @default(6) @map("presentations_per_presentation_block")
