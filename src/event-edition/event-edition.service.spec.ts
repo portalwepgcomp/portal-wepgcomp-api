@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEditionService } from './event-edition.service';
 import { EventEditionCommitteeService } from './event-edition-committee.service';
@@ -697,11 +698,12 @@ describe('EventEditionService', () => {
   });
 
   describe('setRegistrationOpen', () => {
+    const erroNaoEncontrado = new Prisma.PrismaClientKnownRequestError(
+      'Record to update not found.',
+      { code: 'P2025', clientVersion: '5.22.0' },
+    );
+
     it('deve atualizar a flag quando a edição está ativa', async () => {
-      mockPrismaService.eventEdition.findUnique.mockResolvedValue({
-        id: '1',
-        isActive: true,
-      });
       mockPrismaService.eventEdition.update.mockResolvedValue({
         id: '1',
         registrationOpen: true,
@@ -713,23 +715,49 @@ describe('EventEditionService', () => {
       });
     });
 
-    it('deve recusar alteração em edição inativa', async () => {
-      mockPrismaService.eventEdition.findUnique.mockResolvedValue({
+    it('deve condicionar a escrita à edição ativa, não a uma checagem anterior', async () => {
+      mockPrismaService.eventEdition.update.mockResolvedValue({
         id: '1',
-        isActive: false,
+        registrationOpen: true,
       });
+
+      await service.setRegistrationOpen('1', true);
+
+      expect(mockPrismaService.eventEdition.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: '1', isActive: true },
+        }),
+      );
+    });
+
+    it('deve recusar alteração em edição inativa', async () => {
+      mockPrismaService.eventEdition.update.mockRejectedValue(
+        erroNaoEncontrado,
+      );
+      mockPrismaService.eventEdition.findUnique.mockResolvedValue({ id: '1' });
 
       await expect(service.setRegistrationOpen('1', true)).rejects.toThrow(
         'Só a edição ativa pode abrir ou fechar as inscrições.',
       );
-      expect(mockPrismaService.eventEdition.update).not.toHaveBeenCalled();
     });
 
     it('deve recusar quando a edição não existe', async () => {
+      mockPrismaService.eventEdition.update.mockRejectedValue(
+        erroNaoEncontrado,
+      );
       mockPrismaService.eventEdition.findUnique.mockResolvedValue(null);
 
       await expect(service.setRegistrationOpen('1', true)).rejects.toThrow(
-        BadRequestException,
+        'Não existe nenhum evento com esse identificador',
+      );
+    });
+
+    it('deve propagar erros que não sejam de registro ausente', async () => {
+      const outroErro = new Error('conexão perdida');
+      mockPrismaService.eventEdition.update.mockRejectedValue(outroErro);
+
+      await expect(service.setRegistrationOpen('1', true)).rejects.toThrow(
+        outroErro,
       );
     });
   });
