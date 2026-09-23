@@ -22,7 +22,6 @@ describe('UserService', () => {
   let mailingService: MailingService;
 
   beforeEach(async () => {
-    process.env.REGISTRATION_OPEN = 'true';
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
@@ -48,6 +47,11 @@ describe('UserService', () => {
             },
             submission: {
               findMany: jest.fn().mockResolvedValue([]),
+            },
+            eventEdition: {
+              findFirst: jest
+                .fn()
+                .mockResolvedValue({ registrationOpen: true }),
             },
             $transaction: jest.fn(async (callback) => {
               const prismaMock = {
@@ -95,6 +99,55 @@ describe('UserService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('create - abertura de inscrições', () => {
+    const dto = {
+      name: 'Fulano',
+      email: 'fulano@ufba.br',
+      password: 'senha123',
+      profile: Profile.Listener,
+      subprofile: 'Other',
+    } as any;
+
+    it('deve recusar o cadastro quando a edição ativa está com inscrições fechadas', async () => {
+      (prismaService.eventEdition.findFirst as jest.Mock).mockResolvedValue({
+        registrationOpen: false,
+      });
+
+      await expect(service.create(dto)).rejects.toThrow(
+        'Período de inscrições encerrado.',
+      );
+      expect(prismaService.userAccount.create).not.toHaveBeenCalled();
+    });
+
+    it('deve recusar o cadastro quando não existe edição ativa', async () => {
+      (prismaService.eventEdition.findFirst as jest.Mock).mockResolvedValue(
+        null,
+      );
+
+      await expect(service.create(dto)).rejects.toThrow(
+        'Período de inscrições encerrado.',
+      );
+      expect(prismaService.userAccount.create).not.toHaveBeenCalled();
+    });
+
+    it('deve consultar a flag na edição ativa, não em variável de ambiente', async () => {
+      process.env.REGISTRATION_OPEN = 'true';
+      (prismaService.eventEdition.findFirst as jest.Mock).mockResolvedValue({
+        registrationOpen: false,
+      });
+
+      await expect(service.create(dto)).rejects.toThrow(
+        'Período de inscrições encerrado.',
+      );
+
+      expect(prismaService.eventEdition.findFirst).toHaveBeenCalledWith({
+        where: { isActive: true },
+        select: { registrationOpen: true },
+      });
+
+      delete process.env.REGISTRATION_OPEN;
+    });
+  });
   describe('create', () => {
     it('should throw an AppException if email already exists', async () => {
       prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(true);

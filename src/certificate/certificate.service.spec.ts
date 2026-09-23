@@ -147,6 +147,7 @@ describe('CertificateService', () => {
         presentationsPerPresentationBlock: 5,
         coordinatorId: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
         isActive: true,
+        registrationOpen: false,
         createdAt: new Date('2024-12-01T10:00:00Z'),
         updatedAt: new Date('2024-12-01T10:00:00Z'),
       };
@@ -276,6 +277,7 @@ describe('CertificateService', () => {
         presentationsPerPresentationBlock: 5,
         coordinatorId: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
         isActive: true,
+        registrationOpen: false,
         createdAt: new Date('2024-12-01T10:00:00Z'),
         updatedAt: new Date('2024-12-01T10:00:00Z'),
       };
@@ -330,6 +332,7 @@ describe('CertificateService', () => {
         presentationsPerPresentationBlock: 5,
         coordinatorId: 'b88d1588-168a-4b7e-b118-bd6c5f84c9b2',
         isActive: true,
+        registrationOpen: false,
         createdAt: new Date('2024-12-01T10:00:00Z'),
         updatedAt: new Date('2024-12-01T10:00:00Z'),
       };
