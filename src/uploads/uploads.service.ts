@@ -124,6 +124,9 @@ export class UploadsService {
         return;
       }
 
+      res.removeHeader('Content-Type');
+      res.removeHeader('Content-Disposition');
+
       const status = erro?.code === 'ENOENT' ? 404 : 500;
       res.status(status).json({
         statusCode: status,
