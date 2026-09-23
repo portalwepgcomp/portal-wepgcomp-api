@@ -265,6 +265,10 @@ export class SubmissionService {
       throw new AppException('Submissão não encontrada.', 404);
     }
 
+    if (!submission.pdfFile) {
+      throw new AppException('Esta submissão não possui PDF.', 404);
+    }
+
     return this.uploadService.downloadFile(submission.pdfFile, res);
   }
 
