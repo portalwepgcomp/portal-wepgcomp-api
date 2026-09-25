@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppException } from '../exceptions/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePresentationBlockDto } from './dto/create-presentation-block.dto';
+import { availableSubmissionSlots } from './presentation-block-availability';
 
 @Injectable()
 export class PresentationBlockTimeService {
@@ -101,8 +102,15 @@ export class PresentationBlockTimeService {
         ...presentationBlock,
         presentations: [],
         availablePositionsWithinBlock: [],
+        availableSubmissionSlots: 0,
       };
     }
+
+    const openSubmissionSlots = await availableSubmissionSlots(
+      this.prismaClient,
+      presentationBlock,
+      presentationDuration,
+    );
 
     // Calculate total and available positions
     const totalPositions = Math.floor(
@@ -152,6 +160,7 @@ export class PresentationBlockTimeService {
       ...presentationBlock,
       presentations: presentationsWithStartTime,
       availablePositionsWithinBlock,
+      availableSubmissionSlots: openSubmissionSlots,
     };
   }
 }

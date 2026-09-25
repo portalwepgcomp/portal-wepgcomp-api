@@ -39,6 +39,7 @@ describe('PresentationBlockService', () => {
               findUnique: jest.fn(),
             },
             presentation: {
+              count: jest.fn().mockResolvedValue(0),
               findMany: jest.fn(),
               updateMany: jest.fn(),
               findUnique: jest.fn(),
@@ -47,6 +48,7 @@ describe('PresentationBlockService', () => {
               deleteMany: jest.fn(),
             },
             submission: {
+              count: jest.fn().mockResolvedValue(0),
               findMany: jest.fn(),
             },
             userAccount: {

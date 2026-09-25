@@ -30,45 +30,42 @@ export class SubmissionService {
   ) {}
 
   async create(createSubmissionDto: CreateSubmissionDto) {
-    const {
-      advisorId,
-      mainAuthorId,
-      eventEditionId,
-      title,
-      abstractText,
-      pdfFile,
-      phoneNumber,
-      proposedPresentationBlockId,
-      proposedPositionWithinBlock,
-      status,
-      coAdvisor,
-      linkHostedFile,
-    } = createSubmissionDto;
+    return this.prismaClient.$transaction(async (tx) => {
+      await this.validatorService.validateCreate(createSubmissionDto, tx);
 
-    await this.validatorService.validateCreate(createSubmissionDto);
-
-    const submissionStatus = status || SubmissionStatus.Submitted;
-
-    const createdSubmission = await this.prismaClient.submission.create({
-      data: {
+      const {
         advisorId,
         mainAuthorId,
         eventEditionId,
         title,
-        abstract: abstractText,
+        abstractText,
         pdfFile,
         phoneNumber,
         proposedPresentationBlockId,
         proposedPositionWithinBlock,
-        status: submissionStatus,
+        status,
         coAdvisor,
         linkHostedFile,
-      },
+      } = createSubmissionDto;
+
+      return tx.submission.create({
+        data: {
+          advisorId,
+          mainAuthorId,
+          eventEditionId,
+          title,
+          abstract: abstractText,
+          pdfFile,
+          phoneNumber,
+          proposedPresentationBlockId,
+          proposedPositionWithinBlock,
+          status: status || SubmissionStatus.Submitted,
+          coAdvisor,
+          linkHostedFile,
+        },
+      });
     });
-
-    return createdSubmission;
   }
-
   /**
    * Lista submissões com suporte a busca textual, filtros de visibilidade
    * e paginação server-side com envelope (P3.2).
@@ -284,60 +281,75 @@ export class SubmissionService {
       linkHostedFile,
     } = updateSubmissionDto;
 
-    const existingSubmission = await this.prismaClient.submission.findUnique({
-      where: { id },
-    });
+    const { updated, previousPdf } = await this.prismaClient.$transaction(
+      async (tx) => {
+        const existingSubmission = await tx.submission.findUnique({
+          where: { id },
+        });
+        if (!existingSubmission) {
+          throw new AppException('Submissão não encontrada.', 404);
+        }
 
-    if (!existingSubmission) {
-      throw new AppException('Submissão não encontrada.', 404);
-    }
+        const selectionChanged =
+          proposedPresentationBlockId !== undefined &&
+          proposedPresentationBlockId !==
+            existingSubmission.proposedPresentationBlockId;
+        const nextPosition =
+          proposedPositionWithinBlock !== undefined
+            ? proposedPositionWithinBlock
+            : selectionChanged
+              ? null
+              : undefined;
+        await this.validatorService.validateUpdate(
+          id,
+          { ...updateSubmissionDto, proposedPositionWithinBlock: nextPosition },
+          existingSubmission,
+          tx,
+        );
 
-    await this.validatorService.validateUpdate(
-      id,
-      updateSubmissionDto,
-      existingSubmission,
+        const updated = await tx.submission.update({
+          where: { id },
+          data: {
+            advisorId,
+            mainAuthorId,
+            eventEditionId,
+            title,
+            abstract: abstractText,
+            pdfFile,
+            phoneNumber,
+            proposedPresentationBlockId,
+            proposedPositionWithinBlock: nextPosition,
+            status: status ?? existingSubmission.status,
+            coAdvisor,
+            linkHostedFile,
+          },
+        });
+        return {
+          updated,
+          previousPdf:
+            pdfFile && existingSubmission.pdfFile !== pdfFile
+              ? existingSubmission.pdfFile
+              : null,
+        };
+      },
     );
 
-    const submissionStatus = status || SubmissionStatus.Submitted;
-
-    if (pdfFile && existingSubmission.pdfFile) {
-      const oldPdfPath = path.join(
-        process.cwd(),
-        'storage',
-        existingSubmission.pdfFile,
-      );
-
+    // A limpeza ocorre após o commit: uma disputa por vaga não pode apagar o PDF atual.
+    if (previousPdf) {
+      const oldPdfPath = path.join(process.cwd(), 'storage', previousPdf);
       if (fs.existsSync(oldPdfPath)) {
         try {
           fs.unlinkSync(oldPdfPath);
-        } catch {
-          throw new AppException(
-            'Não foi possível substituir o arquivo PDF antigo.',
-            500,
+        } catch (error) {
+          this.logger.warn(
+            `Não foi possível remover o PDF antigo da submissão ${id}: ${error}`,
           );
         }
       }
     }
 
-    return this.prismaClient.submission.update({
-      where: { id },
-      data: {
-        advisorId,
-        mainAuthorId,
-        eventEditionId,
-        title,
-        abstract: abstractText,
-        pdfFile,
-        phoneNumber,
-        proposedPresentationBlockId,
-        proposedPositionWithinBlock,
-        status: submissionStatus,
-        coAdvisor,
-        linkHostedFile,
-      },
-    });
+    return updated;
   }
-
   async remove(id: string) {
     const submission = await this.prismaClient.submission.findUnique({
       where: { id },
