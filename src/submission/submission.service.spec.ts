@@ -17,6 +17,8 @@ describe('SubmissionService', () => {
 
   beforeEach(() => {
     prismaService = {
+      $transaction: jest.fn((callback) => callback(prismaService)),
+      $queryRaw: jest.fn().mockResolvedValue([{ id: 'block1' }]),
       userAccount: {
         findMany: jest.fn(),
         findUnique: jest.fn(),
@@ -25,6 +27,7 @@ describe('SubmissionService', () => {
         findUnique: jest.fn(),
       },
       submission: {
+        count: jest.fn().mockResolvedValue(0),
         create: jest.fn(),
         findFirst: jest.fn(),
         findMany: jest.fn(),
@@ -37,6 +40,7 @@ describe('SubmissionService', () => {
         findMany: jest.fn().mockResolvedValue([]),
       },
       presentation: {
+        count: jest.fn().mockResolvedValue(0),
         findFirst: jest.fn(),
       },
       coAuthor: {
@@ -90,6 +94,44 @@ describe('SubmissionService', () => {
 
       expect(result).toHaveProperty('id');
       expect(result.title).toBe(validCreateSubmissionDto.title);
+    });
+
+    it('persiste a sessão escolhida sem exigir uma posição', async () => {
+      (prismaService.userAccount.findMany as jest.Mock).mockResolvedValue([
+        { id: 'author123' },
+        { id: 'advisor-id', profile: Profile.Professor },
+      ]);
+      (prismaService.eventEdition.findUnique as jest.Mock).mockResolvedValue({
+        id: 'event123',
+        presentationDuration: 10,
+        submissionStartDate: new Date(Date.now() - 86400000),
+        submissionDeadline: new Date(Date.now() + 86400000),
+      });
+      (prismaService.submission.findFirst as jest.Mock).mockResolvedValue(null);
+      (
+        prismaService.presentationBlock.findUnique as jest.Mock
+      ).mockResolvedValue({
+        id: 'block1',
+        eventEditionId: 'event123',
+        type: 'Presentation',
+        duration: 20,
+      });
+      (prismaService.submission.create as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+      });
+
+      await service.create({
+        ...validCreateSubmissionDto,
+        proposedPresentationBlockId: 'block1',
+      });
+
+      expect(prismaService.$transaction).toHaveBeenCalledTimes(1);
+      expect(prismaService.submission.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          proposedPresentationBlockId: 'block1',
+          proposedPositionWithinBlock: undefined,
+        }),
+      });
     });
 
     it('should throw an error when mainAuthorId does not exist', async () => {
@@ -259,6 +301,44 @@ describe('SubmissionService', () => {
       expect(result).toBeInstanceOf(ResponseSubmissionDto);
     });
 
+    it('limpa a posição antiga quando a sessão proposta muda', async () => {
+      (prismaService.submission.findUnique as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+        eventEditionId: 'event123',
+        proposedPresentationBlockId: 'old-block',
+        proposedPositionWithinBlock: 1,
+      });
+      (
+        prismaService.presentationBlock.findUnique as jest.Mock
+      ).mockResolvedValue({
+        id: 'block1',
+        eventEditionId: 'event123',
+        type: 'Presentation',
+        duration: 20,
+      });
+      (prismaService.eventEdition.findUnique as jest.Mock).mockResolvedValue({
+        id: 'event123',
+        presentationDuration: 10,
+      });
+      (prismaService.submission.update as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+        proposedPresentationBlockId: 'block1',
+        proposedPositionWithinBlock: null,
+      });
+
+      await service.update('submission123', {
+        proposedPresentationBlockId: 'block1',
+      });
+
+      expect(prismaService.submission.update).toHaveBeenCalledWith({
+        where: { id: 'submission123' },
+        data: expect.objectContaining({
+          proposedPresentationBlockId: 'block1',
+          proposedPositionWithinBlock: null,
+        }),
+      });
+    });
+
     it('should throw error if submission not found', async () => {
       (prismaService.submission.findUnique as jest.Mock).mockResolvedValue(
         null,
@@ -302,6 +382,27 @@ describe('SubmissionService', () => {
   });
 
   describe('update', () => {
+    it('preserves the current status when updating other fields', async () => {
+      (prismaService.submission.findUnique as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+        eventEditionId: 'event123',
+        status: SubmissionStatus.Rejected,
+      });
+      (prismaService.submission.update as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+        status: SubmissionStatus.Rejected,
+      });
+
+      await service.update('submission123', {
+        abstractText: 'Updated abstract',
+      });
+
+      expect(prismaService.submission.update).toHaveBeenCalledWith({
+        where: { id: 'submission123' },
+        data: expect.objectContaining({ status: SubmissionStatus.Rejected }),
+      });
+    });
+
     const validUpdateSubmissionDto: UpdateSubmissionDto = {
       advisorId: 'advisor123',
       mainAuthorId: 'author123',
@@ -347,6 +448,44 @@ describe('SubmissionService', () => {
 
       expect(result).toHaveProperty('id');
       expect(result.title).toBe(validUpdateSubmissionDto.title);
+    });
+
+    it('limpa a posição antiga quando a sessão proposta muda', async () => {
+      (prismaService.submission.findUnique as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+        eventEditionId: 'event123',
+        proposedPresentationBlockId: 'old-block',
+        proposedPositionWithinBlock: 1,
+      });
+      (
+        prismaService.presentationBlock.findUnique as jest.Mock
+      ).mockResolvedValue({
+        id: 'block1',
+        eventEditionId: 'event123',
+        type: 'Presentation',
+        duration: 20,
+      });
+      (prismaService.eventEdition.findUnique as jest.Mock).mockResolvedValue({
+        id: 'event123',
+        presentationDuration: 10,
+      });
+      (prismaService.submission.update as jest.Mock).mockResolvedValue({
+        id: 'submission123',
+        proposedPresentationBlockId: 'block1',
+        proposedPositionWithinBlock: null,
+      });
+
+      await service.update('submission123', {
+        proposedPresentationBlockId: 'block1',
+      });
+
+      expect(prismaService.submission.update).toHaveBeenCalledWith({
+        where: { id: 'submission123' },
+        data: expect.objectContaining({
+          proposedPresentationBlockId: 'block1',
+          proposedPositionWithinBlock: null,
+        }),
+      });
     });
 
     it('should throw error if submission not found', async () => {

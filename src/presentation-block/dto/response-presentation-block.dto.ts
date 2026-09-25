@@ -154,6 +154,7 @@ export class ResponsePresentationBlockDto {
   presentations: ResponsePresentationDto[];
   panelists: ResponsePanelistDto[];
   availablePositionsWithInBlock: availablePositionsWithInBlockDto[];
+  availableSubmissionSlots: number;
 
   constructor(
     block: any,
@@ -173,6 +174,7 @@ export class ResponsePresentationBlockDto {
     this.presentations = presentations;
     this.panelists = panelists;
 
+    this.availableSubmissionSlots = block.availableSubmissionSlots ?? 0;
     this.availablePositionsWithInBlock = block.availablePositionsWithinBlock
       ? block.availablePositionsWithinBlock.map(
           (pos: any) =>
