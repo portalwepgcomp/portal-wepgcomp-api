@@ -115,6 +115,28 @@ export class UploadsService {
       'Content-Disposition',
       `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`,
     );
+
+    file.on('error', (erro: NodeJS.ErrnoException) => {
+      this.logger.error(`Falha ao ler o arquivo ${filename}`, erro?.stack);
+
+      if (res.headersSent) {
+        res.destroy(erro);
+        return;
+      }
+
+      res.removeHeader('Content-Type');
+      res.removeHeader('Content-Disposition');
+
+      const status = erro?.code === 'ENOENT' ? 404 : 500;
+      res.status(status).json({
+        statusCode: status,
+        message:
+          status === 404
+            ? 'Arquivo não encontrado.'
+            : 'Não foi possível ler o arquivo.',
+      });
+    });
+
     file.pipe(res);
   }
 }
