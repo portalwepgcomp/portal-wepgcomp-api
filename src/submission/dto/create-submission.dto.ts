@@ -8,6 +8,7 @@ import {
   IsUUID,
   Min,
   MinLength,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateSubmissionDto {
@@ -22,10 +23,12 @@ export class CreateSubmissionDto {
 
   @IsString()
   @MinLength(5, { message: 'O título deve ter pelo menos 5 caracteres.' })
+  @MaxLength(300, { message: 'O título deve ter no máximo 300 caracteres.' })
   title: string;
 
   @IsString()
   @MinLength(10, { message: 'O abstract deve ter pelo menos 10 caracteres.' })
+  @MaxLength(800, { message: 'O abstract deve ter no máximo 800 caracteres.' })
   abstractText: string;
 
   @IsString()
