@@ -3,13 +3,27 @@ import { CreateEventEditionDto } from './create-event-edition.dto';
 import {
   IsInt,
   IsISO8601,
+  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
   MaxLength,
   Min,
   IsArray,
+  ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+function toOptionalCoordinate({
+  value,
+}: {
+  value: unknown;
+}): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  return Number(value);
+}
 
 export class UpdateEventEditionDto extends PartialType(CreateEventEditionDto) {}
 
@@ -35,6 +49,22 @@ export class UpdateFromEventEditionFormDto {
   @MaxLength(255)
   @IsOptional()
   location?: string;
+
+  @IsOptional()
+  @Transform(toOptionalCoordinate)
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-90)
+  @Max(90)
+  locationLatitude?: number | null;
+
+  @IsOptional()
+  @Transform(toOptionalCoordinate)
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-180)
+  @Max(180)
+  locationLongitude?: number | null;
 
   @IsUUID()
   @IsOptional()

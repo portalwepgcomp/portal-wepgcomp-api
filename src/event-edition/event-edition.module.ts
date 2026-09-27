@@ -3,15 +3,10 @@ import { ScoringModule } from '../scoring/scoring.module';
 import { EventEditionCommitteeService } from './event-edition-committee.service';
 import { EventEditionController } from './event-edition.controller';
 import { EventEditionService } from './event-edition.service';
-import { EventLocationService } from './event-location.service';
 
 @Module({
   controllers: [EventEditionController],
-  providers: [
-    EventEditionService,
-    EventEditionCommitteeService,
-    EventLocationService,
-  ],
+  providers: [EventEditionService, EventEditionCommitteeService],
   exports: [EventEditionService, EventEditionCommitteeService],
   imports: [ScoringModule],
 })

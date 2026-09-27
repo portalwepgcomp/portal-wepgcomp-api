@@ -18,7 +18,6 @@ import {
 } from './dto/update-event-edition.dto';
 import { PaginatedResponseDto } from '../shared/dto/paginated-response.dto';
 import { EventEditionCommitteeService } from './event-edition-committee.service';
-import { EventLocationService } from './event-location.service';
 
 @Injectable()
 export class EventEditionService {
@@ -26,14 +25,9 @@ export class EventEditionService {
     private readonly prismaClient: PrismaService,
     private readonly scoringService: ScoringService,
     private readonly committeeService: EventEditionCommitteeService,
-    private readonly eventLocationService: EventLocationService,
   ) {}
 
   async create(createEventEditionDto: CreateEventEditionDto) {
-    const coordinates = await this.eventLocationService.locate(
-      createEventEditionDto.location,
-    );
-
     return this.prismaClient.$transaction(async (prisma) => {
       const currentYear = new Date().getFullYear();
 
@@ -94,10 +88,10 @@ export class EventEditionService {
             activeEvent?.partnersText ||
             '',
           location: createEventEditionDto.location,
-          locationLatitude: coordinates?.latitude ?? null,
-          locationLongitude: coordinates?.longitude ?? null,
-          locationApproximate: coordinates?.approximate ?? false,
-          locationGeocodedAddress: coordinates?.displayName ?? null,
+          locationLatitude: createEventEditionDto.locationLatitude ?? null,
+          locationLongitude: createEventEditionDto.locationLongitude ?? null,
+          locationApproximate: false,
+          locationGeocodedAddress: null,
           startDate: createEventEditionDto.startDate,
           endDate: createEventEditionDto.endDate,
           submissionDeadline: createEventEditionDto.submissionDeadline,
@@ -341,10 +335,9 @@ export class EventEditionService {
       );
     }
 
-    const withCoordinates = await this.ensureLocationCoordinates(event);
     const dtoData = {
-      ...withCoordinates,
-      roomName: withCoordinates.rooms?.map((room) => room.name) ?? [],
+      ...event,
+      roomName: event.rooms?.map((room) => room.name) ?? [],
     };
     return new EventEditionResponseDto(dtoData);
   }
@@ -370,10 +363,9 @@ export class EventEditionService {
       throw new NotFoundException('Não há eventos para o ano informado');
     }
 
-    const withCoordinates = await this.ensureLocationCoordinates(event);
     const dtoData = {
-      ...withCoordinates,
-      roomName: withCoordinates.rooms?.map((room) => room.name) ?? [],
+      ...event,
+      roomName: event.rooms?.map((room) => room.name) ?? [],
     };
     return new EventEditionResponseDto(dtoData);
   }
@@ -396,56 +388,11 @@ export class EventEditionService {
       throw new BadRequestException('Não existe nenhum evento ativo');
     }
 
-    const withCoordinates = await this.ensureLocationCoordinates(event);
     const dtoData = {
-      ...withCoordinates,
-      roomName: withCoordinates.rooms?.map((room) => room.name) ?? [],
+      ...event,
+      roomName: event.rooms?.map((room) => room.name) ?? [],
     };
     return new EventEditionResponseDto(dtoData);
-  }
-
-  private async ensureLocationCoordinates<
-    T extends {
-      id: string;
-      location: string;
-      locationLatitude?: number | null;
-      locationLongitude?: number | null;
-      rooms?: { name: string }[];
-    },
-  >(event: T): Promise<T> {
-    const hasCoordinates =
-      typeof event.locationLatitude === 'number' &&
-      typeof event.locationLongitude === 'number' &&
-      Number.isFinite(event.locationLatitude) &&
-      Number.isFinite(event.locationLongitude);
-
-    if (!event.location || hasCoordinates) {
-      return event;
-    }
-
-    const coordinates = await this.eventLocationService.locate(event.location);
-    if (!coordinates) {
-      return event;
-    }
-
-    const updated = await this.prismaClient.eventEdition.update({
-      where: { id: event.id },
-      data: {
-        locationLatitude: coordinates.latitude,
-        locationLongitude: coordinates.longitude,
-        locationApproximate: coordinates.approximate,
-        locationGeocodedAddress: coordinates.displayName,
-      },
-      include: {
-        rooms: {
-          select: {
-            name: true,
-          },
-        },
-      },
-    });
-
-    return updated as unknown as T;
   }
 
   async updateFromEventEditionForm(
@@ -621,14 +568,6 @@ export class EventEditionService {
     }
 
     this.validateSubmissionPeriod(updateEventEdition);
-    const shouldLocate =
-      updateEventEdition.location !== undefined &&
-      (updateEventEdition.location !== event.location ||
-        typeof event.locationLatitude !== 'number' ||
-        typeof event.locationLongitude !== 'number');
-    const coordinates = shouldLocate
-      ? await this.eventLocationService.locate(updateEventEdition.location!)
-      : undefined;
     const fieldsToIgnore = [
       'organizingCommitteeIds',
       'itSupportIds',
@@ -649,15 +588,7 @@ export class EventEditionService {
       where: {
         id,
       },
-      data: {
-        ...filteredData,
-        ...(shouldLocate && {
-          locationLatitude: coordinates?.latitude ?? null,
-          locationLongitude: coordinates?.longitude ?? null,
-          locationApproximate: coordinates?.approximate ?? false,
-          locationGeocodedAddress: coordinates?.displayName ?? null,
-        }),
-      },
+      data: filteredData,
     });
 
     const updatedEvent = await this.prismaClient.eventEdition.findUnique({

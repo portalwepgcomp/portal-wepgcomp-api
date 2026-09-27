@@ -6,9 +6,23 @@ import {
   MaxLength,
   IsISO8601,
   Min,
+  Max,
   IsUUID,
   IsArray,
+  IsNumber,
+  ValidateIf,
 } from 'class-validator';
+import { Transform } from 'class-transformer';
+
+function toOptionalCoordinate({
+  value,
+}: {
+  value: unknown;
+}): number | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  return Number(value);
+}
 
 export class CreateEventEditionDto {
   @IsString()
@@ -29,6 +43,22 @@ export class CreateEventEditionDto {
   @IsString()
   @MaxLength(255)
   location: string;
+
+  @IsOptional()
+  @Transform(toOptionalCoordinate)
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-90)
+  @Max(90)
+  locationLatitude?: number | null;
+
+  @IsOptional()
+  @Transform(toOptionalCoordinate)
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-180)
+  @Max(180)
+  locationLongitude?: number | null;
 
   @IsISO8601()
   startDate: Date;
@@ -82,6 +112,22 @@ export class CreateFromEventEditionFormDto {
   @IsString()
   @MaxLength(255)
   location: string;
+
+  @IsOptional()
+  @Transform(toOptionalCoordinate)
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-90)
+  @Max(90)
+  locationLatitude?: number | null;
+
+  @IsOptional()
+  @Transform(toOptionalCoordinate)
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsNumber({ maxDecimalPlaces: 8 })
+  @Min(-180)
+  @Max(180)
+  locationLongitude?: number | null;
 
   @IsUUID()
   @IsOptional()
