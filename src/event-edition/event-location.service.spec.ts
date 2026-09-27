@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import {
   EventLocationService,
   getLocationText,
@@ -63,6 +64,27 @@ describe('EventLocationService', () => {
     expect(secondUrl.searchParams.get('q')).toBe(
       'Rua Barão de Jeremoabo, 668, Ondina, Salvador, Bahia, Brasil',
     );
+  });
+
+  it('não bloqueia o endereço quando o geocodificador está indisponível', async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockRejectedValue(new Error('network unavailable'));
+    jest.spyOn(Logger.prototype, 'warn').mockImplementation();
+
+    const service = new EventLocationService();
+    expect(await service.locate('Rua Barão de Jeremoabo, 668')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retorna sem coordenadas quando não encontra o endereço', async () => {
+    const fetchMock = jest
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('[]', { status: 200 }));
+
+    const service = new EventLocationService();
+    expect(await service.locate('Brasil')).toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('não consulta o serviço quando o endereço está vazio', async () => {

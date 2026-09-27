@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 export interface EventCoordinates {
   latitude: number;
@@ -45,6 +41,7 @@ export function simplifyLocationQuery(address: string): string {
 
 @Injectable()
 export class EventLocationService {
+  private readonly logger = new Logger(EventLocationService.name);
   private nextRequestAt = 0;
   private queue: Promise<void> = Promise.resolve();
 
@@ -59,6 +56,7 @@ export class EventLocationService {
 
     for (const [index, query] of queries.entries()) {
       const results = await this.search(query);
+      if (!results) return null;
       const match = postalCode
         ? results.find(
             (result) =>
@@ -91,12 +89,10 @@ export class EventLocationService {
       };
     }
 
-    throw new BadRequestException(
-      'Não foi possível localizar o endereço no mapa. Informe rua, número, cidade e estado ou o nome do local.',
-    );
+    return null;
   }
 
-  private async search(query: string): Promise<NominatimResult[]> {
+  private async search(query: string): Promise<NominatimResult[] | null> {
     const url = new URL(
       process.env.NOMINATIM_SEARCH_URL ??
         'https://nominatim.openstreetmap.org/search',
@@ -116,11 +112,13 @@ export class EventLocationService {
           signal: AbortSignal.timeout(8000),
         });
         if (!response.ok) throw new Error('Geocoder unavailable');
-        return (await response.json()) as NominatimResult[];
+        const results: unknown = await response.json();
+        return Array.isArray(results) ? (results as NominatimResult[]) : [];
       } catch {
-        throw new ServiceUnavailableException(
-          'Serviço de localização indisponível. Tente salvar o endereço novamente.',
+        this.logger.warn(
+          'Geocodificação indisponível; endereço será salvo sem coordenadas.',
         );
+        return null;
       }
     });
   }
