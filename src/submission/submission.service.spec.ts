@@ -289,6 +289,20 @@ describe('SubmissionService', () => {
       );
     });
 
+    it('deve responder 404 quando a submissão não tem PDF associado', async () => {
+      (prismaService.submission.findUnique as jest.Mock).mockResolvedValue({
+        pdfFile: '',
+      });
+
+      const erro = await service
+        .downloadPdf('submission123', {} as Response)
+        .catch((e) => e);
+
+      expect(erro).toBeInstanceOf(AppException);
+      expect(erro.message).toBe('Esta submissão não possui PDF.');
+      expect(erro.getStatus()).toBe(404);
+      expect(uploadsService.downloadFile).not.toHaveBeenCalled();
+    });
     it('should throw 404 when the submission does not exist', async () => {
       (prismaService.submission.findUnique as jest.Mock).mockResolvedValue(
         null,
