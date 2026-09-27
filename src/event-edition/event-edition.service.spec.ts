@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEditionService } from './event-edition.service';
 import { EventEditionCommitteeService } from './event-edition-committee.service';
+import { EventLocationService } from './event-location.service';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateEventEditionDto } from './dto/create-event-edition.dto';
 import {
@@ -18,6 +19,7 @@ const today = new Date();
 describe('EventEditionService', () => {
   let service: EventEditionService;
   let prismaService: PrismaService;
+  let eventLocationService: EventLocationService;
 
   const mockPrismaService = {
     eventEdition: {
@@ -58,6 +60,17 @@ describe('EventEditionService', () => {
         EventEditionService,
         EventEditionCommitteeService,
         {
+          provide: EventLocationService,
+          useValue: {
+            locate: jest.fn().mockResolvedValue({
+              latitude: -13.0020509,
+              longitude: -38.5103112,
+              approximate: true,
+              displayName: 'Rua Barão de Jeremoabo, Salvador',
+            }),
+          },
+        },
+        {
           provide: PrismaService,
           useValue: mockPrismaService,
         },
@@ -74,6 +87,8 @@ describe('EventEditionService', () => {
 
     service = module.get<EventEditionService>(EventEditionService);
     prismaService = module.get<PrismaService>(PrismaService);
+    eventLocationService =
+      module.get<EventLocationService>(EventLocationService);
   });
 
   afterEach(() => {
@@ -118,10 +133,14 @@ describe('EventEditionService', () => {
         }),
       );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalledWith({
-        data: {
-          ...createDto,
+        data: expect.objectContaining({
+          name: createDto.name,
+          location: createDto.location,
+          locationLatitude: -13.0020509,
+          locationLongitude: -38.5103112,
+          locationApproximate: true,
           isActive: true,
-        },
+        }),
       });
     });
 
@@ -517,6 +536,9 @@ describe('EventEditionService', () => {
       const event = {
         id: '1',
         name: 'Event 1',
+        location: 'UFBA',
+        locationLatitude: -13.0020509,
+        locationLongitude: -38.5103112,
         startDate: new Date(year, 0, 1),
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -542,6 +564,51 @@ describe('EventEditionService', () => {
           },
         },
       });
+      expect(eventLocationService.locate).not.toHaveBeenCalled();
+    });
+
+    it('geocodifica sob demanda quando a edição ainda não tem coordenadas', async () => {
+      const year = 2022;
+      const event = {
+        id: '1',
+        name: 'Event 1',
+        location: '<p>1154, R. Barão de Jeremoabo, 668</p>',
+        locationLatitude: null,
+        locationLongitude: null,
+        startDate: new Date(year, 0, 1),
+        rooms: [],
+      };
+      const geocoded = {
+        ...event,
+        locationLatitude: -13.0020509,
+        locationLongitude: -38.5103112,
+        locationApproximate: true,
+        locationGeocodedAddress: 'Rua Barão de Jeremoabo, Salvador',
+        rooms: [],
+      };
+      mockPrismaService.eventEdition.findFirst.mockResolvedValue(event);
+      mockPrismaService.eventEdition.update.mockResolvedValue(geocoded);
+
+      const result = await service.getByYear(year);
+
+      expect(eventLocationService.locate).toHaveBeenCalledWith(event.location);
+      expect(mockPrismaService.eventEdition.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: {
+          locationLatitude: -13.0020509,
+          locationLongitude: -38.5103112,
+          locationApproximate: true,
+          locationGeocodedAddress: 'Rua Barão de Jeremoabo, Salvador',
+        },
+        include: {
+          rooms: {
+            select: { name: true },
+          },
+        },
+      });
+      expect(result).toEqual(
+        new EventEditionResponseDto({ ...geocoded, roomName: [] }),
+      );
     });
 
     it('should throw a NotFoundException when no event is found for the given year', async () => {
@@ -583,6 +650,39 @@ describe('EventEditionService', () => {
       expect(result).toEqual(
         new EventEditionResponseDto({ ...updatedEvent, roomName: [] }),
       );
+    });
+
+    it('geocodifica e salva as coordenadas ao alterar o endereço', async () => {
+      const event = {
+        id: '1',
+        name: 'Event 1',
+        location: '<p>Endereço antigo</p>',
+        locationLatitude: null,
+        locationLongitude: null,
+      };
+      const updateDto = new UpdateEventEditionDto();
+      updateDto.location = '<p>Rua Barão de Jeremoabo, 668, Salvador</p>';
+
+      mockPrismaService.eventEdition.findUnique
+        .mockResolvedValueOnce(event)
+        .mockResolvedValueOnce({ ...event, ...updateDto, rooms: [] });
+      mockPrismaService.eventEdition.update.mockResolvedValue(event);
+
+      await service.update('1', updateDto);
+
+      expect(eventLocationService.locate).toHaveBeenCalledWith(
+        updateDto.location,
+      );
+      expect(mockPrismaService.eventEdition.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: expect.objectContaining({
+          location: updateDto.location,
+          locationLatitude: -13.0020509,
+          locationLongitude: -38.5103112,
+          locationApproximate: true,
+          locationGeocodedAddress: 'Rua Barão de Jeremoabo, Salvador',
+        }),
+      });
     });
 
     it('should throw an error if event not found', async () => {
