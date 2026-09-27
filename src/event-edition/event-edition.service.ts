@@ -18,6 +18,7 @@ import {
 } from './dto/update-event-edition.dto';
 import { PaginatedResponseDto } from '../shared/dto/paginated-response.dto';
 import { EventEditionCommitteeService } from './event-edition-committee.service';
+import { EventLocationService } from './event-location.service';
 
 @Injectable()
 export class EventEditionService {
@@ -25,9 +26,14 @@ export class EventEditionService {
     private readonly prismaClient: PrismaService,
     private readonly scoringService: ScoringService,
     private readonly committeeService: EventEditionCommitteeService,
+    private readonly eventLocationService: EventLocationService,
   ) {}
 
   async create(createEventEditionDto: CreateEventEditionDto) {
+    const coordinates = await this.eventLocationService.locate(
+      createEventEditionDto.location,
+    );
+
     return this.prismaClient.$transaction(async (prisma) => {
       const currentYear = new Date().getFullYear();
 
@@ -88,6 +94,10 @@ export class EventEditionService {
             activeEvent?.partnersText ||
             '',
           location: createEventEditionDto.location,
+          locationLatitude: coordinates?.latitude ?? null,
+          locationLongitude: coordinates?.longitude ?? null,
+          locationApproximate: coordinates?.approximate ?? false,
+          locationGeocodedAddress: coordinates?.displayName ?? null,
           startDate: createEventEditionDto.startDate,
           endDate: createEventEditionDto.endDate,
           submissionDeadline: createEventEditionDto.submissionDeadline,
@@ -564,6 +574,14 @@ export class EventEditionService {
     }
 
     this.validateSubmissionPeriod(updateEventEdition);
+    const shouldLocate =
+      updateEventEdition.location !== undefined &&
+      (updateEventEdition.location !== event.location ||
+        event.locationLatitude === null ||
+        event.locationLongitude === null);
+    const coordinates = shouldLocate
+      ? await this.eventLocationService.locate(updateEventEdition.location!)
+      : undefined;
     const fieldsToIgnore = [
       'organizingCommitteeIds',
       'itSupportIds',
@@ -584,7 +602,15 @@ export class EventEditionService {
       where: {
         id,
       },
-      data: filteredData,
+      data: {
+        ...filteredData,
+        ...(shouldLocate && {
+          locationLatitude: coordinates?.latitude ?? null,
+          locationLongitude: coordinates?.longitude ?? null,
+          locationApproximate: coordinates?.approximate ?? false,
+          locationGeocodedAddress: coordinates?.displayName ?? null,
+        }),
+      },
     });
 
     const updatedEvent = await this.prismaClient.eventEdition.findUnique({
