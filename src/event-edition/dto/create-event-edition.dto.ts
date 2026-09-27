@@ -21,7 +21,9 @@ function toOptionalCoordinate({
 }): number | null | undefined {
   if (value === undefined) return undefined;
   if (value === null || value === '') return null;
-  return Number(value);
+  const parsed = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(parsed)) return parsed;
+  return Number(parsed.toFixed(8));
 }
 
 export class CreateEventEditionDto {
@@ -47,7 +49,7 @@ export class CreateEventEditionDto {
   @IsOptional()
   @Transform(toOptionalCoordinate)
   @ValidateIf((_, value) => value !== null && value !== undefined)
-  @IsNumber({ maxDecimalPlaces: 8 })
+  @IsNumber()
   @Min(-90)
   @Max(90)
   locationLatitude?: number | null;
@@ -55,7 +57,7 @@ export class CreateEventEditionDto {
   @IsOptional()
   @Transform(toOptionalCoordinate)
   @ValidateIf((_, value) => value !== null && value !== undefined)
-  @IsNumber({ maxDecimalPlaces: 8 })
+  @IsNumber()
   @Min(-180)
   @Max(180)
   locationLongitude?: number | null;
@@ -116,7 +118,7 @@ export class CreateFromEventEditionFormDto {
   @IsOptional()
   @Transform(toOptionalCoordinate)
   @ValidateIf((_, value) => value !== null && value !== undefined)
-  @IsNumber({ maxDecimalPlaces: 8 })
+  @IsNumber()
   @Min(-90)
   @Max(90)
   locationLatitude?: number | null;
@@ -124,7 +126,7 @@ export class CreateFromEventEditionFormDto {
   @IsOptional()
   @Transform(toOptionalCoordinate)
   @ValidateIf((_, value) => value !== null && value !== undefined)
-  @IsNumber({ maxDecimalPlaces: 8 })
+  @IsNumber()
   @Min(-180)
   @Max(180)
   locationLongitude?: number | null;
