@@ -20,18 +20,6 @@ export class EventEditionResponseDto {
   location: string;
 
   @Expose()
-  locationLatitude: number | null;
-
-  @Expose()
-  locationLongitude: number | null;
-
-  @Expose()
-  locationApproximate: boolean;
-
-  @Expose()
-  locationGeocodedAddress: string | null;
-
-  @Expose()
   mapEmbedUrl: string | null;
 
   @Expose()

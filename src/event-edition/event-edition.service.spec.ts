@@ -121,9 +121,6 @@ describe('EventEditionService', () => {
         data: expect.objectContaining({
           name: createDto.name,
           location: createDto.location,
-          locationLatitude: null,
-          locationLongitude: null,
-          locationApproximate: false,
           isActive: true,
         }),
       });
@@ -522,8 +519,6 @@ describe('EventEditionService', () => {
         id: '1',
         name: 'Event 1',
         location: 'UFBA',
-        locationLatitude: -13.0020509,
-        locationLongitude: -38.5103112,
         startDate: new Date(year, 0, 1),
         createdAt: new Date(),
         updatedAt: new Date(),

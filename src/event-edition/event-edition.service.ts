@@ -88,10 +88,6 @@ export class EventEditionService {
             activeEvent?.partnersText ||
             '',
           location: createEventEditionDto.location,
-          locationLatitude: createEventEditionDto.locationLatitude ?? null,
-          locationLongitude: createEventEditionDto.locationLongitude ?? null,
-          locationApproximate: false,
-          locationGeocodedAddress: null,
           startDate: createEventEditionDto.startDate,
           endDate: createEventEditionDto.endDate,
           submissionDeadline: createEventEditionDto.submissionDeadline,

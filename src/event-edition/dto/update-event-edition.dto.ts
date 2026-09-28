@@ -3,11 +3,9 @@ import { CreateEventEditionDto } from './create-event-edition.dto';
 import {
   IsInt,
   IsISO8601,
-  IsNumber,
   IsOptional,
   IsString,
   IsUUID,
-  Max,
   MaxLength,
   Min,
   IsArray,
@@ -15,18 +13,6 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
-
-function toOptionalCoordinate({
-  value,
-}: {
-  value: unknown;
-}): number | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === null || value === '') return null;
-  const parsed = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(parsed)) return parsed;
-  return Number(parsed.toFixed(8));
-}
 
 export class UpdateEventEditionDto extends PartialType(CreateEventEditionDto) {}
 
@@ -62,22 +48,6 @@ export class UpdateFromEventEditionFormDto {
     message: 'Informe o link de incorporar o mapa do Google',
   })
   mapEmbedUrl?: string | null;
-
-  @IsOptional()
-  @Transform(toOptionalCoordinate)
-  @ValidateIf((_, value) => value !== null && value !== undefined)
-  @IsNumber()
-  @Min(-90)
-  @Max(90)
-  locationLatitude?: number | null;
-
-  @IsOptional()
-  @Transform(toOptionalCoordinate)
-  @ValidateIf((_, value) => value !== null && value !== undefined)
-  @IsNumber()
-  @Min(-180)
-  @Max(180)
-  locationLongitude?: number | null;
 
   @IsUUID()
   @IsOptional()

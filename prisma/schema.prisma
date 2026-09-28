@@ -60,10 +60,6 @@ model EventEdition {
   callForPapersText                 String                 @map("call_for_papers_text")
   partnersText                      String                 @map("partners_text")
   location                          String                 @map("location")
-  locationLatitude                  Float?                 @map("location_latitude")
-  locationLongitude                 Float?                 @map("location_longitude")
-  locationApproximate               Boolean                @default(false) @map("location_approximate")
-  locationGeocodedAddress           String?                @map("location_geocoded_address")
   mapEmbedUrl                       String?                @map("map_embed_url") @db.Text
   startDate                         DateTime               @map("start_date")
   endDate                           DateTime               @map("end_date")
