@@ -32,6 +32,9 @@ export class EventEditionResponseDto {
   locationGeocodedAddress: string | null;
 
   @Expose()
+  mapEmbedUrl: string | null;
+
+  @Expose()
   startDate: Date;
 
   @Expose()

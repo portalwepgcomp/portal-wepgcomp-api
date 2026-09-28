@@ -11,6 +11,7 @@ import {
   MaxLength,
   Min,
   IsArray,
+  Matches,
   ValidateIf,
 } from 'class-validator';
 import { Transform } from 'class-transformer';
@@ -51,6 +52,16 @@ export class UpdateFromEventEditionFormDto {
   @MaxLength(255)
   @IsOptional()
   location?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => (value === '' ? null : value))
+  @ValidateIf((_, value) => value !== null && value !== undefined)
+  @IsString()
+  @MaxLength(8000)
+  @Matches(/https:\/\/www\.google\.com\/maps\/embed/i, {
+    message: 'Informe o link de incorporar o mapa do Google',
+  })
+  mapEmbedUrl?: string | null;
 
   @IsOptional()
   @Transform(toOptionalCoordinate)

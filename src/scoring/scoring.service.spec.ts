@@ -17,6 +17,7 @@ const createMockEventEdition = (partialEvent: Partial<any>) => {
     locationLongitude: null,
     locationApproximate: false,
     locationGeocodedAddress: null,
+    mapEmbedUrl: null,
     startDate: new Date(),
     endDate: new Date(),
     submissionStartDate: new Date(),
