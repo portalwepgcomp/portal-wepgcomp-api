@@ -19,7 +19,8 @@ import { SwapMultiplePresentationsDto } from './dto/swap-presentations.dto';
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
-import { UserLevel } from '@prisma/client';
+import { UserLevel, PresentationBlockType } from '@prisma/client';
+import { ApiQuery } from '@nestjs/swagger';
 
 @Controller('presentation-block')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
@@ -36,8 +37,10 @@ export class PresentationBlockController {
 
   @Public()
   @Get('event-edition/:eventEditionId')
+  @ApiQuery({ name: 'availableOnly', required: false, type: Boolean })
   async findAllByEventEditionId(
     @Param('eventEditionId') eventEditionId: string,
+    @Query('availableOnly') availableOnly?: string,
   ): Promise<ResponsePresentationBlockDto[]> {
     const presentationBlocks = await this.presentationBlockService.findAll(
       '',
@@ -46,10 +49,18 @@ export class PresentationBlockController {
 
     const sortedBlocks = presentationBlocks.sort(
       (a, b) =>
-        new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+        new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
     );
+    const selectedBlocks =
+      availableOnly === 'true'
+        ? sortedBlocks.filter(
+            (block) =>
+              block.type === PresentationBlockType.Presentation &&
+              block.availableSubmissionSlots > 0,
+          )
+        : sortedBlocks;
     return Promise.all(
-      sortedBlocks.map((block) =>
+      selectedBlocks.map((block) =>
         ResponsePresentationBlockDto.create(block, (id) => this.userLoader(id)),
       ),
     );

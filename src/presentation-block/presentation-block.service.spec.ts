@@ -20,6 +20,7 @@ describe('PresentationBlockService', () => {
         {
           provide: PrismaService,
           useValue: {
+            $queryRaw: jest.fn().mockResolvedValue([]),
             $transaction: jest
               .fn()
               .mockImplementation((cb) =>
@@ -39,6 +40,8 @@ describe('PresentationBlockService', () => {
               findUnique: jest.fn(),
             },
             presentation: {
+              findFirst: jest.fn().mockResolvedValue(null),
+              count: jest.fn().mockResolvedValue(0),
               findMany: jest.fn(),
               updateMany: jest.fn(),
               findUnique: jest.fn(),
@@ -47,7 +50,8 @@ describe('PresentationBlockService', () => {
               deleteMany: jest.fn(),
             },
             submission: {
-              findMany: jest.fn(),
+              count: jest.fn().mockResolvedValue(0),
+              findMany: jest.fn().mockResolvedValue([]),
             },
             userAccount: {
               findMany: jest.fn(),
@@ -63,6 +67,7 @@ describe('PresentationBlockService', () => {
         {
           provide: ScoringService,
           useValue: {
+            $queryRaw: jest.fn().mockResolvedValue([]),
             handleEventUpdate: jest.fn(),
           },
         },
@@ -632,6 +637,115 @@ describe('PresentationBlockService', () => {
       });
     });
 
+    it('rejeita a alocação em lote que consome uma vaga reservada por outro trabalho', async () => {
+      (prismaService.submission.findMany as jest.Mock).mockResolvedValue([
+        { id: 'sub-b' },
+      ]);
+      (prismaService.presentation.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.presentationBlock.update as jest.Mock).mockResolvedValue({
+        ...existingBlock,
+        duration: 20,
+      });
+      (prismaService.presentation.count as jest.Mock).mockResolvedValue(1);
+      (prismaService.submission.count as jest.Mock).mockResolvedValue(1);
+
+      await expect(
+        service.update('block1', {
+          numPresentations: 1,
+          submissions: ['sub-b'],
+        }),
+      ).rejects.toThrow(
+        new AppException(
+          'A sessão escolhida não possui vagas disponíveis.',
+          409,
+        ),
+      );
+      expect(prismaService.$queryRaw).toHaveBeenCalled();
+    });
+
+    it('rejeita diminuir a sessão para menos vagas do que as propostas reservadas', async () => {
+      (prismaService.presentationBlock.update as jest.Mock).mockResolvedValue({
+        ...existingBlock,
+        duration: 20,
+      });
+      (prismaService.submission.count as jest.Mock).mockResolvedValue(2);
+
+      await expect(
+        service.update('block1', {
+          duration: 20,
+        }),
+      ).rejects.toThrow(
+        new AppException(
+          'A sessão escolhida não possui vagas disponíveis.',
+          409,
+        ),
+      );
+    });
+
+    it('permite a lista cheia quando as próprias propostas já estão alocadas', async () => {
+      (prismaService.submission.findMany as jest.Mock).mockResolvedValue([
+        { id: 'sub-b' },
+      ]);
+      (prismaService.presentation.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.presentationBlock.update as jest.Mock).mockResolvedValue({
+        ...existingBlock,
+        duration: 20,
+      });
+      (prismaService.presentation.count as jest.Mock).mockResolvedValue(1);
+      (prismaService.submission.count as jest.Mock).mockResolvedValue(0);
+
+      await expect(
+        service.update('block1', {
+          numPresentations: 1,
+          submissions: ['sub-b'],
+        }),
+      ).resolves.toMatchObject({ duration: 20 });
+    });
+    it('respeita a posição reservada também na edição em lote', async () => {
+      (prismaService.submission.findMany as jest.Mock)
+        .mockResolvedValueOnce([{ id: 'sub-b' }])
+        .mockResolvedValueOnce([{ proposedPositionWithinBlock: 0 }]);
+      (prismaService.presentation.findMany as jest.Mock).mockResolvedValue([]);
+      (prismaService.presentation.findFirst as jest.Mock).mockResolvedValue({
+        id: 'presentation-b',
+      });
+      (prismaService.presentationBlock.update as jest.Mock).mockResolvedValue({
+        ...existingBlock,
+        duration: 40,
+      });
+      (prismaService.presentation.count as jest.Mock).mockResolvedValue(1);
+      (prismaService.submission.count as jest.Mock).mockResolvedValue(1);
+
+      await expect(
+        service.update('block1', {
+          numPresentations: 2,
+          submissions: ['sub-b'],
+        }),
+      ).rejects.toThrow(
+        new AppException('A posição escolhida já está reservada.', 409),
+      );
+    });
+    it('não reduz a capacidade para antes de uma posição já reservada', async () => {
+      (prismaService.presentationBlock.update as jest.Mock).mockResolvedValue({
+        ...existingBlock,
+        duration: 20,
+      });
+      (prismaService.submission.count as jest.Mock).mockResolvedValue(1);
+      (prismaService.submission.findMany as jest.Mock).mockResolvedValue([
+        { proposedPositionWithinBlock: 2 },
+      ]);
+
+      await expect(
+        service.update('block1', {
+          duration: 20,
+        }),
+      ).rejects.toThrow(
+        new AppException(
+          'A sessão possui posições reservadas fora da nova capacidade.',
+          409,
+        ),
+      );
+    });
     // Validation Tests
     it('should throw AppException if block not found', async () => {
       prismaService.presentationBlock.findUnique = jest

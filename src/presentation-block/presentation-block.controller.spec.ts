@@ -96,6 +96,42 @@ describe('PresentationBlockController', () => {
     });
   });
 
+  it('filters sessions with available slots', async () => {
+    mockPresentationBlockService.findAll.mockResolvedValue([
+      {
+        id: 'full',
+        eventEditionId: 'edition',
+        type: PresentationBlockType.Presentation,
+        startTime: new Date('2026-10-01T10:00:00.000Z'),
+        availableSubmissionSlots: 0,
+        presentations: [],
+        panelists: [],
+      },
+      {
+        id: 'general',
+        eventEditionId: 'edition',
+        type: PresentationBlockType.General,
+        startTime: new Date('2026-10-01T11:00:00.000Z'),
+        availableSubmissionSlots: 1,
+        presentations: [],
+        panelists: [],
+      },
+      {
+        id: 'available',
+        eventEditionId: 'edition',
+        type: PresentationBlockType.Presentation,
+        startTime: new Date('2026-10-01T12:00:00.000Z'),
+        availableSubmissionSlots: 1,
+        presentations: [],
+        panelists: [],
+      },
+    ]);
+
+    const result = await controller.findAllByEventEditionId('edition', 'true');
+
+    expect(result.map((block) => block.id)).toEqual(['available']);
+  });
+
   describe('findOne', () => {
     it('should return a presentation block when found', async () => {
       const id = '1';

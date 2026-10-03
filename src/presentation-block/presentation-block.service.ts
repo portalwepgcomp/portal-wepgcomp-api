@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PresentationBlockType } from '@prisma/client';
+import { PresentationBlockType, SubmissionStatus } from '@prisma/client';
 import { AppException } from '../exceptions/app.exception';
 import { PrismaService } from '../prisma/prisma.service';
 import { ScoringService } from '../scoring/scoring.service';
@@ -8,6 +8,7 @@ import { SwapMultiplePresentationsDto } from './dto/swap-presentations.dto';
 import { UpdatePresentationBlockDto } from './dto/update-presentation-block.dto';
 import { PresentationBlockAllocationService } from './presentation-block-allocation.service';
 import { PresentationBlockTimeService } from './presentation-block-time.service';
+import { occupiedSubmissionSlots } from './presentation-block-availability';
 
 @Injectable()
 export class PresentationBlockService {
@@ -187,6 +188,7 @@ export class PresentationBlockService {
     void _numPresentations;
 
     const result = await this.prismaClient.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM presentation_block WHERE id = ${id} FOR UPDATE`;
       await this.allocationService.allocateSubmissionsAndPanelistsOnUpdate(
         tx,
         id,
@@ -194,12 +196,66 @@ export class PresentationBlockService {
         panelists,
       );
 
-      return await tx.presentationBlock.update({
+      const updatedBlock = await tx.presentationBlock.update({
         where: {
           id,
         },
         data: without_num_presentations,
       });
+      const edition = await tx.eventEdition.findUnique({
+        where: { id: updatedBlock.eventEditionId },
+      });
+      if (!edition) {
+        throw new AppException('Edição do evento não encontrada', 404);
+      }
+      const capacity =
+        updatedBlock.type === PresentationBlockType.Presentation &&
+        edition.presentationDuration > 0
+          ? Math.floor(updatedBlock.duration / edition.presentationDuration)
+          : 0;
+      const occupied = await occupiedSubmissionSlots(tx, id);
+      if (occupied > capacity) {
+        throw new AppException(
+          'A sessão escolhida não possui vagas disponíveis.',
+          409,
+        );
+      }
+      const reservations = await tx.submission.findMany({
+        where: {
+          proposedPresentationBlockId: id,
+          status: {
+            in: [SubmissionStatus.Submitted, SubmissionStatus.Confirmed],
+          },
+          Presentation: { none: {} },
+          proposedPositionWithinBlock: { not: null },
+        },
+        select: { proposedPositionWithinBlock: true },
+      });
+      const reservedPositions = reservations
+        .map((reservation) => reservation.proposedPositionWithinBlock)
+        .filter((position): position is number => position != null);
+      if (
+        reservedPositions.some(
+          (position) => position < 0 || position >= capacity,
+        )
+      ) {
+        throw new AppException(
+          'A sessão possui posições reservadas fora da nova capacidade.',
+          409,
+        );
+      }
+      if (reservedPositions.length > 0) {
+        const overlap = await tx.presentation.findFirst({
+          where: {
+            presentationBlockId: id,
+            positionWithinBlock: { in: reservedPositions },
+          },
+        });
+        if (overlap) {
+          throw new AppException('A posição escolhida já está reservada.', 409);
+        }
+      }
+      return updatedBlock;
     });
 
     if (updatePresentationBlockDto.type === PresentationBlockType.General) {
