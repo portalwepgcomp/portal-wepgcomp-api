@@ -1,4 +1,13 @@
-import { IsEmail } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class DefaultEmailDto {
   from: string;
@@ -14,29 +23,22 @@ export class DefaultEmailResponseDto {
 }
 
 export class ContactRequestDto {
+  @IsString({ message: 'O nome deve ser uma string' })
+  @IsNotEmpty({ message: 'O nome é obrigatório' })
   name: string;
 
   @IsEmail()
   email: string;
 
+  @IsString({ message: 'A mensagem deve ser uma string' })
+  @IsNotEmpty({ message: 'A mensagem é obrigatória' })
   text: string;
 }
 
 export class ContactResponseDto {
   message: string;
 }
-
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsNotEmpty,
-  IsObject,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
-
-class EmailFiltersDto {
+export class EmailFiltersDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })

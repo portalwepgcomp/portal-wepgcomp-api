@@ -20,6 +20,9 @@ export class EventEditionResponseDto {
   location: string;
 
   @Expose()
+  mapEmbedUrl: string | null;
+
+  @Expose()
   startDate: Date;
 
   @Expose()

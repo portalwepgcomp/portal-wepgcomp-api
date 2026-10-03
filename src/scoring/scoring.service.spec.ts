@@ -13,6 +13,7 @@ const createMockEventEdition = (partialEvent: Partial<any>) => {
     callForPapersText: 'Default call for papers',
     partnersText: 'Default partners text',
     location: 'Default location',
+    mapEmbedUrl: null,
     startDate: new Date(),
     endDate: new Date(),
     submissionStartDate: new Date(),

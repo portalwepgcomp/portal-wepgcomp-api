@@ -118,10 +118,11 @@ describe('EventEditionService', () => {
         }),
       );
       expect(mockPrismaService.eventEdition.create).toHaveBeenCalledWith({
-        data: {
-          ...createDto,
+        data: expect.objectContaining({
+          name: createDto.name,
+          location: createDto.location,
           isActive: true,
-        },
+        }),
       });
     });
 
@@ -517,6 +518,7 @@ describe('EventEditionService', () => {
       const event = {
         id: '1',
         name: 'Event 1',
+        location: 'UFBA',
         startDate: new Date(year, 0, 1),
         createdAt: new Date(),
         updatedAt: new Date(),

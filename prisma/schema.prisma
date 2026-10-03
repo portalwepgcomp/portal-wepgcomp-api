@@ -60,6 +60,7 @@ model EventEdition {
   callForPapersText                 String                 @map("call_for_papers_text")
   partnersText                      String                 @map("partners_text")
   location                          String                 @map("location")
+  mapEmbedUrl                       String?                @map("map_embed_url") @db.Text
   startDate                         DateTime               @map("start_date")
   endDate                           DateTime               @map("end_date")
   submissionStartDate               DateTime               @map("submission_start_date")
