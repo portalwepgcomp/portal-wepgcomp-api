@@ -12,6 +12,7 @@ export class MailingTemplateService {
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;')
+      .replace(/\r\n/g, '<br>')
       .replace(/\n/g, '<br>');
   }
 
@@ -19,8 +20,6 @@ export class MailingTemplateService {
    * Wraps message content into the standard WEPGCOMP email layout.
    */
   buildEmailTemplate(message: string): string {
-    const sanitizedMessage = this.sanitize(message);
-
     return `
     <!DOCTYPE html>
     <html>
@@ -83,7 +82,7 @@ export class MailingTemplateService {
           </div>
           <div class="content">
             <div class="message">
-              ${sanitizedMessage}
+              ${message}
             </div>
           </div>
           <div class="footer">
@@ -180,11 +179,15 @@ export class MailingTemplateService {
    * Generates contact message HTML.
    */
   buildContactHtml(name: string, email: string, text: string): string {
+    const sanitizeName = this.sanitize(name);
+    const sanitizeEmail = this.sanitize(email);
+    const sanitizeText = this.sanitize(text);
+
     const rawContent = `
-      <p><strong>Nome:</strong> ${name}</p>
-      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Nome:</strong> ${sanitizeName}</p>
+      <p><strong>Email:</strong> ${sanitizeEmail}</p>
       <p><strong>Mensagem:</strong></p>
-      <p>${text.replace(/\n/g, '<br>')}</p>
+      <p>${sanitizeText.replace(/\n/g, '<br>')}</p>
     `;
     return this.buildEmailTemplate(rawContent);
   }
@@ -198,13 +201,18 @@ export class MailingTemplateService {
     adminName: string,
     temporaryPassword: string,
   ): string {
+    const sanitizeProfessorName = this.sanitize(professorName);
+    const sanitizeProfessorEmail = this.sanitize(professorEmail);
+    const sanitizeAdminName = this.sanitize(adminName);
+    const sanitizeTemporaryPassword = this.sanitize(temporaryPassword);
+
     const htmlContent = `
       <h2>Bem-vindo ao Sistema WEPGCOMP!</h2>
-      <p>Olá <strong>${professorName}</strong>,</p>
-      <p>Seu cadastro foi criado no sistema WEPGCOMP - Portal do Workshop de Estudantes de Pós-graduação em Ciência da Computação por ${adminName} (Super Administrador).</p>
+      <p>Olá <strong>${sanitizeProfessorName}</strong>,</p>
+      <p>Seu cadastro foi criado no sistema WEPGCOMP - Portal do Workshop de Estudantes de Pós-graduação em Ciência da Computação por ${sanitizeAdminName} (Super Administrador).</p>
       <p><strong>Suas credenciais de acesso:</strong></p>
-      <p><strong>Email:</strong> ${professorEmail}</p>
-      <p><strong>Senha temporária:</strong> ${temporaryPassword}</p>
+      <p><strong>Email:</strong> ${sanitizeProfessorEmail}</p>
+      <p><strong>Senha temporária:</strong> ${sanitizeTemporaryPassword}</p>
       <p><strong>Importante:</strong> Recomendamos que você altere sua senha no primeiro acesso através do seu perfil por motivos de segurança.</p>
       <p>Para acessar o sistema, faça login com seu email e a senha temporária fornecida acima.</p>
       <p>Se você tiver alguma dúvida, entre em contato com o administrador do sistema.</p>
@@ -216,12 +224,14 @@ export class MailingTemplateService {
    * Generates email confirmation message HTML.
    */
   buildEmailConfirmationHtml(confirmationUrl: string): string {
+    const sanitizeConfirmationUrl = this.sanitize(confirmationUrl);
+
     const htmlContent = `
       <h2>Confirmação de Cadastro</h2>
       <p>Clique no link abaixo para confirmar seu cadastro:</p>
-      <p><a href="${confirmationUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Confirmar Cadastro</a></p>
+      <p><a href="${sanitizeConfirmationUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Confirmar Cadastro</a></p>
       <p>Ou copie e cole este link no seu navegador:</p>
-      <p>${confirmationUrl}</p>
+      <p>${sanitizeConfirmationUrl}</p>
     `;
     return this.buildEmailTemplate(htmlContent);
   }
