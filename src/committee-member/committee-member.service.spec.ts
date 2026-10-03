@@ -196,8 +196,8 @@ describe('CommitteeMemberService', () => {
           user: { name: 'John' },
           level: 'Coordinator',
           role: 'OrganizingCommittee',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T10:00:00.000Z'),
         },
         {
           id: '3',
@@ -206,8 +206,8 @@ describe('CommitteeMemberService', () => {
           user: { id: '2', name: 'Doe' },
           level: 'Member',
           role: 'OrganizingCommittee',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T10:00:00.000Z'),
         },
       ];
       const expectedResult = [
@@ -217,8 +217,8 @@ describe('CommitteeMemberService', () => {
           userId: '2',
           level: 'Coordinator',
           role: 'OrganizingCommittee',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T10:00:00.000Z'),
           userName: 'John',
         },
         {
@@ -227,8 +227,8 @@ describe('CommitteeMemberService', () => {
           userId: '2',
           level: 'Member',
           role: 'OrganizingCommittee',
-          createdAt: new Date(),
-          updatedAt: new Date(),
+          createdAt: new Date('2026-01-01T10:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T10:00:00.000Z'),
           userName: 'Doe',
         },
       ];
