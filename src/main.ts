@@ -87,8 +87,13 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,
+      // Remove campos não declarados nos DTOs (sem rejeitar a request).
       whitelist: true,
-      forbidNonWhitelisted: true,
+      // TODO(emergencial): reativar `forbidNonWhitelisted: true` quando o front
+      // deixar de reenviar campos extras nos PATCH (ex.: eventEditionId em
+      // sessão; ...submission em apresentação). Vários fluxos quebram com
+      // "property X should not exist" enquanto isso.
+      forbidNonWhitelisted: false,
       exceptionFactory: (errors) => {
         const details = collectValidationDetails(errors);
 
