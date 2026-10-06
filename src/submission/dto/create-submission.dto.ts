@@ -40,7 +40,7 @@ export class CreateSubmissionDto {
 
   @IsUUID()
   @IsOptional()
-  proposedPresentationBlockId?: string;
+  proposedPresentationBlockId?: string | null;
 
   @IsInt({
     message: 'A posição da apresentação deve ser um número inteiro.',
@@ -49,7 +49,7 @@ export class CreateSubmissionDto {
     message: 'A posição da apresentação deve ser um número não negativo.',
   })
   @IsOptional()
-  proposedPositionWithinBlock?: number;
+  proposedPositionWithinBlock?: number | null;
 
   @IsEnum(SubmissionStatus)
   @IsOptional()
