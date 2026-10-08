@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Profile } from '@prisma/client';
 import nodemailer, { type Transporter } from 'nodemailer';
 import { CommitteeMemberService } from '../committee-member/committee-member.service';
 import { EventEditionService } from '../event-edition/event-edition.service';
@@ -115,6 +116,52 @@ export class MailingService {
         'Falha ao enviar email de boas-vindas ao professor',
         (error as Error)?.stack,
       );
+    }
+  }
+
+  /**
+   * Avisa os administradores de que um novo usuário aguarda aprovação.
+   * Nunca lança: falha de envio só é registrada em log, para não afetar o fluxo
+   * de quem chamou (ex.: confirmação de e-mail).
+   */
+  async sendApprovalRequestEmail(
+    adminEmails: string[],
+    applicant: {
+      name: string;
+      email: string;
+      profile: Profile;
+      registrationNumber?: string | null;
+    },
+  ): Promise<void> {
+    const recipients = adminEmails.filter((email) => email?.trim());
+    if (recipients.length === 0) return;
+
+    const profileLabel =
+      applicant.profile === Profile.Professor ? 'Professor' : 'Apresentador';
+    const reviewUrl = `${process.env.FRONTEND_URL}/usuarios?busca=${encodeURIComponent(applicant.email)}`;
+    const html = this.templateService.buildApprovalRequestHtml(
+      applicant.name,
+      applicant.email,
+      profileLabel,
+      applicant.registrationNumber,
+      reviewUrl,
+    );
+
+    const batchSize = 50;
+    for (let i = 0; i < recipients.length; i += batchSize) {
+      try {
+        await this.transporter.sendMail({
+          from: process.env.SMTP_FROM_EMAIL,
+          bcc: recipients.slice(i, i + batchSize),
+          subject: `Novo ${profileLabel.toLowerCase()} aguardando aprovação - WEPGCOMP`,
+          html,
+        });
+      } catch (error) {
+        this.logger.error(
+          'Falha ao enviar aviso de aprovação pendente aos administradores',
+          (error as Error)?.stack,
+        );
+      }
     }
   }
 

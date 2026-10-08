@@ -18,7 +18,6 @@ describe('UserService', () => {
   let service: UserService;
   let prismaService: PrismaService;
   let jwtService: JwtService;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   let mailingService: MailingService;
 
   beforeEach(async () => {
@@ -77,6 +76,7 @@ describe('UserService', () => {
           provide: MailingService,
           useValue: {
             sendEmailConfirmation: jest.fn(),
+            sendApprovalRequestEmail: jest.fn(),
             sendEmail: jest.fn(),
           },
         },
@@ -847,6 +847,138 @@ describe('UserService', () => {
 
       expect(jwtService.verify).toHaveBeenCalledWith(token);
       expect(prismaService.userAccount.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('UserService - confirmEmail (aviso de aprovação pendente)', () => {
+    const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
+    const mockConfirmedUser = (overrides: Record<string, unknown>) => {
+      const confirmedUser = {
+        id: 'user-1',
+        name: 'Maria Silva',
+        email: 'maria@example.com',
+        registrationNumber: 'REG456',
+        profile: Profile.Presenter,
+        level: UserLevel.Default,
+        isActive: true,
+        isVerified: true,
+        isPresenterActive: false,
+        isTeacherActive: true,
+        ...overrides,
+      };
+
+      jest.spyOn(jwtService, 'verify').mockReturnValue({ id: 'user-1' });
+      prismaService.emailVerification.findFirst = jest
+        .fn()
+        .mockResolvedValue(null);
+      jest
+        .spyOn(prismaService, '$transaction')
+        .mockImplementation(async (callback) =>
+          callback({
+            userAccount: { update: jest.fn().mockResolvedValue(confirmedUser) },
+            emailVerification: { update: jest.fn().mockResolvedValue({}) },
+          } as unknown as PrismaClient),
+        );
+    };
+
+    beforeEach(() => {
+      (mailingService.sendApprovalRequestEmail as jest.Mock).mockReset();
+      (prismaService.userAccount.findMany as jest.Mock).mockReset();
+    });
+
+    it('should notify active admins when a pending presenter confirms the email', async () => {
+      mockConfirmedUser({});
+      (prismaService.userAccount.findMany as jest.Mock).mockResolvedValue([
+        { email: 'admin1@example.com' },
+        { email: 'admin2@example.com' },
+      ]);
+
+      const result = await service.confirmEmail('token');
+      await flushPromises();
+
+      expect(result).toBe(true);
+      expect(prismaService.userAccount.findMany).toHaveBeenCalledWith({
+        where: { level: UserLevel.Admin, isActive: true },
+        select: { email: true },
+      });
+      expect(mailingService.sendApprovalRequestEmail).toHaveBeenCalledWith(
+        ['admin1@example.com', 'admin2@example.com'],
+        {
+          name: 'Maria Silva',
+          email: 'maria@example.com',
+          profile: Profile.Presenter,
+          registrationNumber: 'REG456',
+        },
+      );
+    });
+
+    it('should notify admins when a pending professor confirms the email', async () => {
+      mockConfirmedUser({
+        profile: Profile.Professor,
+        isPresenterActive: true,
+        isTeacherActive: false,
+      });
+      (prismaService.userAccount.findMany as jest.Mock).mockResolvedValue([
+        { email: 'admin@example.com' },
+      ]);
+
+      await service.confirmEmail('token');
+      await flushPromises();
+
+      expect(mailingService.sendApprovalRequestEmail).toHaveBeenCalledWith(
+        ['admin@example.com'],
+        expect.objectContaining({ profile: Profile.Professor }),
+      );
+    });
+
+    it('should not notify when the user does not need approval', async () => {
+      mockConfirmedUser({
+        profile: Profile.Professor,
+        level: UserLevel.Admin,
+        isTeacherActive: true,
+      });
+
+      await service.confirmEmail('token');
+      await flushPromises();
+
+      expect(prismaService.userAccount.findMany).not.toHaveBeenCalled();
+      expect(mailingService.sendApprovalRequestEmail).not.toHaveBeenCalled();
+    });
+
+    it('should not notify for listeners', async () => {
+      mockConfirmedUser({
+        profile: Profile.Listener,
+        isPresenterActive: true,
+      });
+
+      await service.confirmEmail('token');
+      await flushPromises();
+
+      expect(mailingService.sendApprovalRequestEmail).not.toHaveBeenCalled();
+    });
+
+    it('should not send anything when there are no active admins', async () => {
+      mockConfirmedUser({});
+      (prismaService.userAccount.findMany as jest.Mock).mockResolvedValue([]);
+
+      await service.confirmEmail('token');
+      await flushPromises();
+
+      expect(mailingService.sendApprovalRequestEmail).not.toHaveBeenCalled();
+    });
+
+    it('should still confirm the email when notifying admins fails', async () => {
+      mockConfirmedUser({});
+      (prismaService.userAccount.findMany as jest.Mock).mockResolvedValue([
+        { email: 'admin@example.com' },
+      ]);
+      (mailingService.sendApprovalRequestEmail as jest.Mock).mockRejectedValue(
+        new Error('SMTP down'),
+      );
+
+      await expect(service.confirmEmail('token')).resolves.toBe(true);
+      await flushPromises();
     });
   });
 

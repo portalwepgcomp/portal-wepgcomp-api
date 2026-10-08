@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { JsonWebTokenError, JwtService, TokenExpiredError } from '@nestjs/jwt';
+import { Profile, UserAccount, UserLevel } from '@prisma/client';
 import { AppException } from '../exceptions/app.exception';
 import { MailingService } from '../mailing/mailing.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -53,6 +54,46 @@ export class UserVerificationService {
     }
   }
 
+  /**
+   * Apresentadores e professores nascem pendentes de aprovação. Depois que o
+   * e-mail é confirmado, avisa os administradores ativos. Nunca lança.
+   */
+  private async notifyAdminsOfPendingApproval(
+    user: UserAccount,
+  ): Promise<void> {
+    const needsApproval =
+      (user.profile === Profile.Presenter && !user.isPresenterActive) ||
+      (user.profile === Profile.Professor && !user.isTeacherActive);
+
+    if (!needsApproval) return;
+
+    try {
+      const admins = await this.prismaClient.userAccount.findMany({
+        where: { level: UserLevel.Admin, isActive: true },
+        select: { email: true },
+      });
+      const adminEmails = (admins ?? []).map((admin) => admin.email);
+
+      if (adminEmails.length === 0) {
+        this.logger.warn(
+          `Nenhum administrador ativo para avisar sobre aprovação pendente (userId: ${user.id}).`,
+        );
+        return;
+      }
+
+      await this.mailingService.sendApprovalRequestEmail(adminEmails, {
+        name: user.name,
+        email: user.email,
+        profile: user.profile,
+        registrationNumber: user.registrationNumber,
+      });
+    } catch {
+      this.logger.warn(
+        `Falha ao avisar administradores sobre aprovação pendente (userId: ${user.id}).`,
+      );
+    }
+  }
+
   async confirmEmail(token: string): Promise<boolean> {
     try {
       const tokenUsed = await this.isTokenUsed(token);
@@ -73,6 +114,11 @@ export class UserVerificationService {
 
         return updatedUser;
       });
+
+      if (user) {
+        // Não bloqueia a resposta da confirmação; erros são tratados internamente.
+        void this.notifyAdminsOfPendingApproval(user);
+      }
 
       return !!user;
     } catch (error) {

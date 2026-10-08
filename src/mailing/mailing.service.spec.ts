@@ -4,6 +4,7 @@ import { MailingTemplateService } from './mailing-template.service';
 import { EventEditionService } from '../event-edition/event-edition.service';
 import { CommitteeMemberService } from '../committee-member/committee-member.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { Profile } from '@prisma/client';
 
 const mockSendMailFn = jest.fn().mockResolvedValue({ messageId: '123' });
 
@@ -107,6 +108,91 @@ describe('MailingService', () => {
         'https://portal.example.com/confirmar-email?token=jwt-token',
       );
       expect(mailOptions.html).not.toContain('/users/confirm-email');
+    });
+  });
+
+  describe('sendApprovalRequestEmail', () => {
+    const originalFrontendUrl = process.env.FRONTEND_URL;
+
+    beforeEach(() => {
+      process.env.FRONTEND_URL = 'https://portal.example.com';
+    });
+
+    afterEach(() => {
+      if (originalFrontendUrl === undefined) {
+        delete process.env.FRONTEND_URL;
+      } else {
+        process.env.FRONTEND_URL = originalFrontendUrl;
+      }
+    });
+
+    it('should send to admins via bcc with a link to the users screen', async () => {
+      await service.sendApprovalRequestEmail(
+        ['admin1@example.com', 'admin2@example.com'],
+        {
+          name: 'Maria Silva',
+          email: 'maria+tcc@example.com',
+          profile: Profile.Presenter,
+          registrationNumber: 'REG456',
+        },
+      );
+
+      expect(mockSendMailFn).toHaveBeenCalledTimes(1);
+      const mailOptions = mockSendMailFn.mock.calls[0][0];
+      expect(mailOptions.bcc).toEqual([
+        'admin1@example.com',
+        'admin2@example.com',
+      ]);
+      expect(mailOptions.subject).toContain('apresentador');
+      expect(mailOptions.html).toContain('Maria Silva');
+      expect(mailOptions.html).toContain('REG456');
+      expect(mailOptions.html).toContain(
+        'https://portal.example.com/usuarios?busca=maria%2Btcc%40example.com',
+      );
+    });
+
+    it('should label professors correctly', async () => {
+      await service.sendApprovalRequestEmail(['admin@example.com'], {
+        name: 'Prof',
+        email: 'prof@example.com',
+        profile: Profile.Professor,
+      });
+
+      expect(mockSendMailFn.mock.calls[0][0].subject).toContain('professor');
+    });
+
+    it('should sanitize applicant data', async () => {
+      await service.sendApprovalRequestEmail(['admin@example.com'], {
+        name: '<script>alert(1)</script>',
+        email: 'x@example.com',
+        profile: Profile.Presenter,
+      });
+
+      const html = mockSendMailFn.mock.calls[0][0].html;
+      expect(html).not.toContain('<script>');
+      expect(html).toContain('&lt;script&gt;');
+    });
+
+    it('should do nothing without recipients', async () => {
+      await service.sendApprovalRequestEmail([], {
+        name: 'A',
+        email: 'a@example.com',
+        profile: Profile.Presenter,
+      });
+
+      expect(mockSendMailFn).not.toHaveBeenCalled();
+    });
+
+    it('should not throw when sending fails', async () => {
+      mockSendMailFn.mockRejectedValueOnce(new Error('SMTP down'));
+
+      await expect(
+        service.sendApprovalRequestEmail(['admin@example.com'], {
+          name: 'A',
+          email: 'a@example.com',
+          profile: Profile.Presenter,
+        }),
+      ).resolves.toBeUndefined();
     });
   });
 

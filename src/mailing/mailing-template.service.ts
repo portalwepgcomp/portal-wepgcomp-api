@@ -221,6 +221,38 @@ export class MailingTemplateService {
   }
 
   /**
+   * Generates the "new user waiting for approval" message HTML sent to admins.
+   */
+  buildApprovalRequestHtml(
+    applicantName: string,
+    applicantEmail: string,
+    profileLabel: string,
+    registrationNumber: string | null | undefined,
+    reviewUrl: string,
+  ): string {
+    const sanitizeName = this.sanitize(applicantName);
+    const sanitizeEmail = this.sanitize(applicantEmail);
+    const sanitizeProfile = this.sanitize(profileLabel);
+    const sanitizeReviewUrl = this.sanitize(reviewUrl);
+    const registrationLine = registrationNumber
+      ? `<p><strong>Matrícula:</strong> ${this.sanitize(registrationNumber)}</p>`
+      : '';
+
+    const htmlContent = `
+      <h2>Novo cadastro aguardando aprovação</h2>
+      <p>Um novo usuário confirmou o e-mail e aguarda a aprovação de um administrador:</p>
+      <p><strong>Nome:</strong> ${sanitizeName}</p>
+      <p><strong>E-mail:</strong> ${sanitizeEmail}</p>
+      <p><strong>Perfil:</strong> ${sanitizeProfile}</p>
+      ${registrationLine}
+      <p><a href="${sanitizeReviewUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Revisar cadastro</a></p>
+      <p>Ou copie e cole este link no seu navegador (é necessário estar logado como administrador):</p>
+      <p>${sanitizeReviewUrl}</p>
+    `;
+    return this.buildEmailTemplate(htmlContent);
+  }
+
+  /**
    * Generates email confirmation message HTML.
    */
   buildEmailConfirmationHtml(confirmationUrl: string): string {

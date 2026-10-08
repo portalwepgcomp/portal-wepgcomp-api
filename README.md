@@ -95,7 +95,7 @@ Consulte [`.env.example`](.env.example). Principais:
 | `DATABASE_URL` | Connection string Postgres |
 | `POSTGRES_*` | Credenciais usadas pelo `docker-compose` |
 | `JWT_SECRET` | Segredo JWT (forte e único; não commitar valor real) |
-| `SMTP_*` / `STMP_FROM_EMAIL` | Envio de e-mail |
+| `SMTP_*` (inclui `SMTP_FROM_EMAIL`) | Envio de e-mail |
 | `SEED_PASSWORD` | Senha dos usuários do seed |
 
 Não commite o arquivo `.env`.
