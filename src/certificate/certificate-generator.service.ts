@@ -32,11 +32,11 @@ export class CertificateGeneratorService {
     let texto = '';
 
     if (user.profile === Profile.Professor) {
-      texto += `   Certificamos que ${user.name} participou como avaliador(a) em sessões de apresentações no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${this.dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
+      texto += `   Certificamos que ${user.name} participou como avaliador(a) em sessões de apresentações no Workshop de Estudantes do PGCOMP (WEPGCOMP), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${this.dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
     } else if (user.profile === Profile.Listener) {
-      texto += `   Certificamos que ${user.name} participou como ouvinte no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${this.dateHandler(eventEdition.startDate, eventEdition.endDate)}, com carga horária total de 10 horas.`;
+      texto += `   Certificamos que ${user.name} participou como ouvinte no Workshop de Estudantes do PGCOMP (WEPGCOMP), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${this.dateHandler(eventEdition.startDate, eventEdition.endDate)}, com carga horária total de 10 horas.`;
     } else {
-      texto += `    Certificamos que ${user.name} apresentou o trabalho "${userSubmission?.title}" na categoria Apresentação Oral no Workshop de Estudantes do PGCOMP (${eventEdition.name}), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${this.dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
+      texto += `    Certificamos que ${user.name} apresentou o trabalho "${userSubmission?.title}" na categoria Apresentação Oral no Workshop de Estudantes do PGCOMP (WEPGCOMP), promovido pelo Programa de Pós-Graduação em Ciência da Computação - Universidade Federal da Bahia, de ${this.dateHandler(eventEdition.startDate, eventEdition.endDate)}.`;
     }
 
     const regularFont = await this.getFontAndEmbed(fonts, 'regular', pdfDoc);
