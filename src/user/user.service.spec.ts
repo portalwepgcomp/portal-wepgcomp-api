@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UserVerificationService } from './user-verification.service';
 import { UserAdminService } from './user-admin.service';
@@ -561,6 +562,10 @@ describe('UserService', () => {
           isTeacherActive: true,
           isPresenterActive: true,
           linkLattes: true,
+          subprofile: true,
+          requestedProfile: true,
+          requestedSubprofile: true,
+          profileRequestedAt: true,
         },
       });
 
@@ -614,6 +619,10 @@ describe('UserService', () => {
           isTeacherActive: true,
           linkLattes: true,
           isPresenterActive: true,
+          subprofile: true,
+          requestedProfile: true,
+          requestedSubprofile: true,
+          profileRequestedAt: true,
         },
       });
 
@@ -667,6 +676,10 @@ describe('UserService', () => {
           isTeacherActive: true,
           linkLattes: true,
           isPresenterActive: true,
+          subprofile: true,
+          requestedProfile: true,
+          requestedSubprofile: true,
+          profileRequestedAt: true,
         },
       });
 
@@ -720,6 +733,10 @@ describe('UserService', () => {
           isTeacherActive: true,
           linkLattes: true,
           isPresenterActive: true,
+          subprofile: true,
+          requestedProfile: true,
+          requestedSubprofile: true,
+          profileRequestedAt: true,
         },
       });
 
@@ -1042,6 +1059,207 @@ describe('UserService', () => {
     expect(prismaService.userAccount.update).toHaveBeenCalledWith({
       where: { id: userId },
       data: { registrationNumber },
+    });
+  });
+
+  describe('updateMe', () => {
+    const baseUser = {
+      id: 'user-id-1',
+      name: 'Maria',
+      email: 'maria@ufba.br',
+      profile: 'Presenter',
+      level: 'Default',
+      isActive: true,
+      linkLattes: null,
+      photoFilePath: null,
+    };
+
+    beforeEach(() => {
+      (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue(
+        baseUser,
+      );
+      (prismaService.userAccount.update as jest.Mock).mockImplementation(
+        async ({ data }) => ({ ...baseUser, ...data }),
+      );
+    });
+
+    it('atualiza apenas os campos da whitelist, ignorando level e profile', async () => {
+      const result = await service.updateMe('user-id-1', {
+        name: 'Maria Souza',
+        level: 'Admin',
+        profile: 'Professor',
+        isActive: false,
+      } as any);
+
+      expect(prismaService.userAccount.update).toHaveBeenCalledWith({
+        where: { id: 'user-id-1' },
+        data: { name: 'Maria Souza', updatedBy: 'maria@ufba.br' },
+      });
+      expect(result.name).toBe('Maria Souza');
+      expect(result.level).toBe('Default');
+    });
+
+    it('remove link e foto do Lattes quando recebe string vazia', async () => {
+      await service.updateMe('user-id-1', { linkLattes: '' });
+
+      expect(prismaService.userAccount.update).toHaveBeenCalledWith({
+        where: { id: 'user-id-1' },
+        data: {
+          linkLattes: null,
+          photoFilePath: null,
+          updatedBy: 'maria@ufba.br',
+        },
+      });
+    });
+
+    it('lança erro quando nenhum campo permitido é enviado', async () => {
+      await expect(
+        service.updateMe('user-id-1', { level: 'Admin' } as any),
+      ).rejects.toThrow(BadRequestException);
+      expect(prismaService.userAccount.update).not.toHaveBeenCalled();
+    });
+
+    it('bloqueia usuário inativo', async () => {
+      (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue({
+        ...baseUser,
+        isActive: false,
+      });
+
+      await expect(
+        service.updateMe('user-id-1', { name: 'Outro' }),
+      ).rejects.toThrow(AppException);
+      expect(prismaService.userAccount.update).not.toHaveBeenCalled();
+    });
+
+    describe('troca de matrícula', () => {
+      const approvedPresenter = {
+        ...baseUser,
+        registrationNumber: '2021001',
+        registrationNumberType: 'MATRICULA',
+        subprofile: null,
+        isPresenterActive: true,
+        isTeacherActive: false,
+      };
+
+      beforeEach(() => {
+        (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue(
+          approvedPresenter,
+        );
+        (prismaService.userAccount.findFirst as jest.Mock).mockResolvedValue(
+          null,
+        );
+        (prismaService.userAccount.findMany as jest.Mock).mockResolvedValue([
+          { email: 'admin@ufba.br' },
+        ]);
+        (mailingService.sendApprovalRequestEmail as jest.Mock).mockReset();
+        (prismaService.userAccount.update as jest.Mock).mockImplementation(
+          async ({ data }) => ({ ...approvedPresenter, ...data }),
+        );
+      });
+
+      it('devolve apresentador aprovado para pendente e avisa os admins', async () => {
+        const result = await service.updateMe('user-id-1', {
+          registrationNumber: '2021002',
+        });
+
+        expect(prismaService.userAccount.update).toHaveBeenCalledWith({
+          where: { id: 'user-id-1' },
+          data: {
+            registrationNumber: '2021002',
+            registrationNumberType: 'MATRICULA',
+            isPresenterActive: false,
+            updatedBy: 'maria@ufba.br',
+          },
+        });
+        expect(result.isPresenterActive).toBe(false);
+        await new Promise(process.nextTick);
+        expect(mailingService.sendApprovalRequestEmail).toHaveBeenCalledWith(
+          ['admin@ufba.br'],
+          expect.objectContaining({
+            registrationNumber: '2021002',
+            reason: 'registration-change',
+          }),
+        );
+      });
+
+      it('devolve professor aprovado para pendente', async () => {
+        (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue({
+          ...approvedPresenter,
+          profile: 'Professor',
+          isPresenterActive: false,
+          isTeacherActive: true,
+        });
+
+        await service.updateMe('user-id-1', { registrationNumber: '123' });
+
+        expect(
+          (prismaService.userAccount.update as jest.Mock).mock.calls[0][0].data,
+        ).toMatchObject({ isTeacherActive: false });
+      });
+
+      it('não mexe na aprovação de quem ainda está pendente', async () => {
+        (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue({
+          ...approvedPresenter,
+          isPresenterActive: false,
+        });
+
+        await service.updateMe('user-id-1', { registrationNumber: '2021002' });
+
+        const { data } = (prismaService.userAccount.update as jest.Mock).mock
+          .calls[0][0];
+        expect(data).not.toHaveProperty('isPresenterActive');
+        await new Promise(process.nextTick);
+        expect(mailingService.sendApprovalRequestEmail).not.toHaveBeenCalled();
+      });
+
+      it('não altera nada quando a matrícula é a mesma', async () => {
+        await expect(
+          service.updateMe('user-id-1', { registrationNumber: '2021001' }),
+        ).rejects.toThrow(BadRequestException);
+        expect(prismaService.userAccount.update).not.toHaveBeenCalled();
+      });
+
+      it('valida o formato da matrícula', async () => {
+        await expect(
+          service.updateMe('user-id-1', {
+            registrationNumber: '12345678901234',
+          }),
+        ).rejects.toThrow('Número de matrícula deve conter apenas dígitos');
+      });
+
+      it('exige CPF de 11 dígitos para ouvinte "Outro"', async () => {
+        (prismaService.userAccount.findUnique as jest.Mock).mockResolvedValue({
+          ...approvedPresenter,
+          profile: 'Listener',
+          subprofile: 'Other',
+          isPresenterActive: false,
+        });
+
+        await expect(
+          service.updateMe('user-id-1', { registrationNumber: '123' }),
+        ).rejects.toThrow('CPF inválido');
+
+        await service.updateMe('user-id-1', {
+          registrationNumber: '12345678901',
+        });
+        expect(
+          (prismaService.userAccount.update as jest.Mock).mock.calls[0][0].data,
+        ).toMatchObject({ registrationNumberType: 'CPF' });
+      });
+
+      it('recusa matrícula de outro usuário', async () => {
+        (prismaService.userAccount.findFirst as jest.Mock).mockResolvedValue({
+          id: 'outro',
+        });
+
+        await expect(
+          service.updateMe('user-id-1', { registrationNumber: '2021002' }),
+        ).rejects.toThrow('Matrícula já está em uso por outro usuário.');
+        expect(prismaService.userAccount.findFirst).toHaveBeenCalledWith({
+          where: { registrationNumber: '2021002', id: { not: 'user-id-1' } },
+          select: { id: true },
+        });
+      });
     });
   });
 });

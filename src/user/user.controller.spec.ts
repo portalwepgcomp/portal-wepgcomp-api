@@ -4,6 +4,7 @@ import { UserService } from './user.service';
 import { CreateUserDto, Profile, UserLevel } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { UserProfileChangeService } from './user-profile-change.service';
 
 describe('UserController', () => {
   let controller: UserController;
@@ -18,6 +19,10 @@ describe('UserController', () => {
           useValue: {},
         },
         {
+          provide: UserProfileChangeService,
+          useValue: {},
+        },
+        {
           provide: UserService,
           useValue: {
             create: jest.fn(),
@@ -25,6 +30,8 @@ describe('UserController', () => {
             toggleUserActivation: jest.fn(),
             approveTeacher: jest.fn(),
             findAll: jest.fn(),
+            findById: jest.fn(),
+            updateMe: jest.fn(),
           },
         },
       ],
@@ -260,6 +267,33 @@ describe('UserController', () => {
       expect(result).toEqual(
         usersMock.map((user) => new ResponseUserDto(user as any)),
       );
+    });
+  });
+
+  describe('me', () => {
+    const currentUser = { userId: 'user-id-1' };
+
+    it('getMe busca o usuário do token', async () => {
+      jest.spyOn(userService, 'findById').mockResolvedValue({
+        id: 'user-id-1',
+        name: 'Maria',
+        email: 'maria@ufba.br',
+      } as any);
+
+      const result = await controller.getMe(currentUser);
+
+      expect(userService.findById).toHaveBeenCalledWith('user-id-1');
+      expect(result).toBeInstanceOf(ResponseUserDto);
+      expect(result.email).toBe('maria@ufba.br');
+    });
+
+    it('updateMe usa o id do token, nunca um id vindo da requisição', async () => {
+      const dto = { name: 'Maria Souza' };
+      jest.spyOn(userService, 'updateMe').mockResolvedValue({} as any);
+
+      await controller.updateMe(currentUser, dto);
+
+      expect(userService.updateMe).toHaveBeenCalledWith('user-id-1', dto);
     });
   });
 });

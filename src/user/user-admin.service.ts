@@ -198,32 +198,36 @@ export class UserAdminService {
     const processedData = this.processUpdateData(updateUserDto, existingUser);
     processedData.updatedBy = adminEmail;
 
-    let photoPathToUpdate: string | null | undefined = undefined;
-
     if ('linkLattes' in updateUserDto) {
-      const newLinkLattes = updateUserDto.linkLattes;
-
-      if (newLinkLattes) {
-        try {
-          photoPathToUpdate = await this.getLattesPhotoPath(newLinkLattes);
-        } catch {
-          this.logger.warn(
-            'Falha ao atualizar foto do Lattes. Photo Path será removido.',
-          );
-          photoPathToUpdate = null;
-        }
-      } else {
-        photoPathToUpdate = null;
-      }
-    }
-
-    if (photoPathToUpdate !== undefined) {
-      processedData.photoFilePath = photoPathToUpdate;
+      processedData.photoFilePath = await this.resolveLattesPhotoPath(
+        updateUserDto.linkLattes,
+      );
     }
 
     const updatedUser = await this.updateUser(decodedEmail, processedData);
 
     return new ResponseUpdatedUserDto(updatedUser);
+  }
+
+  /**
+   * Foto derivada do Lattes: null quando o link é removido ou quando não é
+   * possível resolvê-la (a atualização do perfil não falha por isso).
+   */
+  async resolveLattesPhotoPath(
+    linkLattes: string | null | undefined,
+  ): Promise<string | null> {
+    if (!linkLattes) {
+      return null;
+    }
+
+    try {
+      return await this.getLattesPhotoPath(linkLattes);
+    } catch {
+      this.logger.warn(
+        'Falha ao atualizar foto do Lattes. Photo Path será removido.',
+      );
+      return null;
+    }
   }
 
   private async findUserByEmailOrFail(email: string): Promise<UserAccount> {

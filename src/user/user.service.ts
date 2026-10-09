@@ -5,6 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  Prisma,
   Profile,
   RegistrationNumberType,
   UserAccount,
@@ -19,6 +20,7 @@ import {
 } from './dto/create-user.dto';
 import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserAdminService } from './user-admin.service';
 import { UserVerificationService } from './user-verification.service';
@@ -303,6 +305,10 @@ export class UserService {
         isActive: true,
         isTeacherActive: true,
         isPresenterActive: true,
+        subprofile: true,
+        requestedProfile: true,
+        requestedSubprofile: true,
+        profileRequestedAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -357,6 +363,123 @@ export class UserService {
     adminEmail: string,
   ): Promise<ResponseUpdatedUserDto> {
     return this.adminService.editUserByAdmin(email, updateUserDto, adminEmail);
+  }
+
+  /**
+   * Autoatendimento: o usuário altera apenas os próprios dados permitidos.
+   * O `data` é montado campo a campo a partir do UpdateMeDto, então nada
+   * fora da whitelist (level, profile...) chega ao banco. As flags de
+   * aprovação só podem ser desligadas (troca de matrícula), nunca ligadas.
+   */
+  async updateMe(
+    userId: string,
+    updateMeDto: UpdateMeDto,
+  ): Promise<ResponseUserDto> {
+    const existingUser = await this.findById(userId);
+
+    if (!existingUser.isActive) {
+      throw new AppException('Conta de usuário inativa', 403);
+    }
+
+    const data: Prisma.UserAccountUpdateInput = {};
+
+    if (updateMeDto.name !== undefined) {
+      data.name = updateMeDto.name;
+    }
+
+    if (updateMeDto.linkLattes !== undefined) {
+      data.linkLattes = updateMeDto.linkLattes || null;
+      data.photoFilePath = await this.adminService.resolveLattesPhotoPath(
+        updateMeDto.linkLattes,
+      );
+    }
+
+    const registrationChanged =
+      updateMeDto.registrationNumber !== undefined &&
+      updateMeDto.registrationNumber !== existingUser.registrationNumber;
+    let requiresReapproval = false;
+
+    if (registrationChanged) {
+      requiresReapproval = await this.applyRegistrationNumberChange(
+        existingUser,
+        updateMeDto.registrationNumber!,
+        data,
+      );
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('Nenhum campo fornecido para atualização.');
+    }
+
+    data.updatedBy = existingUser.email;
+
+    const updatedUser = await this.prismaClient.userAccount.update({
+      where: { id: userId },
+      data,
+    });
+
+    if (requiresReapproval) {
+      void this.verificationService.notifyAdminsOfPendingApproval(
+        updatedUser,
+        'registration-change',
+      );
+    }
+
+    return new ResponseUserDto(updatedUser);
+  }
+
+  /**
+   * Valida a nova matrícula/CPF com as mesmas regras do cadastro. Para
+   * apresentador ou professor já aprovado, a troca devolve o usuário para a
+   * fila de aprovação (o admin conferiu o número antigo). Retorna se isso
+   * aconteceu.
+   */
+  private async applyRegistrationNumberChange(
+    user: UserAccount,
+    registrationNumber: string,
+    data: Prisma.UserAccountUpdateInput,
+  ): Promise<boolean> {
+    const usesCpf =
+      user.profile === Profile.Listener && user.subprofile === 'Other';
+    const label = usesCpf ? 'CPF' : 'Matrícula';
+
+    if (usesCpf && !/^\d{11}$/.test(registrationNumber)) {
+      throw new BadRequestException('CPF inválido. Deve conter 11 dígitos.');
+    }
+
+    if (!usesCpf && !/^\d{1,13}$/.test(registrationNumber)) {
+      throw new BadRequestException(
+        'Número de matrícula deve conter apenas dígitos (máximo 13)',
+      );
+    }
+
+    const inUse = await this.prismaClient.userAccount.findFirst({
+      where: { registrationNumber, id: { not: user.id } },
+      select: { id: true },
+    });
+
+    if (inUse) {
+      throw new BadRequestException(
+        `${label} já está em uso por outro usuário.`,
+      );
+    }
+
+    data.registrationNumber = registrationNumber;
+    data.registrationNumberType = usesCpf
+      ? RegistrationNumberType.CPF
+      : RegistrationNumberType.MATRICULA;
+
+    if (user.profile === Profile.Presenter && user.isPresenterActive) {
+      data.isPresenterActive = false;
+      return true;
+    }
+
+    if (user.profile === Profile.Professor && user.isTeacherActive) {
+      data.isTeacherActive = false;
+      return true;
+    }
+
+    return false;
   }
 
   public async findById(userId: string) {

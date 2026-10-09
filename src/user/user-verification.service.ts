@@ -56,10 +56,12 @@ export class UserVerificationService {
 
   /**
    * Apresentadores e professores nascem pendentes de aprovação. Depois que o
-   * e-mail é confirmado, avisa os administradores ativos. Nunca lança.
+   * e-mail é confirmado (ou a matrícula é trocada), avisa os administradores
+   * ativos. Nunca lança.
    */
-  private async notifyAdminsOfPendingApproval(
+  async notifyAdminsOfPendingApproval(
     user: UserAccount,
+    reason?: 'registration-change',
   ): Promise<void> {
     const needsApproval =
       (user.profile === Profile.Presenter && !user.isPresenterActive) ||
@@ -86,6 +88,7 @@ export class UserVerificationService {
         email: user.email,
         profile: user.profile,
         registrationNumber: user.registrationNumber,
+        reason,
       });
     } catch {
       this.logger.warn(
