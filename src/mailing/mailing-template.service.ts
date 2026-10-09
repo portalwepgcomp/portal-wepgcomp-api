@@ -229,6 +229,7 @@ export class MailingTemplateService {
     profileLabel: string,
     registrationNumber: string | null | undefined,
     reviewUrl: string,
+    registrationChanged = false,
   ): string {
     const sanitizeName = this.sanitize(applicantName);
     const sanitizeEmail = this.sanitize(applicantEmail);
@@ -239,13 +240,40 @@ export class MailingTemplateService {
       : '';
 
     const htmlContent = `
-      <h2>Novo cadastro aguardando aprovação</h2>
-      <p>Um novo usuário confirmou o e-mail e aguarda a aprovação de um administrador:</p>
+      <h2>${registrationChanged ? 'Matrícula alterada: nova aprovação necessária' : 'Novo cadastro aguardando aprovação'}</h2>
+      <p>${registrationChanged ? 'Um usuário aprovado alterou a própria matrícula e voltou a aguardar a aprovação de um administrador:' : 'Um novo usuário confirmou o e-mail e aguarda a aprovação de um administrador:'}</p>
       <p><strong>Nome:</strong> ${sanitizeName}</p>
       <p><strong>E-mail:</strong> ${sanitizeEmail}</p>
       <p><strong>Perfil:</strong> ${sanitizeProfile}</p>
       ${registrationLine}
       <p><a href="${sanitizeReviewUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Revisar cadastro</a></p>
+      <p>Ou copie e cole este link no seu navegador (é necessário estar logado como administrador):</p>
+      <p>${sanitizeReviewUrl}</p>
+    `;
+    return this.buildEmailTemplate(htmlContent);
+  }
+
+  buildProfileChangeRequestHtml(
+    applicantName: string,
+    applicantEmail: string,
+    currentProfileLabel: string,
+    requestedProfileLabel: string,
+    reviewUrl: string,
+  ): string {
+    const sanitizeName = this.sanitize(applicantName);
+    const sanitizeEmail = this.sanitize(applicantEmail);
+    const sanitizeCurrent = this.sanitize(currentProfileLabel);
+    const sanitizeRequested = this.sanitize(requestedProfileLabel);
+    const sanitizeReviewUrl = this.sanitize(reviewUrl);
+
+    const htmlContent = `
+      <h2>Solicitação de troca de perfil</h2>
+      <p>Um usuário pediu para trocar de perfil e aguarda a aprovação de um administrador:</p>
+      <p><strong>Nome:</strong> ${sanitizeName}</p>
+      <p><strong>E-mail:</strong> ${sanitizeEmail}</p>
+      <p><strong>Perfil atual:</strong> ${sanitizeCurrent}</p>
+      <p><strong>Perfil solicitado:</strong> ${sanitizeRequested}</p>
+      <p><a href="${sanitizeReviewUrl}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Revisar solicitação</a></p>
       <p>Ou copie e cole este link no seu navegador (é necessário estar logado como administrador):</p>
       <p>${sanitizeReviewUrl}</p>
     `;

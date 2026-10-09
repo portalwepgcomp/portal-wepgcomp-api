@@ -151,6 +151,21 @@ describe('MailingService', () => {
       );
     });
 
+    it('should use the re-approval wording when the registration changed', async () => {
+      await service.sendApprovalRequestEmail(['admin@example.com'], {
+        name: 'Maria Silva',
+        email: 'maria@ufba.br',
+        profile: Profile.Presenter,
+        registrationNumber: '2021002',
+        reason: 'registration-change',
+      });
+
+      const mailOptions = mockSendMailFn.mock.calls[0][0];
+      expect(mailOptions.subject).toContain('Matrícula alterada');
+      expect(mailOptions.html).toContain('alterou a própria matrícula');
+      expect(mailOptions.html).toContain('2021002');
+    });
+
     it('should label professors correctly', async () => {
       await service.sendApprovalRequestEmail(['admin@example.com'], {
         name: 'Prof',

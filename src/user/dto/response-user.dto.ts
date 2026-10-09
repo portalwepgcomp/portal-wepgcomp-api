@@ -1,4 +1,4 @@
-import { Profile, UserAccount, UserLevel } from '@prisma/client';
+import { Profile, Subprofile, UserAccount, UserLevel } from '@prisma/client';
 import { RegistrationNumberType } from './create-user.dto';
 
 export class ResponseUserDto {
@@ -10,6 +10,7 @@ export class ResponseUserDto {
   linkLattes?: string;
   photoFilePath?: string;
   profile: Profile;
+  subprofile?: Subprofile;
   level: UserLevel;
   isActive: boolean;
   isTeacherActive: boolean;
@@ -18,6 +19,10 @@ export class ResponseUserDto {
   updatedAt: Date;
   isVerified: boolean;
   hasSubmission: boolean;
+  /** Solicitação de troca de perfil pendente (aprovada por um admin). */
+  requestedProfile?: Profile;
+  requestedSubprofile?: Subprofile;
+  profileRequestedAt?: Date;
 
   constructor(user: UserAccount, hasSubmission = false) {
     this.id = user.id;
@@ -29,6 +34,7 @@ export class ResponseUserDto {
     this.linkLattes = user.linkLattes ?? undefined;
     this.photoFilePath = user.photoFilePath ?? undefined;
     this.profile = user.profile;
+    this.subprofile = user.subprofile ?? undefined;
     this.level = user.level;
     this.isActive = user.isActive;
     this.isTeacherActive = user.isTeacherActive ?? false;
@@ -37,5 +43,8 @@ export class ResponseUserDto {
     this.updatedAt = user.updatedAt;
     this.isVerified = user.isVerified;
     this.hasSubmission = hasSubmission;
+    this.requestedProfile = user.requestedProfile ?? undefined;
+    this.requestedSubprofile = user.requestedSubprofile ?? undefined;
+    this.profileRequestedAt = user.profileRequestedAt ?? undefined;
   }
 }
