@@ -131,11 +131,13 @@ export class MailingService {
       email: string;
       profile: Profile;
       registrationNumber?: string | null;
+      reason?: 'registration-change';
     },
   ): Promise<void> {
     const recipients = adminEmails.filter((email) => email?.trim());
     if (recipients.length === 0) return;
 
+    const registrationChanged = applicant.reason === 'registration-change';
     const profileLabel =
       applicant.profile === Profile.Professor ? 'Professor' : 'Apresentador';
     const reviewUrl = `${process.env.FRONTEND_URL}/usuarios?busca=${encodeURIComponent(applicant.email)}`;
@@ -145,6 +147,7 @@ export class MailingService {
       profileLabel,
       applicant.registrationNumber,
       reviewUrl,
+      registrationChanged,
     );
 
     const batchSize = 50;
@@ -153,12 +156,54 @@ export class MailingService {
         await this.transporter.sendMail({
           from: process.env.SMTP_FROM_EMAIL,
           bcc: recipients.slice(i, i + batchSize),
-          subject: `Novo ${profileLabel.toLowerCase()} aguardando aprovação - WEPGCOMP`,
+          subject: registrationChanged
+            ? `Matrícula alterada: ${profileLabel.toLowerCase()} aguardando nova aprovação - WEPGCOMP`
+            : `Novo ${profileLabel.toLowerCase()} aguardando aprovação - WEPGCOMP`,
           html,
         });
       } catch (error) {
         this.logger.error(
           'Falha ao enviar aviso de aprovação pendente aos administradores',
+          (error as Error)?.stack,
+        );
+      }
+    }
+  }
+
+  async sendProfileChangeRequestEmail(
+    adminEmails: string[],
+    applicant: {
+      name: string;
+      email: string;
+      currentProfileLabel: string;
+      requestedProfileLabel: string;
+    },
+  ): Promise<void> {
+    const recipients = adminEmails.filter((email) => email?.trim());
+    if (recipients.length === 0) return;
+
+    const reviewUrl = `${process.env.FRONTEND_URL}/usuarios?busca=${encodeURIComponent(applicant.email)}`;
+    const html = this.templateService.buildProfileChangeRequestHtml(
+      applicant.name,
+      applicant.email,
+      applicant.currentProfileLabel,
+      applicant.requestedProfileLabel,
+      reviewUrl,
+    );
+
+    const batchSize = 50;
+    for (let i = 0; i < recipients.length; i += batchSize) {
+      try {
+        await this.transporter.sendMail({
+          from: process.env.SMTP_FROM_EMAIL,
+          bcc: recipients.slice(i, i + batchSize),
+          subject:
+            'Solicitação de troca de perfil aguardando aprovação - WEPGCOMP',
+          html,
+        });
+      } catch (error) {
+        this.logger.error(
+          'Falha ao enviar aviso de troca de perfil aos administradores',
           (error as Error)?.stack,
         );
       }

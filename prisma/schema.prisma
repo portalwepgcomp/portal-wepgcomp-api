@@ -26,6 +26,9 @@ model UserAccount {
   registrationNumberType  RegistrationNumberType? @map("registration_number_type")
   isTeacherActive         Boolean                 @default(false) @map("is_teacher_active")
   isPresenterActive       Boolean                 @default(false) @map("is_presenter_active")
+  requestedProfile        Profile?                @map("requested_profile")
+  requestedSubprofile     Subprofile?             @map("requested_subprofile")
+  profileRequestedAt      DateTime?               @map("profile_requested_at")
 
   panelistAwards          AwardedPanelist[]
   certificates            Certificate[]
