@@ -36,6 +36,7 @@
     "postinstall": "prisma generate",
     "clean": "rm -rf package-lock.json node_modules && npm cache clean --force",
     "seed": "ts-node prisma/seed.ts",
+    "seed:premiacao": "ts-node prisma/seed.ts --premiacao",
     "swagger:export": "nest build && node dist/scripts/export-swagger.js",
     "prepare": "husky || true"
   },

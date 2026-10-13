@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import {
   CommitteeLevel,
   CommitteeRole,
@@ -9,6 +10,7 @@ import {
   UserLevel,
 } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { seedPremiacao } from './seed-premiacao';
 
 /**
  * Database Seeding Script
@@ -33,8 +35,7 @@ function createEmailByName(name: string) {
 
 // Helper function to safely hash passwords with fallback
 function safeHashPassword(password?: string): string {
-  const passwordToHash =
-    password || process.env.SEED_PASSWORD || 'admin123';
+  const passwordToHash = password || process.env.SEED_PASSWORD || 'admin123';
 
   return bcrypt.hashSync(passwordToHash, 10);
 }
@@ -85,7 +86,8 @@ async function main() {
   await prisma.guidance.create({
     data: {
       eventEditionId: edition2024.id,
-      summary: 'Orientações gerais para autores, avaliadores e ouvintes do WEPGCOMP 2024.',
+      summary:
+        'Orientações gerais para autores, avaliadores e ouvintes do WEPGCOMP 2024.',
       authorGuidance:
         '<h3>Orientações para Autores</h3><p>Os autores devem preparar uma apresentação de no máximo 20 minutos com seus principais resultados de pesquisa e desafios futuros. Recomendamos o uso de slides claros e objetivos.</p><ul><li>Tempo de apresentação: 15 minutos</li><li>Tempo de perguntas: 5 minutos</li><li>Formato dos slides: 16:9 PDF ou PPTX</li></ul>',
       reviewerGuidance:
@@ -700,8 +702,9 @@ async function main() {
 
   const submissionsData = panelistsAndPresentations.map((panelist, index) => {
     const advisor =
-      professorUsers.find((p) => p.name.toLowerCase().includes(panelist.professor.toLowerCase())) ||
-      professorUsers[0];
+      professorUsers.find((p) =>
+        p.name.toLowerCase().includes(panelist.professor.toLowerCase()),
+      ) || professorUsers[0];
 
     return {
       title: panelist.presentation || 'Nome da apresentação não informado.',
@@ -965,10 +968,15 @@ async function main() {
     })),
   });
 
+  await seedPremiacao(prisma, edition2024.id);
   console.log('2024 Edition Seeding completed.');
 }
 
-main()
+const seed = process.argv.includes('--premiacao')
+  ? seedPremiacao(prisma, process.env.SEED_EVENT_EDITION_ID)
+  : main();
+
+seed
   .then(async () => {
     await prisma.$disconnect();
   })

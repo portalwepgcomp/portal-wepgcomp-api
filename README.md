@@ -84,6 +84,21 @@ npm run seed
 # ou: make seed
 ```
 
+### Apresentação para testar a premiação
+
+Para adicionar somente uma apresentação fictícia para testar o recálculo da
+premiação, preservando os dados e as contas existentes:
+
+```bash
+npm run seed:premiacao
+```
+
+O comando usa a edição ativa mais recente. Para escolher outra edição, defina
+`SEED_EVENT_EDITION_ID`. O exemplo aparece como **Apresentação de teste — Recálculo
+da premiação** nas abas Banca e Público, com notas iniciais de 4 e avaliações de 3.
+Clique em **Recalcular** para verificar a atualização das notas sem recarregar a
+página. Executar esse seed novamente preserva as notas e avaliações já existentes.
+
 ## Variáveis de ambiente
 
 Consulte [`.env.example`](.env.example). Principais:
