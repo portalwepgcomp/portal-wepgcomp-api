@@ -30,14 +30,20 @@ import {
   CreateUserDto,
 } from './dto/create-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
+import { RequestProfileChangeDto } from './dto/request-profile-change.dto';
+import { UpdateMeDto } from './dto/update-me.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserProfileChangeService } from './user-profile-change.service';
 import { UserService } from './user.service';
 
 @ApiTags('Users')
 @Controller('users')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
 export class UserController {
-  constructor(private readonly userService: UserService) {}
+  constructor(
+    private readonly userService: UserService,
+    private readonly profileChangeService: UserProfileChangeService,
+  ) {}
 
   @Public()
   @Post('register')
@@ -242,6 +248,83 @@ export class UserController {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  @Get('me')
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Dados do próprio usuário autenticado' })
+  async getMe(@CurrentUser() currentUser: { userId: string }) {
+    const result = await this.userService.findById(currentUser.userId);
+    return new ResponseUserDto(result);
+  }
+
+  @Patch('me')
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Atualizar o próprio perfil',
+    description:
+      'Permite ao usuário autenticado alterar apenas nome e link do Lattes. Campos como email, nível e perfil são ignorados.',
+  })
+  @ApiResponse({ status: 400, description: 'Nenhum campo válido enviado' })
+  async updateMe(
+    @CurrentUser() currentUser: { userId: string },
+    @Body() updateMeDto: UpdateMeDto,
+  ) {
+    return await this.userService.updateMe(currentUser.userId, updateMeDto);
+  }
+
+  @Post('me/profile-change-request')
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Solicitar troca do próprio perfil',
+    description:
+      'Registra a solicitação (substituindo uma pendente) e avisa os administradores. O perfil só muda após aprovação.',
+  })
+  async requestProfileChange(
+    @CurrentUser() currentUser: { userId: string },
+    @Body() dto: RequestProfileChangeDto,
+  ) {
+    return await this.profileChangeService.requestProfileChange(
+      currentUser.userId,
+      dto,
+    );
+  }
+
+  @Delete('me/profile-change-request')
+  @UserLevels(UserLevel.Default, UserLevel.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Cancelar a própria solicitação de troca de perfil',
+  })
+  async cancelProfileChange(@CurrentUser() currentUser: { userId: string }) {
+    return await this.profileChangeService.cancelProfileChange(
+      currentUser.userId,
+    );
+  }
+
+  @Patch(':id/profile-change-request/approve')
+  @UserLevels(UserLevel.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Aprovar solicitação de troca de perfil' })
+  async approveProfileChange(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: { email: string },
+  ) {
+    return await this.profileChangeService.approveProfileChange(
+      id,
+      currentUser.email,
+    );
+  }
+
+  @Patch(':id/profile-change-request/reject')
+  @UserLevels(UserLevel.Admin)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Recusar solicitação de troca de perfil' })
+  async rejectProfileChange(@Param('id') id: string) {
+    return await this.profileChangeService.rejectProfileChange(id);
   }
 
   @Patch('edit/:email')
