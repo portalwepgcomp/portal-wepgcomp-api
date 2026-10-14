@@ -100,6 +100,40 @@ Consulte [`.env.example`](.env.example). Principais:
 
 Não commite o arquivo `.env`.
 
+## Avaliação sem login
+
+Edições ativas com `isEvaluationRestrictToLoggedUsers=false` aceitam avaliações
+do público sem autenticação. As edições restritas continuam exigindo JWT no
+endpoint `PUT /evaluations`.
+
+`GET /evaluations/context/:presentationId` retorna os dados públicos da
+apresentação, a configuração da sua edição e, quando aberta ao público, seus
+critérios. Essa resposta não contém votos nem dados de visitantes.
+
+O envio sem login usa `PUT /evaluations/anonymous`:
+
+```json
+{
+  "name": "Visitante de teste",
+  "email": "visitante@example.com",
+  "evaluations": [
+    {
+      "submissionId": "uuid-da-submissao",
+      "evaluationCriteriaId": "uuid-do-criterio",
+      "score": 3
+    }
+  ]
+}
+```
+
+Envie todos os critérios da mesma apresentação, uma única vez cada, com notas
+de 1 a 5. Nome e e-mail são informados pelo visitante, sem verificação de conta.
+O banco registra `userId=null`, sem atribuir o voto a um usuário cadastrado.
+Reenvios com o mesmo e-mail, normalizado para minúsculas, atualizam apenas as
+avaliações anônimas desse trabalho. O envio é transacional e retorna somente
+uma confirmação. As consultas de avaliações e notas individuais mantêm suas
+proteções de autenticação e autorização.
+
 ## Scripts úteis
 
 | Comando | Equivalente Make | Descrição |
