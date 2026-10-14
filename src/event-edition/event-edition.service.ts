@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -339,11 +340,14 @@ export class EventEditionService {
   }
 
   async getByYear(year: number) {
-    const event = await this.prismaClient.eventEdition.findFirst({
+    if (!Number.isInteger(year) || year < 1000 || year > 9999) {
+      throw new BadRequestException('Informe um ano válido.');
+    }
+    const events = await this.prismaClient.eventEdition.findMany({
       where: {
         startDate: {
-          gte: new Date(year, 0, 1),
-          lt: new Date(year + 1, 0, 1),
+          gte: new Date(Date.UTC(year, 0, 1)),
+          lt: new Date(Date.UTC(year + 1, 0, 1)),
         },
       },
       include: {
@@ -353,11 +357,19 @@ export class EventEditionService {
           },
         },
       },
+      take: 2,
     });
 
-    if (!event) {
+    if (events.length === 0) {
       throw new NotFoundException('Não há eventos para o ano informado');
     }
+
+    if (events.length > 1) {
+      throw new ConflictException(
+        'Há mais de uma edição neste ano. Selecione a edição pelo ID.',
+      );
+    }
+    const [event] = events;
 
     const dtoData = {
       ...event,

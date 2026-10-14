@@ -3,7 +3,11 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventEditionService } from './event-edition.service';
 import { EventEditionCommitteeService } from './event-edition-committee.service';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { CreateEventEditionDto } from './dto/create-event-edition.dto';
 import {
   UpdateEventEditionDto,
@@ -524,18 +528,18 @@ describe('EventEditionService', () => {
         updatedAt: new Date(),
         rooms: [],
       };
-      mockPrismaService.eventEdition.findFirst.mockResolvedValue(event);
+      mockPrismaService.eventEdition.findMany.mockResolvedValue([event]);
 
       const result = await service.getByYear(year);
 
       expect(result).toEqual(
         new EventEditionResponseDto({ ...event, roomName: [] }),
       );
-      expect(mockPrismaService.eventEdition.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.eventEdition.findMany).toHaveBeenCalledWith({
         where: {
           startDate: {
-            gte: new Date(year, 0, 1),
-            lt: new Date(year + 1, 0, 1),
+            gte: new Date(Date.UTC(year, 0, 1)),
+            lt: new Date(Date.UTC(year + 1, 0, 1)),
           },
         },
         include: {
@@ -543,19 +547,20 @@ describe('EventEditionService', () => {
             select: { name: true },
           },
         },
+        take: 2,
       });
     });
 
     it('should throw a NotFoundException when no event is found for the given year', async () => {
       const year = 2022;
-      mockPrismaService.eventEdition.findFirst.mockResolvedValue(null);
+      mockPrismaService.eventEdition.findMany.mockResolvedValue([]);
 
       await expect(service.getByYear(year)).rejects.toThrow(NotFoundException);
-      expect(mockPrismaService.eventEdition.findFirst).toHaveBeenCalledWith({
+      expect(mockPrismaService.eventEdition.findMany).toHaveBeenCalledWith({
         where: {
           startDate: {
-            gte: new Date(year, 0, 1),
-            lt: new Date(year + 1, 0, 1),
+            gte: new Date(Date.UTC(year, 0, 1)),
+            lt: new Date(Date.UTC(year + 1, 0, 1)),
           },
         },
         include: {
@@ -563,8 +568,35 @@ describe('EventEditionService', () => {
             select: { name: true },
           },
         },
+        take: 2,
       });
     });
+
+    it.each([true, false])(
+      'rejects ambiguous years regardless of the active edition position (%s)',
+      async (activeFirst) => {
+        const events = [
+          { id: 'active-2026', isActive: true },
+          { id: 'inactive-2026', isActive: false },
+        ];
+        mockPrismaService.eventEdition.findMany.mockResolvedValue(
+          activeFirst ? events : events.reverse(),
+        );
+        await expect(service.getByYear(2026)).rejects.toThrow(
+          ConflictException,
+        );
+      },
+    );
+
+    it.each([NaN, 2026.5, 999, 10000])(
+      'rejects invalid year %s',
+      async (year) => {
+        await expect(service.getByYear(year)).rejects.toThrow(
+          BadRequestException,
+        );
+        expect(mockPrismaService.eventEdition.findMany).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('update', () => {
