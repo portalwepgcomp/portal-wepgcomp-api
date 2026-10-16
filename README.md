@@ -100,6 +100,16 @@ Consulte [`.env.example`](.env.example). Principais:
 
 Não commite o arquivo `.env`.
 
+## Identidade da edição
+
+Múltiplas edições podem existir no mesmo ano. Use o `id` retornado por
+`GET /event` e consulte `GET /event/:id` para selecionar uma edição e enviar
+requisições de rankings, avaliações ou recálculo.
+
+`GET /event/year/:year` retorna uma edição somente quando há uma única
+correspondência. Sem edição, retorna 404; com duas ou mais, retorna 409 e pede
+seleção por ID. Anos inválidos retornam 400. O intervalo do ano é calculado em UTC.
+
 ## Avaliação sem login
 
 Edições ativas com `isEvaluationRestrictToLoggedUsers=false` aceitam avaliações

@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   Put,
@@ -23,7 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { UserLevel } from '@prisma/client';
 import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
-import { ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { EventEditionResponseDto } from './dto/event-edition-response';
 import { UpdateRegistrationOpenDto } from './dto/update-registration-open.dto';
 
@@ -98,7 +99,11 @@ export class EventEditionController {
 
   @Public()
   @Get('year/:year')
-  async getByYear(@Param('year') year: number) {
+  @ApiResponse({
+    status: 409,
+    description: 'Mais de uma edição no ano; consulte por ID.',
+  })
+  async getByYear(@Param('year', ParseIntPipe) year: number) {
     return await this.eventEditionService.getByYear(year);
   }
 
