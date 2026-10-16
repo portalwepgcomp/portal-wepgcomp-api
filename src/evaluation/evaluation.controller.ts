@@ -14,15 +14,32 @@ import { CreateEvaluationDto } from './dto/create-evaluation.dto';
 import { ApiBody, ApiOperation, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import { UserLevelGuard } from '../auth/guards/user-level.guard';
 import { UserLevel } from '@prisma/client';
-import { UserLevels } from '../auth/decorators/user-level.decorator';
+import { Public, UserLevels } from '../auth/decorators/user-level.decorator';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AppException } from '../exceptions/app.exception';
+import { AnonymousEvaluationDto } from './dto/anonymous-evaluation.dto';
 
 @Controller('evaluations')
 @UseGuards(JwtAuthGuard, UserLevelGuard)
 export class EvaluationController {
   constructor(private readonly evaluationService: EvaluationService) {}
+
+  @Public()
+  @Get('context/:presentationId')
+  @ApiOperation({ summary: 'Get public evaluation context, without votes.' })
+  getContext(@Param('presentationId') presentationId: string) {
+    return this.evaluationService.getContext(presentationId);
+  }
+
+  @Public()
+  @Put('anonymous')
+  @ApiOperation({
+    summary: 'Submit anonymous public scores when the event allows them.',
+  })
+  createAnonymous(@Body() body: AnonymousEvaluationDto) {
+    return this.evaluationService.createAnonymous(body);
+  }
 
   @Put()
   @UserLevels(UserLevel.Admin, UserLevel.Default)
