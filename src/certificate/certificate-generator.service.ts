@@ -40,12 +40,11 @@ export class CertificateGeneratorService {
     }
 
     const regularFont = await this.getFontAndEmbed(fonts, 'regular', pdfDoc);
-    page.drawText(texto, {
+    this.drawJustifiedText(page, texto, regularFont, {
       x: 50,
       y: 330,
       size: 16,
-      font: regularFont,
-      maxWidth: page.getWidth() - 90,
+      maxWidth: page.getWidth() - 100,
       lineHeight: 19,
     });
 
@@ -61,6 +60,69 @@ export class CertificateGeneratorService {
     });
 
     return Buffer.from(await pdfDoc.save());
+  }
+
+  private drawJustifiedText(
+    page: any,
+    text: string,
+    font: PDFFont,
+    options: {
+      x: number;
+      y: number;
+      size: number;
+      maxWidth: number;
+      lineHeight: number;
+    },
+  ): void {
+    const words = text.trim().split(/\s+/);
+    const lines: string[][] = [];
+    let line: string[] = [];
+    let lineWidth = 0;
+
+    for (const word of words) {
+      const wordWidth = font.widthOfTextAtSize(word, options.size);
+      const spaceWidth = line.length
+        ? font.widthOfTextAtSize(' ', options.size)
+        : 0;
+
+      if (
+        line.length &&
+        lineWidth + spaceWidth + wordWidth > options.maxWidth
+      ) {
+        lines.push(line);
+        line = [word];
+        lineWidth = wordWidth;
+      } else {
+        line.push(word);
+        lineWidth += spaceWidth + wordWidth;
+      }
+    }
+    if (line.length) lines.push(line);
+
+    lines.forEach((wordsInLine, index) => {
+      const isLastLine = index === lines.length - 1;
+      const wordsWidth = wordsInLine.reduce(
+        (width, word) => width + font.widthOfTextAtSize(word, options.size),
+        0,
+      );
+      const gap =
+        !isLastLine && wordsInLine.length > 1
+          ? (options.maxWidth - wordsWidth) / (wordsInLine.length - 1)
+          : font.widthOfTextAtSize(' ', options.size);
+      let x = options.x;
+
+      wordsInLine.forEach((word, wordIndex) => {
+        page.drawText(word, {
+          x,
+          y: options.y - index * options.lineHeight,
+          size: options.size,
+          font,
+        });
+        x +=
+          font.widthOfTextAtSize(word, options.size) +
+          (wordIndex < wordsInLine.length - 1 ? gap : 0);
+      });
+    });
   }
 
   private parseLocalDate(dateStr: string): Date {
