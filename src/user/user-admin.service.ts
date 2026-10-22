@@ -23,6 +23,7 @@ import { ResponseUpdatedUserDto } from './dto/response-updated-user.dto';
 import { ResponseUserDto } from './dto/response-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserFieldCalculator } from './utils/user-field-calculator';
+import { isValidCpf } from './utils/cpf-validator';
 
 @Injectable()
 export class UserAdminService {
@@ -331,6 +332,20 @@ export class UserAdminService {
       updateData.registrationNumber === existingUser.registrationNumber
     ) {
       return;
+    }
+
+    const effectiveProfile = updateData.profile ?? existingUser.profile;
+    const effectiveRegistrationNumberType =
+      updateData.registrationNumberType ??
+      (effectiveProfile === Profile.Listener
+        ? RegistrationNumberType.CPF
+        : existingUser.registrationNumberType);
+
+    if (
+      effectiveRegistrationNumberType === RegistrationNumberType.CPF &&
+      !isValidCpf(updateData.registrationNumber)
+    ) {
+      throw new BadRequestException('CPF inválido.');
     }
 
     const exists = await this.prismaClient.userAccount.findFirst({

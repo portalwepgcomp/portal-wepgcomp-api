@@ -1240,7 +1240,7 @@ describe('UserService', () => {
         ).rejects.toThrow('CPF inválido');
 
         await service.updateMe('user-id-1', {
-          registrationNumber: '12345678901',
+          registrationNumber: '52998224725',
         });
         expect(
           (prismaService.userAccount.update as jest.Mock).mock.calls[0][0].data,

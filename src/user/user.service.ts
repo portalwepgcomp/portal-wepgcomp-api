@@ -25,6 +25,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UserAdminService } from './user-admin.service';
 import { UserVerificationService } from './user-verification.service';
 import { PaginatedResponseDto } from '../shared/dto/paginated-response.dto';
+import { isValidCpf } from './utils/cpf-validator';
 
 @Injectable()
 export class UserService {
@@ -85,15 +86,26 @@ export class UserService {
       );
     }
 
+    if (
+      registrationNumber &&
+      registrationNumberType === RegistrationNumberType.CPF &&
+      !isValidCpf(registrationNumber)
+    ) {
+      throw new BadRequestException('CPF inválido.');
+    }
+
     if (registrationNumber) {
       const exists = await this.prismaClient.userAccount.findFirst({
         where: { registrationNumber },
         select: { id: true },
       });
       if (exists) {
-        throw new BadRequestException(
-          'Um usuário com essa matrícula já existe.',
-        );
+        if (registrationNumberType == RegistrationNumberType.MATRICULA) {
+          throw new BadRequestException(
+            'Um usuário com essa matrícula já existe.',
+          );
+        }
+        throw new BadRequestException('Um usuário com esse CPF já existe.');
       }
     }
 
@@ -443,8 +455,8 @@ export class UserService {
       user.profile === Profile.Listener && user.subprofile === 'Other';
     const label = usesCpf ? 'CPF' : 'Matrícula';
 
-    if (usesCpf && !/^\d{11}$/.test(registrationNumber)) {
-      throw new BadRequestException('CPF inválido. Deve conter 11 dígitos.');
+    if (usesCpf && !isValidCpf(registrationNumber)) {
+      throw new BadRequestException('CPF inválido.');
     }
 
     if (!usesCpf && !/^\d{1,13}$/.test(registrationNumber)) {
