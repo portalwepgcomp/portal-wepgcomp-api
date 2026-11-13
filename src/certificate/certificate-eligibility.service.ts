@@ -26,9 +26,9 @@ export class CertificateEligibilityService {
           },
         },
       });
-      if (evaluationCount < 10) {
+      if (evaluationCount < 5) {
         throw new AppException(
-          'Usuário ouvinte deve avaliar ao menos 10 apresentações pare receber o certificado',
+          'Usuário ouvinte deve avaliar ao menos 5 apresentações para receber o certificado',
           404,
         );
       }
