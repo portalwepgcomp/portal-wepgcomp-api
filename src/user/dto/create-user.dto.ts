@@ -9,6 +9,7 @@ import {
   Matches,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { IsCpf } from '../utils/cpf-validator';
 
 export enum Profile {
   Presenter = 'Presenter',
@@ -46,11 +47,22 @@ export class CreateUserDto {
   @Length(1, 255)
   password: string;
 
-  @ValidateIf((object) => object.profile === Profile.Presenter)
+  @ValidateIf(
+    (object) =>
+      object.profile === Profile.Presenter ||
+      object.registrationNumberType === RegistrationNumberType.CPF ||
+      (object.profile === Profile.Listener && object.subprofile === 'Other'),
+  )
   @IsString()
   @Matches(/^\d{1,13}$/, {
     message: 'Número de matrícula deve conter apenas dígitos (máximo 13)',
   })
+  @IsCpf(
+    { message: 'CPF inválido.' },
+    (object) =>
+      object.registrationNumberType === RegistrationNumberType.CPF ||
+      (object.profile === Profile.Listener && object.subprofile === 'Other'),
+  )
   registrationNumber?: string;
 
   @IsOptional()
