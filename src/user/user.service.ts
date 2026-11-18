@@ -178,11 +178,22 @@ export class UserService {
   }
 
   async findByEmail(email: string) {
-    return this.prismaClient.userAccount.findUnique({
+    const exactMatch = await this.prismaClient.userAccount.findUnique({
       where: {
         email,
       },
     });
+    if (exactMatch) return exactMatch;
+
+    // O Prisma usa ILIKE nessa busca. Preserve os caracteres literais do e-mail.
+    const escapedEmail = email.replace(/[\\%_]/g, '\\$&');
+    const matches = await this.prismaClient.userAccount.findMany({
+      where: { email: { equals: escapedEmail, mode: 'insensitive' } },
+      take: 2,
+    });
+
+    // Cadastros antigos podem ter o mesmo endereço com capitalizações distintas.
+    return matches.length === 1 ? matches[0] : null;
   }
 
   async checkFirstProfessorShouldBeAdmin(): Promise<boolean> {
