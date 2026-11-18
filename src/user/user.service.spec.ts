@@ -418,11 +418,44 @@ describe('UserService', () => {
       expect(prismaService.userAccount.findUnique).toHaveBeenCalledWith({
         where: { email: 'user@example.com' },
       });
+      expect(prismaService.userAccount.findMany).not.toHaveBeenCalled();
       expect(result).toEqual(userMock);
+    });
+
+    it('should find a single case-insensitive match with literal email characters', async () => {
+      const userMock = { id: '1', email: 'first_last%qa@example.com' };
+      prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(null);
+      prismaService.userAccount.findMany = jest
+        .fn()
+        .mockResolvedValue([userMock]);
+
+      const result = await service.findByEmail('First_Last%QA@EXAMPLE.COM');
+
+      expect(prismaService.userAccount.findMany).toHaveBeenCalledWith({
+        where: {
+          email: {
+            equals: 'First\\_Last\\%QA@EXAMPLE.COM',
+            mode: 'insensitive',
+          },
+        },
+        take: 2,
+      });
+      expect(result).toEqual(userMock);
+    });
+
+    it('should return null when multiple accounts differ only in capitalization', async () => {
+      prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(null);
+      prismaService.userAccount.findMany = jest.fn().mockResolvedValue([
+        { id: '1', email: 'user@example.com' },
+        { id: '2', email: 'User@example.com' },
+      ]);
+
+      expect(await service.findByEmail('USER@example.com')).toBeNull();
     });
 
     it('should return null if user does not exist', async () => {
       prismaService.userAccount.findUnique = jest.fn().mockResolvedValue(null);
+      prismaService.userAccount.findMany = jest.fn().mockResolvedValue([]);
 
       const result = await service.findByEmail('nonexistent@example.com');
 
