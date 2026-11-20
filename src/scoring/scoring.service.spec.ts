@@ -128,11 +128,13 @@ describe('ScoringService', () => {
             {
               score: 4,
               userId: 'user1',
+              user: { profile: 'Professor', isTeacherActive: true },
               evaluationCriteria: { weightRadio: 1 },
             },
             {
               score: 5,
               userId: 'user2',
+              user: { profile: 'Listener', isTeacherActive: false },
               evaluationCriteria: { weightRadio: 1 },
             },
           ],
@@ -148,6 +150,7 @@ describe('ScoringService', () => {
             {
               score: 3,
               userId: 'user3',
+              user: { profile: 'Presenter', isTeacherActive: false },
               evaluationCriteria: { weightRadio: 1 },
             },
           ],
@@ -227,11 +230,13 @@ describe('ScoringService', () => {
               {
                 score: 4,
                 userId: 'panelist1',
+                user: { profile: 'Professor', isTeacherActive: true },
                 evaluationCriteria: { weightRadio: 1 },
               },
               {
                 score: 3,
                 userId: 'public1',
+                user: { profile: 'Listener', isTeacherActive: false },
                 evaluationCriteria: { weightRadio: 1 },
               },
             ],
@@ -259,6 +264,79 @@ describe('ScoringService', () => {
             evaluatorsAverageScore: expect.any(Number),
           }),
         }),
+      );
+    });
+
+    it('classifies active professors as panelists regardless of session association', async () => {
+      const evaluations = [
+        {
+          score: 5,
+          userId: 'linked-teacher',
+          user: { profile: 'Professor', isTeacherActive: true },
+          evaluationCriteria: { weightRadio: 1 },
+        },
+        {
+          score: 4,
+          userId: 'unlinked-teacher',
+          user: { profile: 'Professor', isTeacherActive: true },
+          evaluationCriteria: { weightRadio: 1 },
+        },
+        {
+          score: 3,
+          userId: 'inactive-teacher',
+          user: { profile: 'Professor', isTeacherActive: false },
+          evaluationCriteria: { weightRadio: 1 },
+        },
+        {
+          score: 2,
+          userId: 'presenter',
+          user: { profile: 'Presenter', isTeacherActive: false },
+          evaluationCriteria: { weightRadio: 1 },
+        },
+        {
+          score: 1,
+          userId: null,
+          user: null,
+          evaluationCriteria: { weightRadio: 1 },
+        },
+      ];
+      (prismaService.presentation.findMany as jest.Mock).mockResolvedValue([
+        {
+          id: 'presentation1',
+          submission: { Evaluation: evaluations },
+          presentationBlock: { panelists: [{ userId: 'linked-teacher' }] },
+        },
+      ]);
+      (
+        prismaService.evaluationCriteria.findMany as jest.Mock
+      ).mockResolvedValue([]);
+      const calculator = service['calculatorService'];
+      const calculateBayesianMean = jest.spyOn(
+        calculator,
+        'calculateBayesianMean',
+      );
+
+      await service.recalculateAllScores('event1');
+
+      expect(calculateBayesianMean).toHaveBeenNthCalledWith(
+        1,
+        [evaluations[2], evaluations[3], evaluations[4]].map(
+          ({ score, evaluationCriteria }) => ({
+            score,
+            weightRadio: evaluationCriteria.weightRadio,
+          }),
+        ),
+        expect.any(Object),
+        false,
+      );
+      expect(calculateBayesianMean).toHaveBeenNthCalledWith(
+        2,
+        evaluations.slice(0, 2).map(({ score, evaluationCriteria }) => ({
+          score,
+          weightRadio: evaluationCriteria.weightRadio,
+        })),
+        expect.objectContaining({ panelistMeanScore: 4.5, publicMeanScore: 2 }),
+        true,
       );
     });
 
