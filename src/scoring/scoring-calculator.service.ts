@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Profile } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventStats, ScoringConfig } from './scoring.types';
 
@@ -30,16 +31,14 @@ export class ScoringCalculatorService {
             Evaluation: {
               include: {
                 evaluationCriteria: true,
-                user: true,
+                user: {
+                  select: { profile: true, isTeacherActive: true },
+                },
               },
             },
           },
         },
-        presentationBlock: {
-          include: {
-            panelists: true,
-          },
-        },
+        presentationBlock: true,
       },
     });
 
@@ -51,10 +50,6 @@ export class ScoringCalculatorService {
     let totalPanelistEvaluations = 0;
 
     for (const presentation of presentations) {
-      const panelistIds = presentation.presentationBlock.panelists.map(
-        (p) => p.userId,
-      );
-
       let publicCount = 0;
       let panelistCount = 0;
       let publicScoreSum = 0;
@@ -71,7 +66,10 @@ export class ScoringCalculatorService {
           this.config.defaultWeight;
 
         const normalizedScore = weightedScore / weight;
-        if (evaluation.userId && panelistIds.includes(evaluation.userId)) {
+        if (
+          evaluation.user?.profile === Profile.Professor &&
+          evaluation.user.isTeacherActive
+        ) {
           panelistCount++;
           panelistScoreSum += normalizedScore;
         } else {
