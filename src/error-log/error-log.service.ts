@@ -10,6 +10,7 @@ import {
   RequestContext,
 } from '../common/request-context/request-context';
 import { PrismaService } from '../prisma/prisma.service';
+import { ErrorLogStreamService } from './error-log-stream.service';
 import {
   limitContextSize,
   sanitize,
@@ -83,6 +84,7 @@ export class ErrorLogService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly stream: ErrorLogStreamService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_3AM)
@@ -107,7 +109,11 @@ export class ErrorLogService {
   async record(input: RecordErrorInput): Promise<void> {
     try {
       const data = await this.build(input);
-      await this.prisma.errorLog.create({ data });
+      const created = await this.prisma.errorLog.create({
+        data,
+        select: { id: true, createdAt: true, route: true, path: true },
+      });
+      this.stream.publish(created);
     } catch (persistError) {
       console.error(
         '[ErrorLogService] Falha ao persistir log de erro:',

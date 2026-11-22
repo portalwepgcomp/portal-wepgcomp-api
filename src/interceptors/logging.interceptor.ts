@@ -5,8 +5,9 @@ import {
   Logger,
   NestInterceptor,
 } from '@nestjs/common';
+import { SSE_METADATA } from '@nestjs/common/constants';
 import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { finalize, tap } from 'rxjs/operators';
 import { Request, Response } from 'express';
 import { RequestContext } from '../common/request-context/request-context';
 
@@ -24,6 +25,20 @@ export class LoggingInterceptor implements NestInterceptor {
       context.getClass().name,
       context.getHandler().name,
     );
+
+    // Em SSE cada mensagem passa pelo `next`: registra só abertura e fim.
+    if (Reflect.getMetadata(SSE_METADATA, context.getHandler())) {
+      this.logger.log(`${method} ${originalUrl} stream aberto`);
+      return next
+        .handle()
+        .pipe(
+          finalize(() =>
+            this.logger.log(
+              `${method} ${originalUrl} stream encerrado - ${Date.now() - now}ms`,
+            ),
+          ),
+        );
+    }
 
     return next.handle().pipe(
       tap({

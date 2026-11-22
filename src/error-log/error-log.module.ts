@@ -3,6 +3,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { HttpExceptionFilter } from '../exceptions/filter';
 import { ErrorLogController } from './error-log.controller';
 import { ErrorLogQueryService } from './error-log-query.service';
+import { ErrorLogStreamService } from './error-log-stream.service';
 import { ErrorLogService } from './error-log.service';
 import { PersistentLogger } from './persistent-logger.service';
 
@@ -12,6 +13,7 @@ import { PersistentLogger } from './persistent-logger.service';
   providers: [
     ErrorLogService,
     ErrorLogQueryService,
+    ErrorLogStreamService,
     PersistentLogger,
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
   ],

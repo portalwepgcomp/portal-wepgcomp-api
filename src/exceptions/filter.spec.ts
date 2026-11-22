@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Prisma } from '@prisma/client';
 import { RequestContext } from '../common/request-context/request-context';
+import { ErrorLogStreamService } from '../error-log/error-log-stream.service';
 import { ErrorLogService } from '../error-log/error-log.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { HttpExceptionFilter } from './filter';
@@ -123,6 +124,7 @@ describe('HttpExceptionFilter', () => {
         failingPrisma as unknown as PrismaService,
         new JwtService({ secret: 's' }),
         { get: jest.fn() } as unknown as ConfigService,
+        new ErrorLogStreamService(),
       ),
     );
     const { host, response } = createHost({

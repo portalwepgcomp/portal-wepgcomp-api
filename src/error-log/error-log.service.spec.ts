@@ -6,6 +6,7 @@ import { Request } from 'express';
 import { RequestContext } from '../common/request-context/request-context';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDACTED } from './error-log.sanitizer';
+import { ErrorLogStreamService } from './error-log-stream.service';
 import { DEFAULT_RETENTION_DAYS, ErrorLogService } from './error-log.service';
 
 const SECRET = 'test-secret';
@@ -32,12 +33,19 @@ describe('ErrorLogService', () => {
     userAccount: { findUnique: jest.Mock };
   };
   let config: { get: jest.Mock };
+  let stream: { publish: jest.Mock };
   const jwtService = new JwtService({ secret: SECRET });
+  const created = {
+    id: 'log-1',
+    createdAt: new Date('2026-11-21T12:00:00.000Z'),
+    route: '/submission/:id',
+    path: '/submission/abc',
+  };
 
   beforeEach(() => {
     prisma = {
       errorLog: {
-        create: jest.fn().mockResolvedValue({}),
+        create: jest.fn().mockResolvedValue(created),
         deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
       },
       userAccount: {
@@ -47,10 +55,12 @@ describe('ErrorLogService', () => {
       },
     };
     config = { get: jest.fn() };
+    stream = { publish: jest.fn() };
     service = new ErrorLogService(
       prisma as unknown as PrismaService,
       jwtService,
       config as unknown as ConfigService,
+      stream as unknown as ErrorLogStreamService,
     );
     jest.spyOn(console, 'error').mockImplementation();
   });
@@ -226,6 +236,23 @@ describe('ErrorLogService', () => {
     expect(savedData().prismaCode).toBe('P1001');
   });
 
+  it('publica o registro gravado para as telas em tempo real', async () => {
+    await service.record({
+      source: 'http',
+      level: 'error',
+      error: new Error('boom'),
+      request: buildRequest(),
+    });
+
+    expect(prisma.errorLog.create.mock.calls[0][0].select).toEqual({
+      id: true,
+      createdAt: true,
+      route: true,
+      path: true,
+    });
+    expect(stream.publish).toHaveBeenCalledWith(created);
+  });
+
   it('nunca rejeita quando o insert falha', async () => {
     prisma.errorLog.create.mockRejectedValue(new Error('db down'));
 
@@ -233,6 +260,7 @@ describe('ErrorLogService', () => {
       service.record({ source: 'logger', level: 'error', error: 'x' }),
     ).resolves.toBeUndefined();
     expect(console.error).toHaveBeenCalled();
+    expect(stream.publish).not.toHaveBeenCalled();
   });
 
   it('recordWithTimeout não espera além do limite', async () => {
