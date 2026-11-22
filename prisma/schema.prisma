@@ -260,6 +260,43 @@ model Guidance {
   @@map("guidance")
 }
 
+model ErrorLog {
+  id              String   @id @default(uuid()) @map("id")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  source          String   @map("source") @db.VarChar(20)
+  level           String   @map("level") @db.VarChar(10)
+  requestId       String?  @map("request_id") @db.VarChar(64)
+  statusCode      Int?     @map("status_code")
+  method          String?  @map("method") @db.VarChar(10)
+  path            String?  @map("path")
+  route           String?  @map("route")
+  isAuthenticated Boolean  @default(false) @map("is_authenticated")
+  userId          String?  @map("user_id") @db.VarChar(64)
+  userName        String?  @map("user_name") @db.VarChar(255)
+  userEmail       String?  @map("user_email") @db.VarChar(255)
+  userLevel       String?  @map("user_level") @db.VarChar(30)
+  userProfile     String?  @map("user_profile") @db.VarChar(30)
+  exceptionName   String?  @map("exception_name") @db.VarChar(255)
+  message         String   @map("message")
+  loggerContext   String?  @map("logger_context") @db.VarChar(255)
+  prismaCode      String?  @map("prisma_code") @db.VarChar(20)
+  file            String?  @map("file")
+  line            Int?     @map("line")
+  column          Int?     @map("column")
+  functionName    String?  @map("function_name") @db.VarChar(255)
+  context         Json     @default("{}") @map("context")
+
+  @@index([createdAt])
+  @@index([statusCode, createdAt])
+  @@index([userEmail, createdAt])
+  @@index([userId])
+  @@index([requestId])
+  @@index([source, createdAt])
+  @@index([exceptionName])
+  @@index([prismaCode])
+  @@map("error_log")
+}
+
 enum Profile {
   Presenter
   Professor

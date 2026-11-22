@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
@@ -8,6 +8,8 @@ import { AwardedPresentersModule } from './awarded-presenters/awarded-presenters
 import { AwardedPanelistsModule } from './awarded-panelists/awarded-panelists.module';
 import { CertificateModule } from './certificate/certificate.module';
 import { CommitteeMemberModule } from './committee-member/committee-member.module';
+import { RequestContextMiddleware } from './common/request-context/request-context.middleware';
+import { ErrorLogModule } from './error-log/error-log.module';
 import { EvaluationCriteriaModule } from './evaluation-criteria/evaluation-criteria.module';
 import { EvaluationModule } from './evaluation/evaluation.module';
 import { EventEditionModule } from './event-edition/event-edition.module';
@@ -28,6 +30,7 @@ import { UserModule } from './user/user.module';
     AuthModule,
     UserModule,
     PrismaModule,
+    ErrorLogModule,
     EventEditionModule,
     MailingModule,
     ScheduleModule.forRoot(),
@@ -48,4 +51,8 @@ import { UserModule } from './user/user.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestContextMiddleware).forRoutes('{*splat}');
+  }
+}

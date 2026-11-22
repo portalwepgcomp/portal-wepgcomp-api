@@ -5,8 +5,12 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter } from './exceptions/filter';
+import { REQUEST_ID_HEADER } from './common/request-context/request-context.middleware';
+import { ErrorLogService } from './error-log/error-log.service';
+import { PersistentLogger } from './error-log/persistent-logger.service';
 import { LoggingInterceptor } from './interceptors/logging.interceptor';
+
+const PROCESS_ERROR_PERSIST_TIMEOUT_MS = 2000;
 
 type ValidationDetail = {
   field: string;
@@ -64,10 +68,41 @@ function resolveCorsOrigins(): (
   };
 }
 
+/**
+ * Registra a falha e encerra o processo, preservando o comportamento padrão do
+ * Node (o processo cai e o orquestrador reinicia).
+ */
+function registerProcessErrorHandlers(errorLogService: ErrorLogService) {
+  let exiting = false;
+
+  const handle = (kind: string) => async (error: unknown) => {
+    if (exiting) {
+      return;
+    }
+    exiting = true;
+    console.error(`[${kind}]`, error);
+    await errorLogService.recordWithTimeout(
+      {
+        source: 'process',
+        level: 'error',
+        error,
+        loggerContext: kind,
+      },
+      PROCESS_ERROR_PERSIST_TIMEOUT_MS,
+    );
+    process.exit(1);
+  };
+
+  process.on('unhandledRejection', handle('unhandledRejection'));
+  process.on('uncaughtException', handle('uncaughtException'));
+}
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
-    logger: ['log', 'error', 'warn', 'debug'],
-  });
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+
+  const logger = app.get(PersistentLogger);
+  logger.setLogLevels(['log', 'error', 'warn', 'debug']);
+  app.useLogger(logger);
 
   app.use(helmet());
 
@@ -80,7 +115,9 @@ async function bootstrap() {
       'Accept',
       'Origin',
       'X-Requested-With',
+      REQUEST_ID_HEADER,
     ],
+    exposedHeaders: [REQUEST_ID_HEADER],
     credentials: true,
   });
 
@@ -105,7 +142,6 @@ async function bootstrap() {
       },
     }),
   );
-  app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
@@ -118,5 +154,7 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   await app.listen(process.env.PORT || 3000, '0.0.0.0');
+
+  registerProcessErrorHandlers(app.get(ErrorLogService));
 }
 bootstrap();
