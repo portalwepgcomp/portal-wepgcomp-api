@@ -5,7 +5,12 @@ import * as path from 'path';
 @Injectable()
 export class CertificateAssetsService {
   private readonly logger = new Logger(CertificateAssetsService.name);
-  private readonly assetsDir = path.resolve(process.cwd(), 'public', 'assets');
+  private readonly assetsDir = path.resolve(
+    process.cwd(),
+    'dist',
+    'public',
+    'assets',
+  );
   private readonly fontCache = new Map<string, Buffer>();
   private readonly imageCache = new Map<string, Buffer>();
 
